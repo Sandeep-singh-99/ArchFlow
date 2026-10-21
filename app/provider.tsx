@@ -29,12 +29,16 @@ export default function Provider({ children }: { children: React.ReactNode }) {
 
   const CreateAndGetUser = async () => {
     if (user) {
-      const result = await createUser({
-        name: user.fullName ?? "",
-        email: user.primaryEmailAddress?.emailAddress ?? "",
-        imageUrl: user.imageUrl ?? "",
-      });
-      setUserDetails(result);
+      try {
+        const result = await createUser({
+          name: user.fullName ?? "",
+          email: user.primaryEmailAddress?.emailAddress ?? "",
+          imageUrl: user.imageUrl ?? "",
+        });
+        setUserDetails(result);
+      } catch (err) {
+        console.error("Failed to sync user with Convex:", err);
+      }
     }
   };
   return (

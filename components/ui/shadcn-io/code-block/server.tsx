@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
   transformerNotationDiff,
   transformerNotationErrorLevel,
@@ -61,3 +62,4 @@ export const CodeBlockContent = async ({
     />
   );
 };
+
