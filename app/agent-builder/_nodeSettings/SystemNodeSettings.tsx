@@ -10,19 +10,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Save, Sliders, Trash2 } from "lucide-react";
+import { Save, Sliders, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface Props {
   selectedNode: any;
   updateFormData: (formData: any) => void;
   onDeleteNode?: (nodeId: string) => void;
+  onClose?: () => void;
 }
 
 export default function SystemNodeSettings({
   selectedNode,
   updateFormData,
   onDeleteNode,
+  onClose,
 }: Props) {
   const [formData, setFormData] = useState({
     name: "",
@@ -65,9 +67,22 @@ export default function SystemNodeSettings({
           <Sliders className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           <h3 className="text-xs font-bold text-foreground">Node Specifications</h3>
         </div>
-        <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border">
-          {selectedNode?.type || "Node"}
-        </Badge>
+        <div className="flex items-center gap-1.5">
+          <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border">
+            {selectedNode?.type || "Node"}
+          </Badge>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-muted-foreground hover:text-foreground h-5 w-5 flex items-center justify-center rounded hover:bg-muted cursor-pointer transition-colors"
+              title="Close specifications"
+              aria-label="Close specifications"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-1.5">

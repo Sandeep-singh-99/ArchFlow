@@ -110,6 +110,7 @@ export default function AgentBuilder() {
     setAddedNodes,
     nodeEdges,
     setNodeEdges,
+    selectedNode,
     setSelectedNode,
   } = useContext(WorkflowContext);
 
@@ -135,6 +136,7 @@ export default function AgentBuilder() {
   };
 
   useEffect(() => {
+    setSelectedNode(null);
     GetAgentDetail();
   }, []);
 
@@ -198,6 +200,8 @@ export default function AgentBuilder() {
     ({ nodes }: OnSelectionChangeParams) => {
       if (nodes && nodes.length > 0) {
         setSelectedNode(nodes[0]);
+      } else {
+        setSelectedNode(null);
       }
     },
     [setSelectedNode]
@@ -218,6 +222,8 @@ export default function AgentBuilder() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={(e, node) => setSelectedNode(node)}
+          onPaneClick={() => setSelectedNode(null)}
+          onEdgeClick={() => setSelectedNode(null)}
           nodeTypes={nodeTypes}
           defaultEdgeOptions={{
             animated: true,
@@ -262,10 +268,12 @@ export default function AgentBuilder() {
             <AgentToolsPanel />
           </Panel>
 
-          {/* Right Inspector: Node Specifications */}
-          <Panel position="top-right">
-            <SettingPanel onSave={(nodes: any) => SaveNodeAndEdges(nodes)} />
-          </Panel>
+          {/* Right Inspector: Node Specifications (only visible when a node is selected) */}
+          {selectedNode && (
+            <Panel position="top-right">
+              <SettingPanel onSave={(nodes: any) => SaveNodeAndEdges(nodes)} />
+            </Panel>
+          )}
 
           {/* Bottom Center: Save Action */}
           <Panel position="bottom-center">

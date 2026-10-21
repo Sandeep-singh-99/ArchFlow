@@ -79,6 +79,7 @@ export default function SettingPanel({
           selectedNode={selectedNode}
           updateFormData={onUpdateNodeData}
           onDeleteNode={onDeleteNode}
+          onClose={() => setSelectedNode(null)}
         />
       )}
 
