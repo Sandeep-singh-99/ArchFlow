@@ -1,7 +1,6 @@
 "use client";
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState, useCallback } from "react";
 import Header from "../_components/Header";
-import { useState, useCallback } from "react";
 import {
   ReactFlow,
   applyNodeChanges,
@@ -13,43 +12,96 @@ import {
   Panel,
   useOnSelectionChange,
   OnSelectionChangeParams,
-  Node,
-  Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import StartNode from "../_customNodes/StartNode";
-import AgentNode from "../_customNodes/AgentNode";
+
+import { nodeTypes } from "../_customNodes/nodeTypes";
+
 import AgentToolsPanel from "../_components/AgentToolsPanel";
+import SettingPanel from "../_components/SettingPanel";
 import { WorkflowContext } from "@/context/WorkflowContext";
 import { useConvex, useMutation } from "convex/react";
 import { useParams } from "next/navigation";
 import { api } from "@/convex/_generated/api";
 import { Agent } from "@/types/AgentTypes";
 import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
+import { Save, Check, Loader } from "lucide-react";
 import { toast } from "sonner";
-import EndNode from "../_customNodes/EndNode";
-import IfElseNode from "../_customNodes/IfElseNode";
-import WhileNode from "../_customNodes/WhileNode";
-import UserApprovalNode from "../_customNodes/UserApprovalNode";
-import ApiNode from "../_customNodes/ApiNode";
-import SettingPanel from "../_components/SettingPanel";
 
-// const initialNodes = [
-//   { id: "n1", position: { x: 0, y: 0 }, data: { label: "Node 1" }, type: 'StartNode' },
-//   { id: "n2", position: { x: 0, y: 100 }, data: { label: "Node 2" }, type: 'AgentNode' },
-// ];
-// const initialEdges = [{ id: "n1-n2", source: "n1", target: "n2" }];
+const defaultSystemNodes = [
+  {
+    id: "client-1",
+    type: "ClientNode",
+    position: { x: 50, y: 150 },
+    data: {
+      label: "Web & Mobile Clients",
+      settings: {
+        name: "Web & Mobile Clients",
+        protocol: "HTTPS / HTTP/3",
+        qps: "100k QPS",
+      },
+    },
+  },
+  {
+    id: "gateway-1",
+    type: "GatewayNode",
+    position: { x: 320, y: 150 },
+    data: {
+      label: "Envoy API Gateway",
+      settings: {
+        name: "Envoy API Gateway",
+        tech: "Envoy / Rate Limiting",
+        latency: "2.4ms",
+      },
+    },
+  },
+  {
+    id: "service-1",
+    type: "ServiceNode",
+    position: { x: 600, y: 150 },
+    data: {
+      label: "Order Service",
+      settings: {
+        name: "Order Service",
+        tech: "Go Microservice (HPA)",
+        latency: "8.5ms",
+      },
+    },
+  },
+  {
+    id: "cache-1",
+    type: "CacheNode",
+    position: { x: 880, y: 60 },
+    data: {
+      label: "Redis Cache",
+      settings: {
+        name: "Redis Cache",
+        tech: "Cluster LRU",
+        hitRatio: "0.8ms • 94% Hit",
+      },
+    },
+  },
+  {
+    id: "db-1",
+    type: "DatabaseNode",
+    position: { x: 880, y: 240 },
+    data: {
+      label: "PostgreSQL Database",
+      settings: {
+        name: "PostgreSQL Database",
+        tech: "Master-Replica (WAL)",
+        latency: "6.2ms",
+      },
+    },
+  },
+];
 
-export const nodeTypes = {
-  StartNode: StartNode,
-  AgentNode: AgentNode,
-  EndNode: EndNode,
-  IfElseNode: IfElseNode,
-  WhileNode: WhileNode,
-  UserApprovalNode: UserApprovalNode,
-  ApiNode: ApiNode,
-};
+const defaultSystemEdges = [
+  { id: "e1-2", source: "client-1", target: "gateway-1", animated: true },
+  { id: "e2-3", source: "gateway-1", target: "service-1", animated: true },
+  { id: "e3-4", source: "service-1", target: "cache-1", animated: true },
+  { id: "e3-5", source: "service-1", target: "db-1", animated: true },
+];
 
 export default function AgentBuilder() {
   const {
@@ -61,18 +113,21 @@ export default function AgentBuilder() {
   } = useContext(WorkflowContext);
 
   const { agentId } = useParams();
-
   const convex = useConvex();
-
   const updateAgentDetail = useMutation(api.agent.UpdateAgentDetail);
 
   const [agentDetail, setAgentDetail] = useState<Agent>();
+  const [isSaving, setIsSaving] = useState(false);
 
   const GetAgentDetail = async () => {
-    const results = await convex.query(api.agent.GetAgentById, {
-      agentId: agentId as string,
-    });
-    setAgentDetail(results);
+    try {
+      const results = await convex.query(api.agent.GetAgentById, {
+        agentId: agentId as string,
+      });
+      setAgentDetail(results);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   useEffect(() => {
@@ -81,81 +136,124 @@ export default function AgentBuilder() {
 
   useEffect(() => {
     if (agentDetail) {
-      setAddedNodes(agentDetail.nodes);
-      setNodeEdges(agentDetail.edges);
+      if (agentDetail.nodes && agentDetail.nodes.length > 0) {
+        setAddedNodes(agentDetail.nodes);
+        setNodeEdges(agentDetail.edges || []);
+      } else {
+        // Initialize with realistic starter system design topology
+        setAddedNodes(defaultSystemNodes);
+        setNodeEdges(defaultSystemEdges);
+      }
     }
   }, [agentDetail]);
 
   const SaveNodeAndEdges = async (updatedNodes?: any, updatedEdges?: any) => {
-    const result = await updateAgentDetail({
-      //@ts-ignore
-      id: agentDetail?._id,
-      edges: updatedEdges ?? nodeEdges,
-      nodes: updatedNodes ?? addedNodes,
-    });
-    toast.success("Saved!");
+    if (!agentDetail?._id) return;
+    try {
+      setIsSaving(true);
+      await updateAgentDetail({
+        id: agentDetail._id,
+        edges: updatedEdges ?? nodeEdges,
+        nodes: updatedNodes ?? addedNodes,
+      });
+      toast.success("Architecture saved!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to save architecture");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const onNodesChange = useCallback(
     (changes: any) =>
       setAddedNodes((nodesSnapshot: any) => {
-        const updated = applyNodeChanges(changes, nodesSnapshot);
+        const updated = applyNodeChanges(changes, nodesSnapshot || []);
         return updated;
       }),
     [setAddedNodes]
   );
+
   const onEdgesChange = useCallback(
     (changes: any) =>
       setNodeEdges((edgesSnapshot: any) =>
-        applyEdgeChanges(changes, edgesSnapshot)
+        applyEdgeChanges(changes, edgesSnapshot || [])
       ),
     [setNodeEdges]
   );
+
   const onConnect = useCallback(
-    // @ts-ignore
     (params: any) =>
-      setNodeEdges((edgesSnapshot: any) => addEdge(params, edgesSnapshot)),
+      setNodeEdges((edgesSnapshot: any) =>
+        addEdge({ ...params, animated: true }, edgesSnapshot || [])
+      ),
     [setNodeEdges]
   );
 
   const onNodeSelect = useCallback(
-    ({ nodes, edges }: OnSelectionChangeParams) => {
-      setSelectedNode(nodes[0]);
+    ({ nodes }: OnSelectionChangeParams) => {
+      if (nodes && nodes.length > 0) {
+        setSelectedNode(nodes[0]);
+      }
     },
-    []
+    [setSelectedNode]
   );
 
   useOnSelectionChange({
     onChange: onNodeSelect,
   });
+
   return (
-    <div>
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-background">
       <Header agentDetail={agentDetail} />
-      <div style={{ width: "100vw", height: "90vh" }}>
+      <div className="flex-1 w-full relative">
         <ReactFlow
-          nodes={addedNodes}
-          edges={nodeEdges}
+          nodes={addedNodes || []}
+          edges={nodeEdges || []}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={(e, node) => setSelectedNode(node)}
           nodeTypes={nodeTypes}
+          defaultEdgeOptions={{
+            animated: true,
+            style: { strokeWidth: 2 },
+          }}
           fitView
         >
-          <MiniMap />
-          <Controls />
-          {/* @ts-ignore */}
-          <Background variant="dots" gap={12} size={1} />
+          <MiniMap className="border border-border bg-card rounded-lg overflow-hidden" />
+          <Controls className="border border-border bg-card rounded-lg overflow-hidden" />
+          {/* Theme-adaptive canvas background */}
+          <Background gap={16} size={1} className="opacity-50" />
+
+          {/* Left Palette: System Components */}
           <Panel position="top-left">
             <AgentToolsPanel />
           </Panel>
 
+          {/* Right Inspector: Node Specifications */}
           <Panel position="top-right">
             <SettingPanel onSave={(nodes: any) => SaveNodeAndEdges(nodes)} />
           </Panel>
+
+          {/* Bottom Center: Save Action */}
           <Panel position="bottom-center">
-            <Button onClick={() => SaveNodeAndEdges()}>
-              <Save /> Save
+            <Button
+              onClick={() => SaveNodeAndEdges()}
+              disabled={isSaving}
+              className="gap-2 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-zinc-950 shadow-md cursor-pointer"
+            >
+              {isSaving ? (
+                <>
+                  <Loader className="h-4 w-4 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  <span>Save Architecture</span>
+                </>
+              )}
             </Button>
           </Panel>
         </ReactFlow>

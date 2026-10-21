@@ -1,6 +1,15 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import { Agent } from "@/types/AgentTypes";
-import { ChevronLeft, Code, Play, X, Copy, Check } from "lucide-react";
+import {
+  ChevronLeft,
+  FileCode,
+  Share2,
+  Workflow,
+  Copy,
+  Check,
+  Sparkles,
+} from "lucide-react";
 import Link from "next/link";
 import {
   Dialog,
@@ -13,22 +22,8 @@ import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
-import {
-  CodeBlock,
-  CodeBlockBody,
-  CodeBlockContent,
-  CodeBlockCopyButton,
-  CodeBlockFilename,
-  CodeBlockFiles,
-  CodeBlockHeader,
-  CodeBlockItem,
-  CodeBlockSelect,
-  CodeBlockSelectContent,
-  CodeBlockSelectItem,
-  CodeBlockSelectTrigger,
-  CodeBlockSelectValue,
-} from "@/components/ui/shadcn-io/code-block";
-import type { BundledLanguage } from "@/components/ui/shadcn-io/code-block";
+import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 type Props = {
   agentDetail: Agent | undefined;
@@ -37,140 +32,135 @@ type Props = {
 
 export default function Header({ agentDetail, previewHeader = false }: Props) {
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const publishAgent = useMutation(api.agent.PublishAgent);
 
   const handlePublish = async () => {
     if (!agentDetail?._id) return;
-
     try {
       await publishAgent({
         id: agentDetail._id,
         published: true,
       });
+      toast.success("Architecture published successfully!");
       setOpen(true);
-      toast.success("Agent published successfully!");
     } catch (error) {
-      toast.error("Failed to publish agent");
+      toast.error("Failed to publish architecture");
       console.error(error);
     }
   };
 
-  const embedCode = `<script src="${process.env.NEXT_PUBLIC_APP_URL}/embed/${agentDetail?.agentId}.js"></script>`;
+  // Generate dynamic Mermaid.js syntax from nodes if present
+  const nodes = agentDetail?.nodes || [];
+  const edges = agentDetail?.edges || [];
 
-  const apiCode = `const res = await fetch('${process.env.NEXT_PUBLIC_APP_URL}/api/agent-chat', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    agentId: "${agentDetail?.agentId}",
-    userId: <userId />,
-    userInput: <userInput />,
-  })
-})
-
-if (!res.body) return;
-
-const reader = res.body.getReader();
-const decoder = new TextDecoder();
-let done = false;
-
-while (!done) {
-  const { value, done: doneReading } = await reader.read();
-  done = doneReading;
-  if (value) {
-    const chunk = decoder.decode(value);
-    console.log(chunk);
-    // Process chunk...
+  let mermaidCode = "graph TD\n";
+  if (nodes.length > 0) {
+    nodes.forEach((n: any) => {
+      const label = n.data?.label || n.type;
+      mermaidCode += `    ${n.id}["${label}"]\n`;
+    });
+    if (edges.length > 0) {
+      edges.forEach((e: any) => {
+        mermaidCode += `    ${e.source} --> ${e.target}\n`;
+      });
+    } else {
+      mermaidCode += "    %% Connect your nodes on the canvas to generate edges\n";
+    }
+  } else {
+    mermaidCode += "    Client[\"Web & Mobile Clients\"] --> Gateway[\"Envoy API Gateway\"]\n";
+    mermaidCode += "    Gateway --> Service[\"Microservice Cluster\"]\n";
+    mermaidCode += "    Service --> Cache[(\"Redis Cache\")]\n";
+    mermaidCode += "    Service --> DB[(\"PostgreSQL Database\")]\n";
+    mermaidCode += "    Service --> Kafka[\"Kafka Event Bus\"]\n";
   }
-}`;
 
-  const codeData = [
-    {
-      language: "javascript",
-      filename: "api-client.js",
-      code: apiCode,
-    },
-  ];
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(mermaidCode);
+    setCopied(true);
+    toast.success("Mermaid syntax copied to clipboard!");
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
-    <div className="w-full p-3 flex items-center justify-between">
-      <div className="flex gap-2 items-center">
-        <ChevronLeft className="h-8 w-8" />
-        <h2 className="text-xl">{agentDetail?.name}</h2>
-      </div>
+    <div className="w-full px-4 py-2.5 border-b border-border bg-background/90 backdrop-blur flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <Button variant={"ghost"}>
-          <Code />
-          Code
-        </Button>
-        {!previewHeader ? (
-          <Link href={`/agent-builder/${agentDetail?.agentId}/preview`}>
-            <Button>
-              <Play />
-              Preview
-            </Button>
-          </Link>
-        ) : (
-          <Link href={`/agent-builder/${agentDetail?.agentId}`}>
-            <Button variant={"outline"}>
-              <X />
-              Close Preview
-            </Button>
-          </Link>
-        )}
+        <Link
+          href="/dashboard"
+          className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          title="Back to Dashboard"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Link>
+        <div className="h-4 w-px bg-border" />
+        <div className="flex items-center gap-2">
+          <Workflow className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <h2 className="font-bold text-sm text-foreground">
+            {agentDetail?.name || "System Architecture Canvas"}
+          </h2>
+          <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border hidden sm:inline">
+            Canvas Studio
+          </Badge>
+        </div>
+      </div>
 
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        <ThemeToggle />
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setOpen(true)}
+          className="h-8 gap-1.5 text-xs font-semibold"
+        >
+          <FileCode className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span>Export Mermaid</span>
+        </Button>
+
+        <Button
+          size="sm"
+          onClick={handlePublish}
+          className="h-8 gap-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-zinc-950 shadow-xs"
+        >
+          <Share2 className="h-3.5 w-3.5" />
+          <span>Share & Publish</span>
+        </Button>
+
+        {/* Export Modal */}
         <Dialog open={open} onOpenChange={setOpen}>
-          <Button onClick={handlePublish}>Publish</Button>
-          <DialogContent className="sm:max-w-2xl h-[calc(100vh-10rem)] overflow-y-auto">
+          <DialogContent className="sm:max-w-xl">
             <DialogHeader>
-              <DialogTitle>Get Code</DialogTitle>
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <FileCode className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <span>Architecture Mermaid.js Code</span>
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Paste this into your GitHub README, Notion document, or Architecture RFC for instant rendering.
+              </DialogDescription>
             </DialogHeader>
-            <div className="">
-              <CodeBlock data={codeData} defaultValue="javascript">
-                <CodeBlockHeader>
-                  <CodeBlockFiles>
-                    {(item) => (
-                      <CodeBlockFilename
-                        key={item.language}
-                        value={item.language}
-                      >
-                        {item.filename}
-                      </CodeBlockFilename>
-                    )}
-                  </CodeBlockFiles>
-                  <CodeBlockSelect>
-                    <CodeBlockSelectTrigger>
-                      <CodeBlockSelectValue />
-                    </CodeBlockSelectTrigger>
-                    <CodeBlockSelectContent>
-                      {(item) => (
-                        <CodeBlockSelectItem
-                          key={item.language}
-                          value={item.language}
-                        >
-                          {item.language}
-                        </CodeBlockSelectItem>
-                      )}
-                    </CodeBlockSelectContent>
-                  </CodeBlockSelect>
-                  <CodeBlockCopyButton
-                    onCopy={() => toast.success("Copied to clipboard")}
-                    onError={() => toast.error("Failed to copy")}
-                  />
-                </CodeBlockHeader>
-                <CodeBlockBody>
-                  {(item) => (
-                    <CodeBlockItem key={item.language} value={item.language}>
-                      <CodeBlockContent
-                        language={item.language as BundledLanguage}
-                      >
-                        {item.code}
-                      </CodeBlockContent>
-                    </CodeBlockItem>
-                  )}
-                </CodeBlockBody>
-              </CodeBlock>
+
+            <div className="relative mt-2">
+              <pre className="p-4 rounded-lg bg-muted border border-border font-mono text-xs overflow-x-auto text-foreground max-h-[300px]">
+                {mermaidCode}
+              </pre>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={copyToClipboard}
+                className="absolute top-2.5 right-2.5 h-7 gap-1 text-[11px] font-semibold bg-card/80"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                    <span>Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3 w-3" />
+                    <span>Copy</span>
+                  </>
+                )}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

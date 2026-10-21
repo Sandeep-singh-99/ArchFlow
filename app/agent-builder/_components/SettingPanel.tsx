@@ -1,5 +1,7 @@
+"use client";
 import { WorkflowContext } from "@/context/WorkflowContext";
 import React, { useContext } from "react";
+import SystemNodeSettings from "../_nodeSettings/SystemNodeSettings";
 import AgentSettings from "../_nodeSettings/AgentSettings";
 import EndSettings from "../_nodeSettings/EndSettings";
 import IfElseSetting from "../_nodeSettings/IfElseSetting";
@@ -12,10 +14,11 @@ export default function SettingPanel({
 }: {
   onSave: (nodes: any) => void;
 }) {
-  const { selectedNode, setAddedNodes, setSelectedNode, nodeEdges } =
+  const { selectedNode, setAddedNodes, setSelectedNode } =
     useContext(WorkflowContext);
 
   const onUpdateNodeData = (formData: any) => {
+    if (!selectedNode) return;
     const updateNode = {
       ...selectedNode,
       data: {
@@ -28,37 +31,94 @@ export default function SettingPanel({
       const updatedNodes = prev.map((node: any) =>
         node.id === selectedNode.id ? updateNode : node
       );
-      onSave(updatedNodes); // Trigger save with new nodes
+      onSave(updatedNodes);
       return updatedNodes;
     });
     setSelectedNode(updateNode);
   };
 
+  const onDeleteNode = (nodeId: string) => {
+    setAddedNodes((prev: any) => {
+      const filtered = prev.filter((node: any) => node.id !== nodeId);
+      onSave(filtered);
+      return filtered;
+    });
+    setSelectedNode(null);
+  };
+
+  if (!selectedNode) return null;
+
+  const isSystemNode = [
+    "FrontendNode",
+    "MobileNode",
+    "AiAgentNode",
+    "CloudInfraNode",
+    "ClientNode",
+    "DnsNode",
+    "CdnNode",
+    "GatewayNode",
+    "LoadBalancerNode",
+    "RateLimiterNode",
+    "ServiceNode",
+    "ServerlessNode",
+    "QueueNode",
+    "CacheNode",
+    "DatabaseNode",
+    "VectorDbNode",
+    "StorageNode",
+    "WorkerNode",
+    "SearchNode",
+    "MonitoringNode",
+    "ThirdPartyApiNode",
+  ].includes(selectedNode?.type);
+
   return (
-    selectedNode && (
-      <div className="p-5 bg-white rounded-2xl w-[350px] shadow">
-        {selectedNode?.type === "AgentNode" && (
-          <AgentSettings
-            selectedNode={selectedNode}
-            updateFormData={(value: any) => onUpdateNodeData(value)}
-          />
-        )}
+    <div className="p-4 sm:p-5 bg-card border border-border rounded-xl w-[340px] shadow-xl max-h-[85vh] overflow-y-auto">
+      {isSystemNode && (
+        <SystemNodeSettings
+          selectedNode={selectedNode}
+          updateFormData={onUpdateNodeData}
+          onDeleteNode={onDeleteNode}
+        />
+      )}
 
-        {selectedNode?.type === "EndNode" && <EndSettings selectedNode={selectedNode}
-            updateFormData={(value: any) => onUpdateNodeData(value)} />}
-
-        {selectedNode?.type === "IfElseNode" && <IfElseSetting selectedNode={selectedNode}
-            updateFormData={(value: any) => onUpdateNodeData(value)} />}
-
-        {selectedNode?.type === "WhileNode" && <WhileSettings selectedNode={selectedNode}
-            updateFormData={(value: any) => onUpdateNodeData(value)} />}
-
-        {selectedNode?.type === "UserApprovalNode" && <UserApprovalSettings selectedNode={selectedNode}
-            updateFormData={(value: any) => onUpdateNodeData(value)} />}
-
-        {selectedNode?.type === "ApiNode" && <ApiSettings selectedNode={selectedNode}
-            updateFormData={(value: any) => onUpdateNodeData(value)} />}
-      </div>
-    )
+      {/* Legacy Fallbacks */}
+      {selectedNode?.type === "AgentNode" && (
+        <AgentSettings
+          selectedNode={selectedNode}
+          updateFormData={onUpdateNodeData}
+        />
+      )}
+      {selectedNode?.type === "EndNode" && (
+        <EndSettings
+          selectedNode={selectedNode}
+          updateFormData={onUpdateNodeData}
+        />
+      )}
+      {selectedNode?.type === "IfElseNode" && (
+        <IfElseSetting
+          selectedNode={selectedNode}
+          updateFormData={onUpdateNodeData}
+        />
+      )}
+      {selectedNode?.type === "WhileNode" && (
+        <WhileSettings
+          selectedNode={selectedNode}
+          updateFormData={onUpdateNodeData}
+        />
+      )}
+      {selectedNode?.type === "UserApprovalNode" && (
+        <UserApprovalSettings
+          selectedNode={selectedNode}
+          updateFormData={onUpdateNodeData}
+        />
+      )}
+      {selectedNode?.type === "ApiNode" && (
+        <ApiSettings
+          selectedNode={selectedNode}
+          updateFormData={onUpdateNodeData}
+        />
+      )}
+    </div>
   );
 }

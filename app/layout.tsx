@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ConvexClientProvider } from "./ConvexClientProvider";
@@ -8,19 +7,10 @@ import { dark } from "@clerk/themes";
 import Provider from "./provider";
 import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
   title: "ArchFlow | AI System Design & Architecture Flow Platform",
-  description: "Design scalable cloud architectures, microservices topologies, and interactive system flow diagrams with AI assistance.",
+  description:
+    "Design scalable cloud architectures, microservices topologies, and interactive system flow diagrams with AI assistance.",
 };
 
 export default function RootLayout({
@@ -35,9 +25,7 @@ export default function RootLayout({
       }}
     >
       <html lang="en" suppressHydrationWarning>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
+        <body className="font-sans antialiased">
           <ThemeProvider
             attribute="class"
             defaultTheme="dark"

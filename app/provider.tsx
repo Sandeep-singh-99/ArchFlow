@@ -12,16 +12,8 @@ export default function Provider({ children }: { children: React.ReactNode }) {
   const createUser = useMutation(api.user.CreateNewUser);
   const [userDetails, setUserDetails] = useState<any>(null);
   const [selectedNode, setSelectedNode] = useState<any>();
-  const [addedNodes, setAddedNodes] = useState([
-    {
-      id: "start",
-      position: { x: 0, y: 0 },
-      data: { label: "Start" },
-      type: "StartNode",
-    },
-  ]);
-
-  const [nodeEdges, setNodeEdges] = useState([]);
+  const [addedNodes, setAddedNodes] = useState<any[]>([]);
+  const [nodeEdges, setNodeEdges] = useState<any[]>([]);
 
   useEffect(() => {
     CreateAndGetUser();
