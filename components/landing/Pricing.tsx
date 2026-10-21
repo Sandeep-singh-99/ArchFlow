@@ -11,100 +11,169 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export default function Pricing() {
   return (
-    <section id="pricing" className="bg-secondary/20 py-20">
-      <div className="container px-4 md:px-6">
-        <div className="text-center space-y-4 mb-12">
-          <h2 className="text-3xl font-bold tracking-tighter md:text-4xl text-primary">
-            Simple, Transparent Pricing
+    <section id="pricing" className="py-24 border-t border-border bg-muted/20">
+      <div className="container mx-auto px-4 md:px-8">
+        <div className="text-center space-y-4 mb-16 max-w-3xl mx-auto">
+          <Badge variant="outline" className="text-emerald-700 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-mono">
+            Pricing Plans
+          </Badge>
+          <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-foreground">
+            Predictable Plans for Every Engineer
           </h2>
-          <p className="text-lg text-muted-foreground max-w-[700px] mx-auto">
-            Start for free, upgrade as you scale.
+          <p className="text-muted-foreground text-base md:text-lg">
+            Start designing for free. Upgrade when you need deep AI audits, traffic simulations, and team collaboration.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {/* Free Plan */}
-          <Card className="flex flex-col border-primary/20 shadow-none hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="text-2xl">Free</CardTitle>
-              <CardDescription>
-                Perfect for experimenting and hobby projects.
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {/* Free Tier */}
+          <Card className="flex flex-col border border-border bg-card shadow-2xs hover:border-foreground/30 transition-colors">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-xl font-bold">Developer</CardTitle>
+              <CardDescription className="text-xs">
+                Perfect for students and interview practice.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex-1">
-              <div className="text-4xl font-bold mb-4">
+            <CardContent className="flex-1 space-y-6">
+              <div className="text-3xl font-extrabold font-mono">
                 $0{" "}
-                <span className="text-lg font-normal text-muted-foreground">
+                <span className="text-sm font-normal text-muted-foreground font-sans">
                   /month
                 </span>
               </div>
-              <ul className="space-y-2">
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 mr-2 text-green-500" />
-                  <span className="text-sm">3 Free Agents</span>
+              <ul className="space-y-2.5 text-xs text-muted-foreground">
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>3 Active System Design Projects</span>
                 </li>
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 mr-2 text-green-500" />
-                  <span className="text-sm">Basic Tools Access</span>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>50+ Cloud & Microservice Components</span>
                 </li>
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 mr-2 text-green-500" />
-                  <span className="text-sm">Community Support</span>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Interactive Flow Canvas</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Export to Mermaid.js Code</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Standard Community Templates</span>
                 </li>
               </ul>
             </CardContent>
             <CardFooter>
               <Link href="/dashboard" className="w-full">
-                <Button variant="outline" className="w-full">
-                  Get Started
+                <Button variant="outline" className="w-full text-xs font-semibold">
+                  Start Designing Free
                 </Button>
               </Link>
             </CardFooter>
           </Card>
 
-          {/* Unlimited Plan */}
-          <Card className="flex flex-col border-primary shadow-md relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs px-3 py-1 rounded-bl-lg font-medium">
-              Recommended
+          {/* Pro Tier - High contrast solid Emerald highlight */}
+          <Card className="flex flex-col border-2 border-emerald-500 dark:border-emerald-400 bg-card shadow-lg shadow-emerald-500/5 relative overflow-hidden">
+            <div className="absolute top-0 right-0 bg-emerald-600 dark:bg-emerald-500 text-white dark:text-zinc-950 text-[10px] font-mono px-3 py-1 rounded-bl uppercase tracking-wider font-bold">
+              Most Popular
             </div>
-            <CardHeader>
-              <CardTitle className="text-2xl">Unlimited</CardTitle>
-              <CardDescription>
-                For power users and professional teams.
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-xl font-bold text-emerald-700 dark:text-emerald-400">Architect Pro</CardTitle>
+              <CardDescription className="text-xs">
+                For senior engineers, tech leads & founders.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex-1">
-              <div className="text-4xl font-bold mb-4">
-                $29{" "}
-                <span className="text-lg font-normal text-muted-foreground">
+            <CardContent className="flex-1 space-y-6">
+              <div className="text-3xl font-extrabold font-mono text-foreground">
+                $19{" "}
+                <span className="text-sm font-normal text-muted-foreground font-sans">
                   /month
                 </span>
               </div>
-              <ul className="space-y-2">
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 mr-2 text-primary" />
-                  <span className="text-sm">Unlimited Agents</span>
+              <ul className="space-y-2.5 text-xs text-foreground">
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span className="font-semibold">Unlimited System Architecture Projects</span>
                 </li>
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 mr-2 text-primary" />
-                  <span className="text-sm">Priority Support</span>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span className="font-semibold">AI Architecture Copilot (Unlimited Prompts)</span>
                 </li>
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 mr-2 text-primary" />
-                  <span className="text-sm">Advanced Tools & Integrations</span>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span className="font-semibold">Real-Time Traffic & Latency Simulator</span>
                 </li>
-                <li className="flex items-center">
-                  <Check className="h-4 w-4 mr-2 text-primary" />
-                  <span className="text-sm">API Access</span>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>SPOF & Reliability Audit Tool</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Export to Terraform IaC & 4K SVG/PNG</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Senior System Design Interview Kit</span>
                 </li>
               </ul>
             </CardContent>
             <CardFooter>
               <Link href="/dashboard" className="w-full">
-                <Button className="w-full">Upgrade to Pro</Button>
+                <Button className="w-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-zinc-950">
+                  Upgrade to Pro
+                </Button>
+              </Link>
+            </CardFooter>
+          </Card>
+
+          {/* Team Tier */}
+          <Card className="flex flex-col border border-border bg-card shadow-2xs hover:border-foreground/30 transition-colors">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-xl font-bold">Engineering Team</CardTitle>
+              <CardDescription className="text-xs">
+                For engineering organizations & squads.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 space-y-6">
+              <div className="text-3xl font-extrabold font-mono">
+                $49{" "}
+                <span className="text-sm font-normal text-muted-foreground font-sans">
+                  /month
+                </span>
+              </div>
+              <ul className="space-y-2.5 text-xs text-muted-foreground">
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Everything in Architect Pro</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Multiplayer Real-time Collaboration</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Custom Internal Component Library</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Architecture RFC Review Workflows</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Dedicated Architectural Support</span>
+                </li>
+              </ul>
+            </CardContent>
+            <CardFooter>
+              <Link href="/dashboard" className="w-full">
+                <Button variant="outline" className="w-full text-xs font-semibold">
+                  Contact Team Sales
+                </Button>
               </Link>
             </CardFooter>
           </Card>

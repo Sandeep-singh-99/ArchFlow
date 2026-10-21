@@ -1,56 +1,88 @@
 "use client";
 import React from "react";
-import { ArrowRight, MousePointerClick, Settings, Rocket } from "lucide-react";
+import { Terminal, Workflow, FileCheck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export default function HowItWorks() {
   const steps = [
     {
-      title: "Define Your Agent",
+      step: "01",
+      title: "Prompt AI or Pick a Template",
       description:
-        "Give your agent a name and describe its purpose. Our AI suggests the initial structure.",
-      icon: Settings,
+        "Describe your system in natural language (e.g., 'URL Shortener with 100M daily writes') or choose from production microservice templates.",
+      icon: Terminal,
+      colorClass: "text-emerald-600 dark:text-emerald-400",
+      bgClass: "bg-emerald-500/10 border-emerald-500/20",
+      tag: "AI Generation",
     },
     {
-      title: "Visually Build Logic",
+      step: "02",
+      title: "Wire Components & Flow Paths",
       description:
-        "Use our intuitive drag-and-drop builder to define workflows, tools, and decision paths.",
-      icon: MousePointerClick,
+        "Connect API gateways, service meshes, Kafka event streams, and database shards. Configure gRPC, REST, or WebSocket protocols with SLA metrics.",
+      icon: Workflow,
+      colorClass: "text-violet-600 dark:text-violet-400",
+      bgClass: "bg-violet-500/10 border-violet-500/20",
+      tag: "Visual Builder",
     },
     {
-      title: "One-Click Deploy",
+      step: "03",
+      title: "Simulate, Audit & Export",
       description:
-        "Deploy your agent instantly. Integrate it into your apps via API or share a direct link.",
-      icon: Rocket,
+        "Stress-test against simulated peak QPS, run automated SPOF audits, and export high-res diagrams, Mermaid.js code, or Terraform IaC configs.",
+      icon: FileCheck,
+      colorClass: "text-amber-600 dark:text-amber-400",
+      bgClass: "bg-amber-500/10 border-amber-500/20",
+      tag: "Production Ready",
     },
   ];
 
   return (
-    <section id="how-it-works" className="container py-20 px-4 md:px-6">
-      <div className="text-center space-y-4 mb-16">
-        <h2 className="text-3xl font-bold tracking-tighter md:text-4xl text-primary">
-          How It Works
+    <section id="how-it-works" className="container mx-auto py-24 px-4 md:px-8 border-t border-border">
+      <div className="text-center space-y-4 mb-16 max-w-3xl mx-auto">
+        <Badge variant="outline" className="text-emerald-700 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-mono">
+          Engineering Workflow
+        </Badge>
+        <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-foreground">
+          How ArchFlow Works
         </h2>
-        <p className="text-lg text-muted-foreground max-w-[700px] mx-auto">
-          Building powerful AI agents has never been easier.
+        <p className="text-muted-foreground text-base md:text-lg">
+          Go from an ambiguous system requirement to an exhaustive, production-grade architecture in 3 simple steps.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-        {/* Connector Line (Desktop) */}
-        <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-border -z-10"></div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative max-w-6xl mx-auto">
+        {steps.map((step, index) => {
+          const Icon = step.icon;
+          return (
+            <div
+              key={index}
+              className="flex flex-col rounded-xl border border-border bg-card p-6 sm:p-8 space-y-5 relative hover:border-emerald-500/50 transition-colors shadow-2xs group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-3xl font-extrabold font-mono text-muted-foreground/30 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                  {step.step}
+                </span>
+                <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-muted text-muted-foreground border border-border">
+                  {step.tag}
+                </span>
+              </div>
 
-        {steps.map((step, index) => (
-          <div
-            key={index}
-            className="flex flex-col items-center text-center space-y-4 relative bg-background p-4"
-          >
-            <div className="h-24 w-24 rounded-full bg-secondary flex items-center justify-center border-4 border-background shadow-sm">
-              <step.icon className="h-10 w-10 text-primary" />
+              <div className={`h-11 w-11 rounded-lg flex items-center justify-center border ${step.bgClass} ${step.colorClass}`}>
+                <Icon className="h-5 w-5" />
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                  {step.title}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {step.description}
+                </p>
+              </div>
             </div>
-            <h3 className="text-xl font-bold">{step.title}</h3>
-            <p className="text-muted-foreground">{step.description}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

@@ -19,8 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Agent Builder Platform",
-  description: "The App where you can build Ai Agents easily.",
+  title: "ArchFlow | AI System Design & Architecture Flow Platform",
+  description: "Design scalable cloud architectures, microservices topologies, and interactive system flow diagrams with AI assistance.",
 };
 
 export default function RootLayout({
@@ -40,7 +40,7 @@ export default function RootLayout({
         >
           <ThemeProvider
             attribute="class"
-            defaultTheme="light"
+            defaultTheme="dark"
             enableSystem
             disableTransitionOnChange
           >
