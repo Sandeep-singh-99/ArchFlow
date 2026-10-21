@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Save, Sliders, Trash2, X, Layout, Cpu, Database, Bot, Sparkles } from "lucide-react";
+import { Save, Sliders, Trash2, X, Layout, Cpu, Database, Bot, Sparkles, Table2, Braces, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface Props {
@@ -26,6 +26,18 @@ const ROLES = [
   { id: "database", label: "Database", icon: Database },
   { id: "ai", label: "AI", icon: Bot },
   { id: "custom", label: "Custom", icon: Sparkles },
+];
+
+const DEFAULT_SQL_FIELDS = [
+  { id: "f-1", name: "id", type: "UUID PRIMARY KEY" },
+  { id: "f-2", name: "email", type: "VARCHAR(255) UNIQUE" },
+  { id: "f-3", name: "created_at", type: "TIMESTAMP DEFAULT NOW()" },
+];
+
+const DEFAULT_NOSQL_FIELDS = [
+  { id: "f-1", name: "_id", type: "ObjectId" },
+  { id: "f-2", name: "username", type: "String" },
+  { id: "f-3", name: "is_active", type: "Boolean" },
 ];
 
 export default function SystemNodeSettings({
@@ -44,11 +56,34 @@ export default function SystemNodeSettings({
     qps: "50k req/s",
     redundancy: "Multi-AZ Active",
     notes: "",
+    dbFormat: "sql",
+    dbTableName: "users_table",
+    dbFields: DEFAULT_SQL_FIELDS,
+    dbDescription: "",
+    dbData: "",
   });
+
+  const [newFieldName, setNewFieldName] = useState("");
+  const [newFieldType, setNewFieldType] = useState("");
 
   useEffect(() => {
     if (selectedNode) {
       const settings = selectedNode.data?.settings || {};
+      const inferredFormat =
+        settings.dbFormat ||
+        (settings.action?.toLowerCase().includes("nosql") ||
+        settings.tech?.toLowerCase().includes("mongo") ||
+        settings.tech?.toLowerCase().includes("redis") ||
+        settings.tech?.toLowerCase().includes("dynamo")
+          ? "nosql"
+          : "sql");
+
+      const defaultFields = inferredFormat === "nosql" ? DEFAULT_NOSQL_FIELDS : DEFAULT_SQL_FIELDS;
+      const initialFields =
+        Array.isArray(settings.dbFields) && settings.dbFields.length > 0
+          ? settings.dbFields
+          : defaultFields;
+
       setFormData({
         name: selectedNode.data?.label || selectedNode.data?.name || "Component Node",
         role: settings.role || "frontend",
@@ -59,17 +94,117 @@ export default function SystemNodeSettings({
         qps: settings.qps || "50k req/s",
         redundancy: settings.redundancy || "Multi-AZ Active",
         notes: settings.notes || "",
+        dbFormat: inferredFormat,
+        dbTableName:
+          settings.dbTableName ||
+          (inferredFormat === "nosql" ? "users_collection" : "users_table"),
+        dbFields: initialFields,
+        dbDescription: settings.dbDescription || settings.notes || "",
+        dbData: settings.dbData || "",
       });
     }
   }, [selectedNode]);
 
-  const handleChange = (key: string, value: string) => {
+  const handleChange = (key: string, value: any) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleAddField = () => {
+    if (!newFieldName.trim()) return;
+    const newField = {
+      id: `f-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      name: newFieldName.trim(),
+      type: newFieldType.trim() || (formData.dbFormat === "sql" ? "VARCHAR" : "string"),
+    };
+    setFormData((prev: any) => ({
+      ...prev,
+      dbFields: [...(prev.dbFields || []), newField],
+    }));
+    setNewFieldName("");
+    setNewFieldType("");
+  };
+
+  const handleRemoveField = (fieldId: string) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      dbFields: (prev.dbFields || []).filter((f: any) => f.id !== fieldId),
+    }));
+  };
+
+  const handleSwitchDbFormat = (format: "sql" | "nosql") => {
+    setFormData((prev: any) => ({
+      ...prev,
+      dbFormat: format,
+      dbTableName:
+        format === "sql"
+          ? prev.dbTableName === "users_collection"
+            ? "users_table"
+            : prev.dbTableName || "users_table"
+          : prev.dbTableName === "users_table"
+            ? "users_collection"
+            : prev.dbTableName || "users_collection",
+      dbFields:
+        format === "sql"
+          ? prev.dbFormat === "sql" && prev.dbFields?.length
+            ? prev.dbFields
+            : DEFAULT_SQL_FIELDS
+          : prev.dbFormat === "nosql" && prev.dbFields?.length
+            ? prev.dbFields
+            : DEFAULT_NOSQL_FIELDS,
+      tech: format === "sql" ? "PostgreSQL" : "MongoDB",
+      protocol: format === "sql" ? "Postgres Wire" : "Mongo Wire",
+      action: format === "sql" ? "SQL Relational Store" : "Document / NoSQL Store",
+    }));
+  };
+
+  const handleRoleChange = (roleId: string) => {
+    setFormData((prev: any) => {
+      const updates: any = { ...prev, role: roleId };
+      if (roleId === "database") {
+        const fmt = prev.dbFormat || "sql";
+        updates.dbFormat = fmt;
+        updates.dbTableName =
+          prev.dbTableName ||
+          (fmt === "nosql" ? "users_collection" : "users_table");
+        updates.dbFields =
+          Array.isArray(prev.dbFields) && prev.dbFields.length > 0
+            ? prev.dbFields
+            : fmt === "nosql"
+              ? DEFAULT_NOSQL_FIELDS
+              : DEFAULT_SQL_FIELDS;
+        if (!prev.dbDescription) {
+          updates.dbDescription = "Core database store for platform data persistence";
+        }
+        if (
+          !prev.action ||
+          prev.action === "Core Functionality" ||
+          prev.action === "Landing Page / UI"
+        ) {
+          updates.action =
+            fmt === "nosql" ? "Document / NoSQL Store" : "SQL Relational Store";
+        }
+        if (
+          !prev.tech ||
+          prev.tech.includes("Next.js") ||
+          prev.tech.includes("React")
+        ) {
+          updates.tech = fmt === "nosql" ? "MongoDB" : "PostgreSQL";
+          updates.protocol = fmt === "nosql" ? "Mongo Wire" : "Postgres Wire";
+        }
+      }
+      return updates;
+    });
   };
 
   const handleSave = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    updateFormData(formData);
+    const finalData = { ...formData };
+    if (formData.role === "database") {
+      finalData.name = formData.dbTableName || "Database";
+      finalData.action = formData.dbFormat === "nosql" ? "NoSQL Document Store" : "SQL Relational Store";
+      finalData.notes = formData.dbDescription || "";
+    }
+    updateFormData(finalData);
   };
 
   return (
@@ -109,7 +244,7 @@ export default function SystemNodeSettings({
               <button
                 key={r.id}
                 type="button"
-                onClick={() => handleChange("role", r.id)}
+                onClick={() => handleRoleChange(r.id)}
                 className={`flex flex-col items-center justify-center gap-1 py-1.5 px-1 rounded-md text-[10px] font-semibold transition-all cursor-pointer ${
                   isActive
                     ? "bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 font-bold shadow-xs"
@@ -124,59 +259,218 @@ export default function SystemNodeSettings({
         </div>
       </div>
 
-      {/* Node Name */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-foreground">Component Label</label>
-        <Input
-          value={formData.name}
-          onChange={(e) => handleChange("name", e.target.value)}
-          placeholder="e.g. Landing Page, Products DB, Auth API"
-          className="h-8 text-xs font-medium"
-        />
-      </div>
+      {/* Component Label and Action (hidden for database) */}
+      {formData.role !== "database" && (
+        <>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Component Label</label>
+            <Input
+              value={formData.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+              placeholder="e.g. Landing Page, Products DB, Auth API"
+              className="h-8 text-xs font-medium"
+            />
+          </div>
 
-      {/* What it does / Purpose */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-foreground">What this node does / Action</label>
-        <Input
-          value={formData.action}
-          onChange={(e) => handleChange("action", e.target.value)}
-          placeholder="e.g. Landing to navigate dashboard, SQL relational store..."
-          className="h-8 text-xs font-medium"
-        />
-      </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">What this node does / Action</label>
+            <Input
+              value={formData.action}
+              onChange={(e) => handleChange("action", e.target.value)}
+              placeholder="e.g. Landing to navigate dashboard, user auth service..."
+              className="h-8 text-xs font-medium"
+            />
+          </div>
+        </>
+      )}
 
-      {/* Contextual Quick Presets based on chosen Role */}
+      {/* Contextual Database Controls: SQL vs NoSQL, Table/Document Name, Data Fields, Description */}
       {formData.role === "database" && (
-        <div className="space-y-1.5 p-2 rounded-lg bg-muted/40 border border-border">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block">
-            Database Type Presets
-          </span>
-          <div className="flex flex-wrap gap-1">
-            {[
-              { label: "PostgreSQL (SQL)", action: "SQL Relational Store", tech: "PostgreSQL Master-Replica", protocol: "Postgres Wire", latency: "5.0ms" },
-              { label: "MongoDB (NoSQL)", action: "Document Store", tech: "MongoDB Shards", protocol: "Mongo Wire", latency: "4.5ms" },
-              { label: "Redis (Cache)", action: "In-Memory LRU Cache", tech: "Redis Cluster", protocol: "RESP (Redis)", latency: "0.8ms" },
-              { label: "Amazon S3 (Storage)", action: "Blob / Object Store", tech: "Amazon S3", protocol: "HTTPS REST", latency: "25ms" },
-            ].map((preset) => (
+        <div className="space-y-3 p-3 rounded-xl bg-muted/40 border border-border">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-1 border-b border-border/60">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 font-bold">
+              <Database className="h-3.5 w-3.5 text-foreground" />
+              Database Options
+            </span>
+            <Badge variant="outline" className="text-[9px] font-mono text-foreground border-border uppercase">
+              {formData.dbFormat || "sql"}
+            </Badge>
+          </div>
+
+          {/* 1. Two Options: SQL or NoSQL */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">Select Database Type</label>
+            <div className="grid grid-cols-2 gap-2">
               <button
-                key={preset.label}
                 type="button"
-                onClick={() => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    name: prev.name === "New Component" || prev.name === "Database Store" ? preset.label : prev.name,
-                    action: preset.action,
-                    tech: preset.tech,
-                    protocol: preset.protocol,
-                    latency: preset.latency,
-                  }));
-                }}
-                className="text-[10px] px-2 py-0.5 rounded bg-card hover:bg-muted text-muted-foreground hover:text-foreground border border-border hover:border-[#ffdf27]/40 transition-colors cursor-pointer"
+                onClick={() => handleSwitchDbFormat("sql")}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                  formData.dbFormat === "sql"
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 shadow-xs"
+                    : "bg-card text-muted-foreground hover:text-foreground border-border hover:bg-muted"
+                }`}
               >
-                {preset.label}
+                <Table2 className="h-4 w-4" />
+                <span>SQL</span>
               </button>
-            ))}
+
+              <button
+                type="button"
+                onClick={() => handleSwitchDbFormat("nosql")}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                  formData.dbFormat === "nosql"
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 shadow-xs"
+                    : "bg-card text-muted-foreground hover:text-foreground border-border hover:bg-muted"
+                }`}
+              >
+                <Braces className="h-4 w-4" />
+                <span>NoSQL</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 2. Table or Document Name */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">
+              {formData.dbFormat === "sql" ? "Table Name" : "Document / Collection Name"}
+            </label>
+            <Input
+              value={formData.dbTableName || ""}
+              onChange={(e) => handleChange("dbTableName", e.target.value)}
+              placeholder={formData.dbFormat === "sql" ? "e.g. users, orders, products" : "e.g. users_collection, orders_doc"}
+              className="h-8 text-xs font-mono font-medium"
+            />
+          </div>
+
+          {/* 3. Direct Code / Query Editor for SQL or NoSQL */}
+          <div className="space-y-2 pt-1 border-t border-border/40">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-foreground">
+                {formData.dbFormat === "sql"
+                  ? "SQL Query / Schema (CREATE, INSERT, etc.)"
+                  : "NoSQL JSON Document / Data"}
+              </label>
+              <span className="text-[9px] font-mono text-muted-foreground font-semibold">
+                Visible inside node
+              </span>
+            </div>
+
+            {/* Quick Template Insert Pills */}
+            <div className="flex flex-wrap gap-1">
+              {formData.dbFormat === "sql" ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleChange(
+                        "dbData",
+                        `CREATE TABLE ${formData.dbTableName || "users"} (\n  id UUID PRIMARY KEY,\n  email VARCHAR(255) UNIQUE NOT NULL,\n  role VARCHAR(50) DEFAULT 'user',\n  created_at TIMESTAMP DEFAULT NOW()\n);`
+                      )
+                    }
+                    className="text-[9.5px] px-2 py-0.5 rounded bg-card hover:bg-muted text-foreground border border-border cursor-pointer transition-colors"
+                  >
+                    + CREATE TABLE
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleChange(
+                        "dbData",
+                        `INSERT INTO ${formData.dbTableName || "users"} (email, role)\nVALUES ('alex@example.com', 'admin');`
+                      )
+                    }
+                    className="text-[9.5px] px-2 py-0.5 rounded bg-card hover:bg-muted text-foreground border border-border cursor-pointer transition-colors"
+                  >
+                    + INSERT INTO
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleChange(
+                        "dbData",
+                        `SELECT id, email, role\nFROM ${formData.dbTableName || "users"}\nWHERE role = 'user'\nORDER BY created_at DESC;`
+                      )
+                    }
+                    className="text-[9.5px] px-2 py-0.5 rounded bg-card hover:bg-muted text-foreground border border-border cursor-pointer transition-colors"
+                  >
+                    + SELECT Query
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleChange(
+                        "dbData",
+                        `{\n  "collection": "${formData.dbTableName || "users"}",\n  "document": {\n    "_id": "usr_902",\n    "email": "user@example.com",\n    "role": "customer",\n    "status": "active"\n  }\n}`
+                      )
+                    }
+                    className="text-[9.5px] px-2 py-0.5 rounded bg-card hover:bg-muted text-foreground border border-border cursor-pointer transition-colors"
+                  >
+                    + Single Document
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleChange(
+                        "dbData",
+                        `[\n  {\n    "id": 1,\n    "sku": "ITEM-101",\n    "name": "Mechanical Keyboard",\n    "price": 129.99\n  },\n  {\n    "id": 2,\n    "sku": "ITEM-102",\n    "name": "Wireless Mouse",\n    "price": 49.99\n  }\n]`
+                      )
+                    }
+                    className="text-[9.5px] px-2 py-0.5 rounded bg-card hover:bg-muted text-foreground border border-border cursor-pointer transition-colors"
+                  >
+                    + Document Array
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleChange(
+                        "dbData",
+                        `{\n  "key": "session:user_token_99",\n  "type": "hash",\n  "ttl": 3600,\n  "data": { "userId": "usr_902", "role": "admin" }\n}`
+                      )
+                    }
+                    className="text-[9.5px] px-2 py-0.5 rounded bg-card hover:bg-muted text-foreground border border-border cursor-pointer transition-colors"
+                  >
+                    + Key-Value Record
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Code/Query Textarea */}
+            <Textarea
+              value={formData.dbData || ""}
+              onChange={(e) => handleChange("dbData", e.target.value)}
+              placeholder={
+                formData.dbFormat === "sql"
+                  ? "CREATE TABLE users (\n  id UUID PRIMARY KEY,\n  email VARCHAR(255)\n);"
+                  : '{\n  "id": "item_1",\n  "name": "example"\n}'
+              }
+              className="text-xs font-mono min-h-[140px] resize-y bg-zinc-950 text-zinc-100 border-zinc-800 leading-relaxed scrollbar-thin"
+            />
+          </div>
+
+          {/* 4. Write Description (Hidden from node, ONLY visible in Node Controls) */}
+          <div className="space-y-1.5 pt-1 border-t border-border/40">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-foreground">
+                Database Description
+              </label>
+              <span className="text-[9px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                Inspector only (hidden from node)
+              </span>
+            </div>
+            <Textarea
+              value={formData.dbDescription || ""}
+              onChange={(e) => {
+                handleChange("dbDescription", e.target.value);
+                handleChange("notes", e.target.value);
+              }}
+              placeholder="e.g. High-concurrency customer profiles and credentials store..."
+              className="text-xs min-h-[65px] resize-y"
+            />
           </div>
         </div>
       )}
@@ -282,60 +576,62 @@ export default function SystemNodeSettings({
         </div>
       )}
 
-      {/* Technology / Framework */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-foreground">Technology / Framework</label>
-        <Input
-          value={formData.tech}
-          onChange={(e) => handleChange("tech", e.target.value)}
-          placeholder="e.g. Next.js, PostgreSQL, Go, Claude 3.5"
-          className="h-8 text-xs font-mono"
-        />
-      </div>
+      {/* Technology, Protocol, Latency, and Architecture Notes (hidden for database) */}
+      {formData.role !== "database" && (
+        <>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Technology / Framework</label>
+            <Input
+              value={formData.tech}
+              onChange={(e) => handleChange("tech", e.target.value)}
+              placeholder="e.g. Next.js, Go, Python, Claude 3.5"
+              className="h-8 text-xs font-mono"
+            />
+          </div>
 
-      <div className="grid grid-cols-2 gap-2.5">
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-foreground">Protocol</label>
-          <Select
-            value={formData.protocol}
-            onValueChange={(val) => handleChange("protocol", val)}
-          >
-            <SelectTrigger className="h-8 text-xs font-mono">
-              <SelectValue placeholder="Protocol" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="HTTPS">HTTPS</SelectItem>
-              <SelectItem value="HTTP/2 / HTTP/3">HTTP/2 / HTTP/3</SelectItem>
-              <SelectItem value="gRPC / Protobuf">gRPC / Protobuf</SelectItem>
-              <SelectItem value="WebSocket">WebSocket</SelectItem>
-              <SelectItem value="Postgres Wire">Postgres Wire</SelectItem>
-              <SelectItem value="RESP (Redis)">RESP (Redis)</SelectItem>
-              <SelectItem value="Kafka Binary">Kafka Binary</SelectItem>
-              <SelectItem value="TCP / UDP">TCP / UDP</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">Protocol</label>
+              <Select
+                value={formData.protocol}
+                onValueChange={(val) => handleChange("protocol", val)}
+              >
+                <SelectTrigger className="h-8 text-xs font-mono">
+                  <SelectValue placeholder="Protocol" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="HTTPS">HTTPS</SelectItem>
+                  <SelectItem value="HTTP/2 / HTTP/3">HTTP/2 / HTTP/3</SelectItem>
+                  <SelectItem value="gRPC / Protobuf">gRPC / Protobuf</SelectItem>
+                  <SelectItem value="WebSocket">WebSocket</SelectItem>
+                  <SelectItem value="Kafka Binary">Kafka Binary</SelectItem>
+                  <SelectItem value="TCP / UDP">TCP / UDP</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-foreground">Est. Latency / SLA</label>
-          <Input
-            value={formData.latency}
-            onChange={(e) => handleChange("latency", e.target.value)}
-            placeholder="e.g. 5.0ms"
-            className="h-8 text-xs font-mono"
-          />
-        </div>
-      </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">Est. Latency / SLA</label>
+              <Input
+                value={formData.latency}
+                onChange={(e) => handleChange("latency", e.target.value)}
+                placeholder="e.g. 5.0ms"
+                className="h-8 text-xs font-mono"
+              />
+            </div>
+          </div>
 
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-foreground">Architecture Notes</label>
-        <Textarea
-          value={formData.notes}
-          onChange={(e) => handleChange("notes", e.target.value)}
-          placeholder="e.g. Handles checkout requests and sends confirmation emails..."
-          className="text-xs min-h-[60px] resize-none"
-        />
-      </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Architecture Notes</label>
+            <Textarea
+              value={formData.notes}
+              onChange={(e) => handleChange("notes", e.target.value)}
+              placeholder="e.g. Handles checkout requests and sends confirmation emails..."
+              className="text-xs min-h-[60px] resize-none"
+            />
+          </div>
+        </>
+      )}
 
       {/* Action Buttons */}
       <div className="pt-2 flex items-center justify-between gap-2 border-t border-border/60">
