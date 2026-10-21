@@ -6,16 +6,16 @@ import { ArrowRight, Workflow, CheckCircle2, Sparkles } from "lucide-react";
 
 export default function CallToAction() {
   return (
-    <section className="py-24 border-t border-border bg-background">
+    <section className="py-24 border-t border-white/10 bg-black">
       <div className="container mx-auto px-4 md:px-8 text-center space-y-8 max-w-4xl">
-        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-mono text-emerald-700 dark:text-emerald-400">
-          <Sparkles className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+        <div className="inline-flex items-center gap-2 rounded-full border border-[#ffdf27]/30 bg-[#ffc507]/10 px-4 py-1.5 text-xs font-mono text-[#ffee72]">
+          <Sparkles className="h-3.5 w-3.5 text-[#ffdf27]" />
           <span>Stop Drawing Static Boxes. Start Architecting with AI.</span>
         </div>
 
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground leading-[1.15]">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-[1.15]">
           Ready to Build Battle-Tested <br />
-          <span className="text-emerald-600 dark:text-emerald-400">
+          <span className="bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] bg-clip-text text-transparent">
             System Architectures
           </span>{" "}
           with Confidence?
@@ -46,15 +46,15 @@ export default function CallToAction() {
 
         <div className="flex flex-wrap items-center justify-center gap-6 pt-4 text-xs text-muted-foreground font-mono">
           <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <CheckCircle2 className="h-4 w-4 text-[#ffdf27]" />
             <span>No Credit Card Required</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <CheckCircle2 className="h-4 w-4 text-[#ffdf27]" />
             <span>Instant Interactive Canvas</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <CheckCircle2 className="h-4 w-4 text-[#ffdf27]" />
             <span>Export to Mermaid & Terraform</span>
           </div>
         </div>

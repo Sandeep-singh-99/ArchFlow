@@ -15,10 +15,10 @@ import { Badge } from "@/components/ui/badge";
 
 export default function Pricing() {
   return (
-    <section id="pricing" className="py-24 border-t border-border bg-muted/20">
+    <section id="pricing" className="py-24 border-t border-white/10 bg-black">
       <div className="container mx-auto px-4 md:px-8">
         <div className="text-center space-y-4 mb-16 max-w-3xl mx-auto">
-          <Badge variant="outline" className="text-emerald-700 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-mono">
+          <Badge variant="outline" className="text-[#ffee72] border-[#ffdf27]/30 bg-[#ffc507]/10 px-3 py-1 text-xs font-mono">
             Pricing Plans
           </Badge>
           <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-foreground">
@@ -47,23 +47,23 @@ export default function Pricing() {
               </div>
               <ul className="space-y-2.5 text-xs text-muted-foreground">
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
                   <span>3 Active System Design Projects</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
                   <span>50+ Cloud & Microservice Components</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
                   <span>Interactive Flow Canvas</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
                   <span>Export to Mermaid.js Code</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
                   <span>Standard Community Templates</span>
                 </li>
               </ul>
@@ -97,27 +97,27 @@ export default function Pricing() {
               </div>
               <ul className="space-y-2.5 text-xs text-foreground">
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
                   <span className="font-semibold">Unlimited System Architecture Projects</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
                   <span className="font-semibold">AI Architecture Copilot (Unlimited Prompts)</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
                   <span className="font-semibold">Real-Time Traffic & Latency Simulator</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
                   <span>SPOF & Reliability Audit Tool</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
                   <span>Export to Terraform IaC & 4K SVG/PNG</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
                   <span>Senior System Design Interview Kit</span>
                 </li>
               </ul>
@@ -148,23 +148,23 @@ export default function Pricing() {
               </div>
               <ul className="space-y-2.5 text-xs text-muted-foreground">
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
                   <span>Everything in Architect Pro</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
                   <span>Multiplayer Real-time Collaboration</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
                   <span>Custom Internal Component Library</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
                   <span>Architecture RFC Review Workflows</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
                   <span>Dedicated Architectural Support</span>
                 </li>
               </ul>

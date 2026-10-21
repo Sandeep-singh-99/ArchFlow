@@ -40,7 +40,7 @@ export default function HowItWorks() {
   return (
     <section id="how-it-works" className="container mx-auto py-24 px-4 md:px-8 border-t border-border">
       <div className="text-center space-y-4 mb-16 max-w-3xl mx-auto">
-        <Badge variant="outline" className="text-emerald-700 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-mono">
+        <Badge variant="outline" className="text-[#ffee72] border-[#ffdf27]/30 bg-[#ffc507]/10 px-3 py-1 text-xs font-mono">
           Engineering Workflow
         </Badge>
         <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-foreground">
