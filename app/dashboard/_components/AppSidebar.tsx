@@ -19,43 +19,32 @@ import { api } from "@/convex/_generated/api";
 import { useAuth } from "@clerk/nextjs";
 import { useConvex } from "convex/react";
 import {
-  Database,
-  Gem,
-  Headphones,
-  LayoutDashboard,
-  User2Icon,
-  WalletCards,
+  CreditCard,
+  Layers,
+  Network,
+  Workflow,
+  Sparkles,
+  Zap,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useContext, useEffect, useState } from "react";
 
 const MenuOptions = [
   {
-    title: "Dashboard",
+    title: "Architectures",
     url: "/dashboard",
-    icon: LayoutDashboard,
+    icon: Network,
   },
   {
-    title: "AI Agents",
-    url: "#",
-    icon: Headphones,
+    title: "Templates",
+    url: "/dashboard?tab=template",
+    icon: Layers,
   },
   {
-    title: "Data",
-    url: "#",
-    icon: Database,
-  },
-  {
-    title: "Pricing",
+    title: "Pricing & Plans",
     url: "/dashboard/pricing",
-    icon: WalletCards,
-  },
-  {
-    title: "Profile",
-    url: "#",
-    icon: User2Icon,
+    icon: CreditCard,
   },
 ];
 
@@ -67,7 +56,7 @@ export function AppSidebar() {
   const isPaidUser = has && has({ plan: "unlimited_plan" });
   const convex = useConvex();
 
-  const [totalRemianingCredits, setTotalRemianingCredits] = useState(0);
+  const [totalRemianingCredits, setTotalRemianingCredits] = useState(3);
 
   useEffect(() => {
     if (!isPaidUser && userDetails) {
@@ -76,31 +65,50 @@ export function AppSidebar() {
   }, [userDetails, isPaidUser]);
 
   const GetUserAgent = async () => {
-    const results = await convex.query(api.agent.GetUserAgents, {
-      userId: userDetails?._id,
-    });
-    const remainingCredits = 2 - Number(results?.length || 0);
+    try {
+      const results = await convex.query(api.agent.GetUserAgents, {
+        userId: userDetails?._id,
+      });
+      const remainingCredits = Math.max(0, 3 - Number(results?.length || 0));
 
-    setTotalRemianingCredits(remainingCredits);
+      setTotalRemianingCredits(remainingCredits);
 
-    if (userDetails?.totalRemianingCredits !== remainingCredits) {
-      setUserDetails((prev: any) => ({
-        ...prev,
-        totalRemianingCredits: remainingCredits,
-      }));
+      if (userDetails?.totalRemianingCredits !== remainingCredits) {
+        setUserDetails((prev: any) => ({
+          ...prev,
+          totalRemianingCredits: remainingCredits,
+        }));
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
+
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <Link href="/" className="flex items-center gap-2">
-          <Image src="/logo.svg" alt="Logo" width={48} height={48} />
-          {open && <h1 className="font-bold">AI Agent Builder Platform</h1>}
+    <Sidebar collapsible="icon" className="border-r border-border bg-sidebar">
+      <SidebarHeader className="border-b border-border/60 py-4">
+        <Link href="/" className="flex items-center gap-2.5 px-2">
+          <div className="h-8 w-8 rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white dark:text-zinc-950 flex items-center justify-center shrink-0">
+            <Network className="h-4 w-4" />
+          </div>
+          {open && (
+            <div className="flex flex-col">
+              <span className="font-bold text-sm tracking-tight text-foreground">
+                ArchFlow
+              </span>
+              <span className="text-[10px] font-mono text-muted-foreground uppercase">
+                System AI Studio
+              </span>
+            </div>
+          )}
         </Link>
       </SidebarHeader>
+
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+            Workspace
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {MenuOptions.map((option, index) => (
@@ -109,9 +117,10 @@ export function AppSidebar() {
                     asChild
                     size={open ? "lg" : "default"}
                     isActive={path === option.url}
+                    className="hover:bg-muted data-[active=true]:bg-muted font-medium text-sm"
                   >
                     <Link href={option.url}>
-                      <option.icon />
+                      <option.icon className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                       <span>{option.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -120,23 +129,33 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        {/* <SidebarGroup /> */}
       </SidebarContent>
-      <SidebarFooter className="mb-10">
+
+      <SidebarFooter className="border-t border-border/60 p-4">
         {!isPaidUser ? (
-          <div className="w-full">
-            <div className="flex gap-2 items-center">
-              <Gem />
-              {open && <h2>Remaining Credits: {totalRemianingCredits}/2 </h2>}
+          <div className="w-full space-y-3">
+            <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+              <Zap className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              {open && (
+                <span>
+                  Free Slots: <strong className="text-foreground">{totalRemianingCredits} / 3</strong>
+                </span>
+              )}
             </div>
             {open && (
-              <Button className="mt-3 w-full">Upgrade to Unlimited</Button>
+              <Link href="/dashboard/pricing" className="block w-full">
+                <Button size="sm" className="w-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-zinc-950 shadow-xs">
+                  Upgrade to Pro
+                </Button>
+              </Link>
             )}
           </div>
         ) : (
-          <div>
-            <h2>You can create unlimited Agents</h2>
-          </div>
+          open && (
+            <div className="text-xs font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 p-2.5 rounded border border-emerald-500/20">
+              Unlimited Pro Active
+            </div>
+          )
         )}
       </SidebarFooter>
     </Sidebar>
