@@ -340,7 +340,6 @@ function FloatingCanvasToolbar({ onReset }: { onReset: () => void }) {
         <button
           onClick={() => {
             onReset();
-            fitView({ padding: 0.12, duration: 300 });
           }}
           className="flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-white/10 text-[11px] text-zinc-300 hover:text-white transition-colors cursor-pointer font-sans"
         >
@@ -619,10 +618,9 @@ export default function InteractiveLab() {
             nodeTypes={nodeTypes}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
-            fitView
-            fitViewOptions={{ padding: 0.1 }}
+            defaultViewport={{ x: 40, y: 35, zoom: 1 }}
             minZoom={0.4}
-            maxZoom={1.4}
+            maxZoom={1.6}
             nodesDraggable={true}
             elementsSelectable={true}
             panOnDrag={true}

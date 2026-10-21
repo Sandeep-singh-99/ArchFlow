@@ -5,7 +5,7 @@ import { Network, Github, Twitter, Linkedin } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-border bg-card">
+    <footer className="border-t border-white/10 bg-black">
       <div className="container mx-auto px-4 md:px-8 py-14">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
           {/* Brand Column */}

@@ -95,7 +95,7 @@ export default function ArchitectureTemplates() {
   const current = templates.find((t) => t.id === activeTab) || templates[0];
 
   return (
-    <section id="templates" className="py-24 border-t border-border bg-muted/20">
+    <section id="templates" className="py-24 border-t border-white/10 bg-black">
       <div className="container mx-auto px-4 md:px-8">
         <div className="text-center space-y-4 max-w-3xl mx-auto mb-16">
           <Badge variant="outline" className="text-emerald-700 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-mono">
@@ -121,8 +121,8 @@ export default function ArchitectureTemplates() {
                 onClick={() => setActiveTab(t.id)}
                 className={`p-4 rounded-lg border text-left transition-all duration-150 cursor-pointer flex flex-col justify-between ${
                   isSelected
-                    ? "border-emerald-500 bg-card shadow-sm ring-1 ring-emerald-500/30"
-                    : "border-border bg-card/60 hover:bg-card hover:border-foreground/40"
+                    ? "border-emerald-500 bg-[#0c0d10] shadow-sm ring-1 ring-emerald-500/30"
+                    : "border-white/10 bg-[#0c0d10]/60 hover:bg-[#0c0d10] hover:border-white/20"
                 }`}
               >
                 <div className="flex items-center gap-2 mb-2">
@@ -140,8 +140,8 @@ export default function ArchitectureTemplates() {
         </div>
 
         {/* Selected Template Detail Card */}
-        <div className="max-w-5xl mx-auto rounded-xl border border-border p-6 sm:p-8 bg-card shadow-sm space-y-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
+        <div className="max-w-5xl mx-auto rounded-xl border border-white/10 p-6 sm:p-8 bg-[#0c0d10] shadow-sm space-y-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="text-xs font-mono">
@@ -177,7 +177,7 @@ export default function ArchitectureTemplates() {
             <div className="flex flex-wrap items-center gap-2.5">
               {current.nodes.map((node, idx) => (
                 <React.Fragment key={node}>
-                  <div className="px-3.5 py-2 rounded-md bg-muted/60 border border-border text-xs font-medium font-mono text-foreground flex items-center gap-2">
+                  <div className="px-3.5 py-2 rounded-md bg-[#14151a] border border-white/10 text-xs font-medium font-mono text-foreground flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                     <span>{node}</span>
                   </div>
@@ -190,7 +190,7 @@ export default function ArchitectureTemplates() {
           </div>
 
           {/* Trade-off summary */}
-          <div className="p-4 rounded-lg bg-muted/30 border border-border flex items-start gap-3">
+          <div className="p-4 rounded-lg bg-[#14151a]/60 border border-white/10 flex items-start gap-3">
             <div className="h-6 w-6 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5 border border-amber-500/20">
               <Sparkles className="h-3.5 w-3.5" />
             </div>

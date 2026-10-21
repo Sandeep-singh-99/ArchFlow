@@ -10,7 +10,7 @@ export default function Hero() {
       {/* Targeted Hero Grid Background using the uploaded pattern */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
         {/* Base dark canvas */}
-        <div className="absolute inset-0 bg-[#080808]" />
+        <div className="absolute inset-0 bg-black" />
 
         {/* User's uploaded grid pattern image */}
         <div 
