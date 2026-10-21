@@ -7,8 +7,7 @@ import {
   applyEdgeChanges,
   addEdge,
   Background,
-  MiniMap,
-  Controls,
+  BackgroundVariant,
   Panel,
   useOnSelectionChange,
   OnSelectionChangeParams,
@@ -19,6 +18,8 @@ import { nodeTypes } from "../_customNodes/nodeTypes";
 
 import AgentToolsPanel from "../_components/AgentToolsPanel";
 import SettingPanel from "../_components/SettingPanel";
+import FlowControls, { BackgroundVariantType } from "../_components/FlowControls";
+import FlowMiniMap from "../_components/FlowMiniMap";
 import { WorkflowContext } from "@/context/WorkflowContext";
 import { useConvex, useMutation } from "convex/react";
 import { useParams } from "next/navigation";
@@ -118,6 +119,9 @@ export default function AgentBuilder() {
 
   const [agentDetail, setAgentDetail] = useState<Agent>();
   const [isSaving, setIsSaving] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [bgVariant, setBgVariant] = useState<BackgroundVariantType>("dots");
+  const [showMiniMap, setShowMiniMap] = useState(true);
 
   const GetAgentDetail = async () => {
     try {
@@ -220,11 +224,45 @@ export default function AgentBuilder() {
             style: { strokeWidth: 2 },
           }}
           fitView
+          nodesDraggable={!isLocked}
+          nodesConnectable={!isLocked}
+          elementsSelectable={!isLocked}
         >
-          <MiniMap className="border border-border bg-card rounded-lg overflow-hidden" />
-          <Controls className="border border-border bg-card rounded-lg overflow-hidden" />
-          {/* Theme-adaptive canvas background */}
-          <Background gap={16} size={1} className="opacity-50" />
+          {/* Custom Theme-Adaptive Canvas Background Pattern */}
+          {bgVariant !== "none" && (
+            <Background
+              variant={
+                bgVariant === "lines"
+                  ? BackgroundVariant.Lines
+                  : bgVariant === "cross"
+                  ? BackgroundVariant.Cross
+                  : BackgroundVariant.Dots
+              }
+              gap={bgVariant === "lines" ? 24 : 16}
+              size={bgVariant === "lines" ? 1 : bgVariant === "cross" ? 6 : 1.2}
+              className="opacity-40 dark:opacity-30"
+            />
+          )}
+
+          {/* Canvas Floating Control Center */}
+          <FlowControls
+            isLocked={isLocked}
+            setIsLocked={setIsLocked}
+            bgVariant={bgVariant}
+            setBgVariant={setBgVariant}
+            showMiniMap={showMiniMap}
+            setShowMiniMap={setShowMiniMap}
+          />
+
+          {/* Radar MiniMap Panel */}
+          {showMiniMap && (
+            <Panel position="bottom-right" className="m-3.5 z-20">
+              <FlowMiniMap
+                onClose={() => setShowMiniMap(false)}
+                nodeCount={addedNodes?.length || 0}
+              />
+            </Panel>
+          )}
 
           {/* Left Palette: System Components */}
           <Panel position="top-left">
