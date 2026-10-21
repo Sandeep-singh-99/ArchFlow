@@ -8,7 +8,7 @@ export default function SettingPanel({
 }: {
   onSave: (nodes: any) => void;
 }) {
-  const { selectedNode, setAddedNodes, setSelectedNode } =
+  const { selectedNode, addedNodes, setAddedNodes, setSelectedNode } =
     useContext(WorkflowContext);
 
   const onUpdateNodeData = (formData: any) => {
@@ -21,23 +21,21 @@ export default function SettingPanel({
         settings: formData,
       },
     };
-    setAddedNodes((prev: any) => {
-      const updatedNodes = prev.map((node: any) =>
-        node.id === selectedNode.id ? updateNode : node
-      );
-      onSave(updatedNodes);
-      return updatedNodes;
-    });
+    const currentNodes = addedNodes || [];
+    const updatedNodes = currentNodes.map((node: any) =>
+      node.id === selectedNode.id ? updateNode : node
+    );
+    setAddedNodes(updatedNodes);
     setSelectedNode(updateNode);
+    onSave(updatedNodes);
   };
 
   const onDeleteNode = (nodeId: string) => {
-    setAddedNodes((prev: any) => {
-      const filtered = prev.filter((node: any) => node.id !== nodeId);
-      onSave(filtered);
-      return filtered;
-    });
+    const currentNodes = addedNodes || [];
+    const filtered = currentNodes.filter((node: any) => node.id !== nodeId);
+    setAddedNodes(filtered);
     setSelectedNode(null);
+    onSave(filtered);
   };
 
   if (!selectedNode) return null;

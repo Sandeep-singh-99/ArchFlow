@@ -9,8 +9,18 @@ interface FlowMiniMapProps {
 }
 
 export default function FlowMiniMap({ className = "" }: FlowMiniMapProps) {
+  const [mounted, setMounted] = React.useState(false);
   const { resolvedTheme } = useTheme();
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const isDark = resolvedTheme === "dark";
+
+  if (!mounted) {
+    return null;
+  }
 
   // Categorized architectural node colors for the canvas minimap
   const getNodeColor = (node: any) => {
@@ -62,8 +72,8 @@ export default function FlowMiniMap({ className = "" }: FlowMiniMapProps) {
       }
       maskStrokeColor={
         isDark
-          ? "rgba(16, 185, 129, 0.5)"
-          : "rgba(16, 185, 129, 0.6)"
+          ? "rgba(255, 223, 39, 0.5)"
+          : "rgba(255, 223, 39, 0.6)"
       }
       maskStrokeWidth={1.5}
       bgColor="transparent"

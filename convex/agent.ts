@@ -6,6 +6,8 @@ export const CreateAgent = mutation({
     name: v.string(),
     agentId: v.string(),
     userId: v.id("UserTable"),
+    nodes: v.optional(v.any()),
+    edges: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     const results = await ctx.db.insert("AgentTable", {
@@ -13,6 +15,8 @@ export const CreateAgent = mutation({
       agentId: args.agentId,
       published: false,
       userId: args.userId,
+      nodes: args.nodes ?? [],
+      edges: args.edges ?? [],
     });
     return results;
   },

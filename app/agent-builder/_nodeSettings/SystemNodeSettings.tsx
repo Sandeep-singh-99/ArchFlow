@@ -64,7 +64,7 @@ export default function SystemNodeSettings({
     <form onSubmit={handleSave} className="space-y-4 text-left">
       <div className="flex items-center justify-between border-b border-border/80 pb-3">
         <div className="flex items-center gap-2">
-          <Sliders className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <Sliders className="h-4 w-4 text-[#ffdf27]" />
           <h3 className="text-xs font-bold text-foreground">Node Specifications</h3>
         </div>
         <div className="flex items-center gap-1.5">
@@ -196,9 +196,9 @@ export default function SystemNodeSettings({
         <Button
           type="submit"
           size="sm"
-          className="h-8 ml-auto text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-zinc-950"
+          className="h-8 ml-auto text-xs font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 border-none shadow-xs cursor-pointer"
         >
-          <Save className="h-3.5 w-3.5 mr-1" />
+          <Save className="h-3.5 w-3.5 mr-1 text-zinc-950" />
           Apply
         </Button>
       </div>

@@ -30,81 +30,6 @@ import { Button } from "@/components/ui/button";
 import { Save, Check, Loader } from "lucide-react";
 import { toast } from "sonner";
 
-const defaultSystemNodes = [
-  {
-    id: "client-1",
-    type: "ClientNode",
-    position: { x: 50, y: 150 },
-    data: {
-      label: "Web & Mobile Clients",
-      settings: {
-        name: "Web & Mobile Clients",
-        protocol: "HTTPS / HTTP/3",
-        qps: "100k QPS",
-      },
-    },
-  },
-  {
-    id: "gateway-1",
-    type: "GatewayNode",
-    position: { x: 320, y: 150 },
-    data: {
-      label: "Envoy API Gateway",
-      settings: {
-        name: "Envoy API Gateway",
-        tech: "Envoy / Rate Limiting",
-        latency: "2.4ms",
-      },
-    },
-  },
-  {
-    id: "service-1",
-    type: "ServiceNode",
-    position: { x: 600, y: 150 },
-    data: {
-      label: "Order Service",
-      settings: {
-        name: "Order Service",
-        tech: "Go Microservice (HPA)",
-        latency: "8.5ms",
-      },
-    },
-  },
-  {
-    id: "cache-1",
-    type: "CacheNode",
-    position: { x: 880, y: 60 },
-    data: {
-      label: "Redis Cache",
-      settings: {
-        name: "Redis Cache",
-        tech: "Cluster LRU",
-        hitRatio: "0.8ms • 94% Hit",
-      },
-    },
-  },
-  {
-    id: "db-1",
-    type: "DatabaseNode",
-    position: { x: 880, y: 240 },
-    data: {
-      label: "PostgreSQL Database",
-      settings: {
-        name: "PostgreSQL Database",
-        tech: "Master-Replica (WAL)",
-        latency: "6.2ms",
-      },
-    },
-  },
-];
-
-const defaultSystemEdges = [
-  { id: "e1-2", source: "client-1", target: "gateway-1", animated: true },
-  { id: "e2-3", source: "gateway-1", target: "service-1", animated: true },
-  { id: "e3-4", source: "service-1", target: "cache-1", animated: true },
-  { id: "e3-5", source: "service-1", target: "db-1", animated: true },
-];
-
 export default function AgentBuilder() {
   const {
     addedNodes,
@@ -143,14 +68,9 @@ export default function AgentBuilder() {
 
   useEffect(() => {
     if (agentDetail) {
-      if (agentDetail.nodes && agentDetail.nodes.length > 0) {
-        setAddedNodes(agentDetail.nodes);
-        setNodeEdges(agentDetail.edges || []);
-      } else {
-        // Initialize with realistic starter system design topology
-        setAddedNodes(defaultSystemNodes);
-        setNodeEdges(defaultSystemEdges);
-      }
+      // Respect saved nodes directly; if empty or new, start with an empty canvas
+      setAddedNodes(agentDetail.nodes || []);
+      setNodeEdges(agentDetail.edges || []);
     }
   }, [agentDetail]);
 
@@ -282,16 +202,16 @@ export default function AgentBuilder() {
             <Button
               onClick={() => SaveNodeAndEdges()}
               disabled={isSaving}
-              className="gap-2 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-zinc-950 shadow-md cursor-pointer"
+              className="gap-2 font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 border-none shadow-md cursor-pointer"
             >
               {isSaving ? (
                 <>
-                  <Loader className="h-4 w-4 animate-spin" />
+                  <Loader className="h-4 w-4 animate-spin text-zinc-950" />
                   <span>Saving...</span>
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4" />
+                  <Save className="h-4 w-4 text-zinc-950" />
                   <span>Save Architecture</span>
                 </>
               )}
