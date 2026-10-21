@@ -24,34 +24,18 @@ export default function FlowMiniMap({ className = "" }: FlowMiniMapProps) {
 
   // Categorized architectural node colors for the canvas minimap
   const getNodeColor = (node: any) => {
-    const type = node?.type;
-    switch (type) {
-      case "FrontendNode":
-      case "ClientNode":
-      case "MobileNode":
-        return "#10b981"; // emerald
-      case "AiAgentNode":
-        return "#8b5cf6"; // purple / violet
-      case "GatewayNode":
-      case "LoadBalancerNode":
-      case "RateLimiterNode":
-        return "#f43f5e"; // rose
-      case "ServiceNode":
-      case "ServerlessNode":
-      case "WorkerNode":
-        return "#3b82f6"; // blue
-      case "DatabaseNode":
-      case "VectorDbNode":
-      case "CacheNode":
-      case "StorageNode":
-        return "#f59e0b"; // amber
-      case "DnsNode":
-      case "CdnNode":
-      case "CloudInfraNode":
+    const role = (node?.data?.settings?.role || node?.type?.replace("Node", "") || "").toLowerCase();
+    switch (role) {
+      case "frontend":
         return "#06b6d4"; // cyan
-      case "MonitoringNode":
-      case "QueueNode":
-        return "#6366f1"; // indigo
+      case "backend":
+      case "service":
+        return "#3b82f6"; // blue
+      case "database":
+        return "#a855f7"; // purple
+      case "ai":
+      case "aiagent":
+        return "#ffdf27"; // gold
       default:
         return isDark ? "#71717a" : "#94a3b8"; // zinc / slate
     }

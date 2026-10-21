@@ -115,7 +115,7 @@ export default function PreviewAgent() {
         }
     });
 
-    const startNode = agentDetail?.nodes?.find((n: any) => n.type === 'ClientNode' || n.type === 'FrontendNode' || n.type === 'StartNode') || agentDetail?.nodes?.[0];
+    const startNode = agentDetail?.nodes?.find((n: any) => n.type === 'CustomNode' || n.type === 'FrontendNode' || n.type === 'ClientNode' || n.type === 'StartNode') || agentDetail?.nodes?.[0];
 
     const config = {
         startNode: startNode?.id || null,
