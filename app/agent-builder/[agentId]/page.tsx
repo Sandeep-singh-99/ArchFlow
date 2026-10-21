@@ -254,15 +254,8 @@ export default function AgentBuilder() {
             setShowMiniMap={setShowMiniMap}
           />
 
-          {/* Radar MiniMap Panel */}
-          {showMiniMap && (
-            <Panel position="bottom-right" className="m-3.5 z-20">
-              <FlowMiniMap
-                onClose={() => setShowMiniMap(false)}
-                nodeCount={addedNodes?.length || 0}
-              />
-            </Panel>
-          )}
+          {/* Radar MiniMap */}
+          {showMiniMap && <FlowMiniMap />}
 
           {/* Left Palette: System Components */}
           <Panel position="top-left">
