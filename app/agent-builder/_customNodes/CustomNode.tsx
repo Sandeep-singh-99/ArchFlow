@@ -313,12 +313,18 @@ export default function CustomNode({ data }: any) {
       <Handle
         type="target"
         position={Position.Left}
-        className="w-2.5 h-2.5 bg-muted-foreground border-2 border-background"
+        id="left"
+        isConnectableStart={true}
+        isConnectableEnd={true}
+        className="w-3.5 h-3.5 rounded-full bg-zinc-400 dark:bg-zinc-500 border-2 border-background hover:scale-125 hover:bg-[#ffdf27] transition-all cursor-crosshair z-30"
       />
       <Handle
         type="source"
         position={Position.Right}
-        className="w-2.5 h-2.5 bg-[#ffdf27] border-2 border-background"
+        id="right"
+        isConnectableStart={true}
+        isConnectableEnd={true}
+        className="w-3.5 h-3.5 rounded-full bg-[#ffdf27] border-2 border-background hover:scale-125 hover:bg-[#ffee72] transition-all cursor-crosshair z-30"
       />
     </div>
   );
