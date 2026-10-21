@@ -80,7 +80,7 @@ export default function CreateAgentSection() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 max-w-7xl mx-auto">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-emerald-700 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 text-xs font-mono">
+            <Badge variant="outline" className="text-[#ffee72] border-[#ffdf27]/30 bg-[#ffc507]/10 text-xs font-mono">
               Architecture Studio
             </Badge>
             <span className="text-xs font-mono text-muted-foreground">Canvas v2.0</span>
@@ -97,15 +97,15 @@ export default function CreateAgentSection() {
         <div className="flex items-center gap-3">
           <Dialog open={openDialog} onOpenChange={setOpenDialog}>
             <DialogTrigger asChild>
-              <Button size="lg" className="gap-2 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-zinc-950 shadow-sm cursor-pointer">
-                <Plus className="h-4 w-4" />
+              <Button size="lg" className="gap-2 font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 hover:shadow-md hover:shadow-[#ffc507]/20 border-none transition-all shadow-sm cursor-pointer">
+                <Plus className="h-4 w-4 text-zinc-950" />
                 <span>New Architecture</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-lg">
-                  <Workflow className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  <Workflow className="h-5 w-5 text-[#ffdf27]" />
                   <span>Create New Architecture</span>
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
@@ -159,7 +159,7 @@ export default function CreateAgentSection() {
                   size="sm"
                   onClick={() => CreateAgent()}
                   disabled={loading || !agentName.trim()}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-zinc-950 font-semibold"
+                  className="bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 border-none font-semibold cursor-pointer shadow-xs"
                 >
                   {loading && <Loader className="mr-2 h-3.5 w-3.5 animate-spin" />}
                   Open Canvas

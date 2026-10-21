@@ -88,8 +88,8 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-border bg-sidebar">
       <SidebarHeader className="border-b border-border/60 py-4">
         <Link href="/" className="flex items-center gap-2.5 px-2">
-          <div className="h-8 w-8 rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white dark:text-zinc-950 flex items-center justify-center shrink-0">
-            <Network className="h-4 w-4" />
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 flex items-center justify-center shrink-0 shadow-xs">
+            <Network className="h-4 w-4 text-zinc-950 font-bold" />
           </div>
           {open && (
             <div className="flex flex-col">
@@ -120,7 +120,7 @@ export function AppSidebar() {
                     className="hover:bg-muted data-[active=true]:bg-muted font-medium text-sm"
                   >
                     <Link href={option.url}>
-                      <option.icon className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      <option.icon className={`h-4 w-4 ${path === option.url ? "text-[#ffee72]" : "text-muted-foreground group-hover:text-foreground"}`} />
                       <span>{option.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -135,7 +135,7 @@ export function AppSidebar() {
         {!isPaidUser ? (
           <div className="w-full space-y-3">
             <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
-              <Zap className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              <Zap className="h-3.5 w-3.5 text-[#ffdf27]" />
               {open && (
                 <span>
                   Free Slots: <strong className="text-foreground">{totalRemianingCredits} / 3</strong>
@@ -144,7 +144,7 @@ export function AppSidebar() {
             </div>
             {open && (
               <Link href="/dashboard/pricing" className="block w-full">
-                <Button size="sm" className="w-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-zinc-950 shadow-xs">
+                <Button size="sm" className="w-full text-xs font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 border-none shadow-xs cursor-pointer">
                   Upgrade to Pro
                 </Button>
               </Link>
@@ -152,7 +152,7 @@ export function AppSidebar() {
           </div>
         ) : (
           open && (
-            <div className="text-xs font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 p-2.5 rounded border border-emerald-500/20">
+            <div className="text-xs font-mono text-[#ffee72] bg-[#ffc507]/10 p-2.5 rounded border border-[#ffdf27]/20">
               Unlimited Pro Active
             </div>
           )

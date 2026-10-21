@@ -98,8 +98,8 @@ export default function MyAgents({ onSelectTemplateTab }: MyAgentsProps) {
   if (agentList.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-dashed border-border bg-card/40 my-8 space-y-5">
-        <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shadow-xs">
-          <Workflow className="h-7 w-7" />
+        <div className="h-14 w-14 rounded-2xl bg-[#ffc507]/10 text-[#ffee72] flex items-center justify-center border border-[#ffdf27]/20 shadow-xs">
+          <Workflow className="h-7 w-7 text-[#ffdf27]" />
         </div>
         <div className="space-y-1.5 max-w-md">
           <h3 className="font-bold text-lg text-foreground">
@@ -114,9 +114,9 @@ export default function MyAgents({ onSelectTemplateTab }: MyAgentsProps) {
             variant="outline"
             size="sm"
             onClick={onSelectTemplateTab}
-            className="gap-2 text-xs font-semibold cursor-pointer"
+            className="gap-2 text-xs font-semibold cursor-pointer hover:border-[#ffdf27]/40 hover:text-[#ffee72]"
           >
-            <Layers className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            <Layers className="h-3.5 w-3.5 text-[#ffdf27]" />
             <span>Browse Architecture Templates</span>
           </Button>
         )}
@@ -130,12 +130,12 @@ export default function MyAgents({ onSelectTemplateTab }: MyAgentsProps) {
         {agentList.map((agent, index) => (
           <div
             key={index}
-            className="rounded-xl border border-border bg-card p-5 hover:border-emerald-500/50 transition-all duration-150 shadow-2xs hover:shadow-sm relative group flex flex-col justify-between"
+            className="rounded-xl border border-border bg-card p-5 hover:border-[#ffdf27]/50 transition-all duration-150 shadow-2xs hover:shadow-sm relative group flex flex-col justify-between"
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="h-9 w-9 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-                  <Network className="h-4 w-4" />
+                <div className="h-9 w-9 rounded-lg bg-[#ffc507]/10 text-[#ffee72] flex items-center justify-center border border-[#ffdf27]/20">
+                  <Network className="h-4 w-4 text-[#ffdf27]" />
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border">
@@ -156,7 +156,7 @@ export default function MyAgents({ onSelectTemplateTab }: MyAgentsProps) {
               </div>
 
               <div>
-                <h3 className="font-bold text-base text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
+                <h3 className="font-bold text-base text-foreground group-hover:text-[#ffee72] transition-colors line-clamp-1">
                   {agent.name}
                 </h3>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono mt-1">
@@ -171,7 +171,7 @@ export default function MyAgents({ onSelectTemplateTab }: MyAgentsProps) {
                 Topology Studio
               </span>
               <Link href={`/agent-builder/${agent.agentId}`}>
-                <Button size="sm" variant="ghost" className="h-8 gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-500/10 cursor-pointer">
+                <Button size="sm" variant="ghost" className="h-8 gap-1.5 text-xs font-semibold text-[#ffee72] hover:text-[#ffdf27] hover:bg-[#ffc507]/10 cursor-pointer">
                   <span>Open Canvas</span>
                   <ArrowRight className="h-3 w-3" />
                 </Button>

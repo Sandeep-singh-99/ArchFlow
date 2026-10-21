@@ -214,7 +214,7 @@ export default function AiAgentTab() {
               return (
                 <div
                   key={template.id}
-                  className="rounded-xl border border-border bg-card p-5 hover:border-emerald-500/50 transition-all duration-150 shadow-2xs hover:shadow-sm flex flex-col justify-between space-y-4"
+                  className="rounded-xl border border-border bg-card p-5 hover:border-[#ffdf27]/50 transition-all duration-150 shadow-2xs hover:shadow-sm flex flex-col justify-between space-y-4"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -233,7 +233,7 @@ export default function AiAgentTab() {
                       <div className="flex items-center gap-3 text-xs font-mono text-muted-foreground">
                         <span>QPS: <strong className="text-foreground">{template.qps}</strong></span>
                         <span>•</span>
-                        <span>SLA: <strong className="text-emerald-700 dark:text-emerald-400">{template.sla}</strong></span>
+                        <span>SLA: <strong className="text-[#ffee72]">{template.sla}</strong></span>
                       </div>
                     </div>
 
@@ -261,7 +261,7 @@ export default function AiAgentTab() {
                       size="sm"
                       onClick={() => handleCloneTemplate(template)}
                       disabled={isCloning}
-                      className="w-full gap-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-zinc-950 cursor-pointer"
+                      className="w-full gap-2 text-xs font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 border-none cursor-pointer shadow-xs"
                     >
                       {isCloning ? (
                         <>
@@ -297,7 +297,7 @@ export default function AiAgentTab() {
             {componentCatalog.map((category) => (
               <div key={category.category} className="rounded-xl border border-border bg-card p-5 space-y-4 shadow-2xs">
                 <div className="flex items-center gap-2">
-                  <Cpu className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <Cpu className="h-4 w-4 text-[#ffdf27]" />
                   <h4 className="font-bold text-sm text-foreground">{category.category}</h4>
                 </div>
                 <div className="space-y-2">
@@ -307,7 +307,7 @@ export default function AiAgentTab() {
                         <div className="font-semibold text-foreground">{c.name}</div>
                         <div className="text-[10px] font-mono text-muted-foreground">{c.protocol}</div>
                       </div>
-                      <Badge variant="outline" className="font-mono text-[10px] text-emerald-700 dark:text-emerald-400 border-emerald-500/30">
+                      <Badge variant="outline" className="font-mono text-[10px] text-[#ffee72] border-[#ffdf27]/30 bg-[#ffc507]/10">
                         {c.latency}
                       </Badge>
                     </div>

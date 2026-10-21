@@ -5,7 +5,7 @@ export default function PricingPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-12 space-y-8">
       <div className="text-center space-y-3">
-        <Badge variant="outline" className="text-emerald-700 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10 text-xs font-mono">
+        <Badge variant="outline" className="text-[#ffee72] border-[#ffdf27]/30 bg-[#ffc507]/10 text-xs font-mono">
           Subscription Plans
         </Badge>
         <h1 className="text-3xl font-extrabold tracking-tight text-foreground">

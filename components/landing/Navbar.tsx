@@ -11,16 +11,16 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/90 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-8">
-        {/* Brand Logo with Solid Emerald Accent */}
+        {/* Brand Logo with Signature Gold Accent */}
         <Link href="/" className="flex items-center gap-2.5 font-bold text-lg group">
-          <div className="h-8 w-8 rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white dark:text-zinc-950 flex items-center justify-center transition-transform group-hover:scale-105 shadow-xs">
-            <Network className="h-4 w-4" />
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 flex items-center justify-center transition-transform group-hover:scale-105 shadow-xs">
+            <Network className="h-4 w-4 text-zinc-950 font-bold" />
           </div>
           <div className="flex items-center gap-2">
             <span className="font-bold tracking-tight text-foreground">
               ArchFlow
             </span>
-            <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 font-semibold">
+            <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#ffc507]/10 text-[#ffee72] border border-[#ffdf27]/20 font-semibold">
               Studio
             </span>
           </div>
