@@ -227,11 +227,17 @@
   width: 10px !important;
   height: 10px !important;
   border: 2px solid var(--card) !important;
+  cursor: crosshair !important;
+  transition: box-shadow 0.15s ease !important;
+}
+
+.react-flow__handle:hover {
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.4) !important;
 }
 
 /* ========================================================
-   Dark Theme: Four Connected Dots (Handles) Color Enhancement
-   (Static Position - Zero Movement / Animation)
+   Dark Theme: Node Connection Dots (Handles) Color Enhancement
+   (Left Inflow & Right Outflow)
    ======================================================== */
 
 .dark .react-flow__handle {
@@ -239,24 +245,21 @@
   height: 10px !important;
   border-radius: 50% !important;
   border: 2px solid #09090b !important;
+  cursor: crosshair !important;
 }
 
-/* Incoming / Target Connection Dots (Left & Top) in Dark Theme */
+/* Incoming / Target Connection Dots (Left) in Dark Theme */
 .dark .react-flow__handle-left,
-.dark .react-flow__handle-top,
 .dark .react-flow__handle.target,
-.dark .react-flow__handle[data-handlepos="left"],
-.dark .react-flow__handle[data-handlepos="top"] {
+.dark .react-flow__handle[data-handlepos="left"] {
   background-color: #38bdf8 !important; /* Luminous Electric Sky Cyan */
   box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.5) !important;
 }
 
-/* Outgoing / Source Connection Dots (Right & Bottom) in Dark Theme */
+/* Outgoing / Source Connection Dots (Right) in Dark Theme */
 .dark .react-flow__handle-right,
-.dark .react-flow__handle-bottom,
 .dark .react-flow__handle.source,
-.dark .react-flow__handle[data-handlepos="right"],
-.dark .react-flow__handle[data-handlepos="bottom"] {
+.dark .react-flow__handle[data-handlepos="right"] {
   background-color: #10b981 !important; /* Luminous Vivid Emerald */
   box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.5) !important;
 }

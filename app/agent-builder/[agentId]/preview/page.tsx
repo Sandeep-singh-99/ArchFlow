@@ -5,7 +5,7 @@ import { useConvex, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useParams } from "next/navigation";
 import { Agent } from "@/types/AgentTypes";
-import { Background, ReactFlow } from "@xyflow/react";
+import { Background, ReactFlow, ConnectionMode } from "@xyflow/react";
 import { nodeTypes } from "../../_customNodes/nodeTypes";
 import "@xyflow/react/dist/style.css";
 import axios from "axios";
@@ -115,7 +115,7 @@ export default function PreviewAgent() {
         }
     });
 
-    const startNode = agentDetail?.nodes?.find((n: any) => n.type === 'StartNode');
+    const startNode = agentDetail?.nodes?.find((n: any) => n.type === 'ClientNode' || n.type === 'FrontendNode' || n.type === 'StartNode') || agentDetail?.nodes?.[0];
 
     const config = {
         startNode: startNode?.id || null,
@@ -152,6 +152,7 @@ export default function PreviewAgent() {
             <h2>Preview</h2>
           <div style={{ width: "100%", height: "90vh", backgroundColor: '#f8f8f8', borderRadius: 20 }}>
             <ReactFlow
+              connectionMode={ConnectionMode.Loose}
               nodes={agentDetail?.nodes || []}
               edges={agentDetail?.edges || []}
               nodeTypes={nodeTypes}

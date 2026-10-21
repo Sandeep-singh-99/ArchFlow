@@ -8,7 +8,7 @@ export default function MonitoringNode({ data }: any) {
   const interval = data?.settings?.interval || "10s Scrape • Alertmanager";
 
   return (
-    <div className="rounded-xl border border-border bg-card p-3 shadow-sm min-w-[210px] hover:border-purple-500/60 transition-colors">
+    <div className="relative rounded-xl border border-border bg-card p-3 shadow-sm min-w-[210px] hover:border-purple-500/60 transition-colors">
       <div className="flex items-center gap-2.5">
         <div className="h-8 w-8 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center border border-purple-500/20 shrink-0">
           <Activity className="h-4 w-4" />
@@ -23,26 +23,15 @@ export default function MonitoringNode({ data }: any) {
         <span>Metrics</span>
         <span className="font-semibold text-purple-600 dark:text-purple-400">{interval}</span>
       </div>
-
       <Handle
         type="target"
         position={Position.Left}
         className="w-2.5 h-2.5 bg-muted-foreground border-2 border-background"
       />
       <Handle
-        type="target"
-        position={Position.Top}
-        className="w-2.5 h-2.5 bg-muted-foreground border-2 border-background"
-      />
-      <Handle
         type="source"
         position={Position.Right}
-        className="w-2.5 h-2.5 bg-purple-500 border-2 border-background"
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="w-2.5 h-2.5 bg-purple-500 border-2 border-background"
+        className="w-2.5 h-2.5 bg-yellow-500 border-2 border-background"
       />
     </div>
   );

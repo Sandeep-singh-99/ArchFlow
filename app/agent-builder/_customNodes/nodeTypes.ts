@@ -21,15 +21,6 @@ import SearchNode from "./SearchNode";
 import MonitoringNode from "./MonitoringNode";
 import ThirdPartyApiNode from "./ThirdPartyApiNode";
 
-// Legacy Fallback Nodes
-import StartNode from "./StartNode";
-import AgentNode from "./AgentNode";
-import EndNode from "./EndNode";
-import IfElseNode from "./IfElseNode";
-import WhileNode from "./WhileNode";
-import UserApprovalNode from "./UserApprovalNode";
-import ApiNode from "./ApiNode";
-
 export const nodeTypes = {
   // Domain Specialized Nodes
   FrontendNode,
@@ -55,13 +46,4 @@ export const nodeTypes = {
   SearchNode,
   MonitoringNode,
   ThirdPartyApiNode,
-
-  // Legacy Node Aliases
-  StartNode,
-  AgentNode,
-  EndNode,
-  IfElseNode,
-  WhileNode,
-  UserApprovalNode,
-  ApiNode,
 };

@@ -8,7 +8,7 @@ export default function WorkerNode({ data }: any) {
   const concurrency = data?.settings?.concurrency || "16 Workers";
 
   return (
-    <div className="rounded-xl border border-border bg-card p-3 shadow-sm min-w-[210px] hover:border-foreground/50 transition-colors">
+    <div className="relative rounded-xl border border-border bg-card p-3 shadow-sm min-w-[210px] hover:border-foreground/50 transition-colors">
       <div className="flex items-center gap-2.5">
         <div className="h-8 w-8 rounded-lg bg-muted text-foreground flex items-center justify-center border border-border shrink-0">
           <Cog className="h-4 w-4" />
@@ -23,25 +23,14 @@ export default function WorkerNode({ data }: any) {
         <span>Async Fleet</span>
         <span className="font-semibold text-foreground">{concurrency}</span>
       </div>
-
       <Handle
         type="target"
         position={Position.Left}
         className="w-2.5 h-2.5 bg-muted-foreground border-2 border-background"
       />
       <Handle
-        type="target"
-        position={Position.Top}
-        className="w-2.5 h-2.5 bg-muted-foreground border-2 border-background"
-      />
-      <Handle
         type="source"
         position={Position.Right}
-        className="w-2.5 h-2.5 bg-foreground border-2 border-background"
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
         className="w-2.5 h-2.5 bg-foreground border-2 border-background"
       />
     </div>

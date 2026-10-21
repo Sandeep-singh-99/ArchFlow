@@ -8,7 +8,7 @@ export default function ClientNode({ data }: any) {
   const qps = data?.settings?.qps || "100k QPS";
 
   return (
-    <div className="rounded-xl border border-border bg-card p-3 shadow-sm min-w-[200px] hover:border-teal-500/60 transition-colors">
+    <div className="relative rounded-xl border border-border bg-card p-3 shadow-sm min-w-[200px] hover:border-teal-500/60 transition-colors">
       <div className="flex items-center gap-2.5">
         <div className="h-8 w-8 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center border border-teal-500/20 shrink-0">
           <Globe className="h-4 w-4" />
@@ -27,11 +27,6 @@ export default function ClientNode({ data }: any) {
       <Handle
         type="source"
         position={Position.Right}
-        className="w-2.5 h-2.5 bg-teal-500 border-2 border-background"
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
         className="w-2.5 h-2.5 bg-teal-500 border-2 border-background"
       />
     </div>

@@ -8,7 +8,7 @@ export default function StorageNode({ data }: any) {
   const sla = data?.settings?.sla || "99.999999999% Durability";
 
   return (
-    <div className="rounded-xl border border-border bg-card p-3 shadow-sm min-w-[210px] hover:border-indigo-500/60 transition-colors">
+    <div className="relative rounded-xl border border-border bg-card p-3 shadow-sm min-w-[210px] hover:border-indigo-500/60 transition-colors">
       <div className="flex items-center gap-2.5">
         <div className="h-8 w-8 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-500/20 shrink-0">
           <HardDrive className="h-4 w-4" />
@@ -23,26 +23,15 @@ export default function StorageNode({ data }: any) {
         <span>Object Storage</span>
         <span className="font-semibold text-indigo-600 dark:text-indigo-400">11 9s</span>
       </div>
-
       <Handle
         type="target"
         position={Position.Left}
         className="w-2.5 h-2.5 bg-muted-foreground border-2 border-background"
       />
       <Handle
-        type="target"
-        position={Position.Top}
-        className="w-2.5 h-2.5 bg-muted-foreground border-2 border-background"
-      />
-      <Handle
         type="source"
         position={Position.Right}
-        className="w-2.5 h-2.5 bg-indigo-500 border-2 border-background"
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="w-2.5 h-2.5 bg-indigo-500 border-2 border-background"
+        className="w-2.5 h-2.5 bg-cyan-500 border-2 border-background"
       />
     </div>
   );

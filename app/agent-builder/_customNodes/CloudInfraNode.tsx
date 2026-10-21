@@ -8,7 +8,7 @@ export default function CloudInfraNode({ data }: any) {
   const topology = data?.settings?.topology || "Multi-AZ • Node Group";
 
   return (
-    <div className="rounded-xl border border-border bg-card p-3 shadow-sm min-w-[210px] hover:border-cyan-500/60 transition-colors">
+    <div className="relative rounded-xl border border-border bg-card p-3 shadow-sm min-w-[210px] hover:border-cyan-500/60 transition-colors">
       <div className="flex items-center gap-2.5">
         <div className="h-8 w-8 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center border border-cyan-500/20 shrink-0">
           <Server className="h-4 w-4" />
@@ -23,26 +23,15 @@ export default function CloudInfraNode({ data }: any) {
         <span>Infra</span>
         <span className="font-semibold text-cyan-600 dark:text-cyan-400">{topology}</span>
       </div>
-
       <Handle
         type="target"
         position={Position.Left}
         className="w-2.5 h-2.5 bg-muted-foreground border-2 border-background"
       />
       <Handle
-        type="target"
-        position={Position.Top}
-        className="w-2.5 h-2.5 bg-muted-foreground border-2 border-background"
-      />
-      <Handle
         type="source"
         position={Position.Right}
-        className="w-2.5 h-2.5 bg-cyan-500 border-2 border-background"
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="w-2.5 h-2.5 bg-cyan-500 border-2 border-background"
+        className="w-2.5 h-2.5 bg-slate-500 border-2 border-background"
       />
     </div>
   );

@@ -21,7 +21,6 @@ export default function FlowMiniMap({ className = "" }: FlowMiniMapProps) {
       case "MobileNode":
         return "#10b981"; // emerald
       case "AiAgentNode":
-      case "AgentNode":
         return "#8b5cf6"; // purple / violet
       case "GatewayNode":
       case "LoadBalancerNode":

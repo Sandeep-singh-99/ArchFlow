@@ -3,6 +3,7 @@ import React, { useContext, useEffect, useState, useCallback } from "react";
 import Header from "../_components/Header";
 import {
   ReactFlow,
+  ConnectionMode,
   applyNodeChanges,
   applyEdgeChanges,
   addEdge,
@@ -216,6 +217,7 @@ export default function AgentBuilder() {
       <Header agentDetail={agentDetail} />
       <div className="flex-1 w-full relative">
         <ReactFlow
+          connectionMode={ConnectionMode.Loose}
           nodes={addedNodes || []}
           edges={nodeEdges || []}
           onNodesChange={onNodesChange}
