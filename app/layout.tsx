@@ -24,12 +24,13 @@ export default function RootLayout({
         baseTheme: dark,
       }}
     >
-      <html lang="en" suppressHydrationWarning>
+      <html lang="en" className="dark" style={{ colorScheme: "dark" }} suppressHydrationWarning>
         <body className="font-sans antialiased">
           <ThemeProvider
             attribute="class"
             defaultTheme="dark"
-            enableSystem
+            forcedTheme="dark"
+            enableSystem={false}
             disableTransitionOnChange
           >
             <ConvexClientProvider>

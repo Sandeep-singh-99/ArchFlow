@@ -77,13 +77,13 @@ export default function Pricing() {
             </CardFooter>
           </Card>
 
-          {/* Pro Tier - High contrast solid Emerald highlight */}
-          <Card className="flex flex-col border-2 border-emerald-500 dark:border-emerald-400 bg-card shadow-lg shadow-emerald-500/5 relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-emerald-600 dark:bg-emerald-500 text-white dark:text-zinc-950 text-[10px] font-mono px-3 py-1 rounded-bl uppercase tracking-wider font-bold">
+          {/* Pro Tier - High contrast gradient highlight */}
+          <Card className="flex flex-col border-2 border-[#ffdf27]/70 bg-card shadow-lg shadow-[#ffc507]/10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 text-[10px] font-mono px-3 py-1 rounded-bl uppercase tracking-wider font-bold">
               Most Popular
             </div>
             <CardHeader className="space-y-1">
-              <CardTitle className="text-xl font-bold text-emerald-700 dark:text-emerald-400">Architect Pro</CardTitle>
+              <CardTitle className="text-xl font-bold text-[#ffdf27]">Architect Pro</CardTitle>
               <CardDescription className="text-xs">
                 For senior engineers, tech leads & founders.
               </CardDescription>
@@ -124,7 +124,7 @@ export default function Pricing() {
             </CardContent>
             <CardFooter>
               <Link href="/dashboard" className="w-full">
-                <Button className="w-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-zinc-950">
+                <Button className="w-full text-xs font-bold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 hover:shadow-md hover:shadow-[#ffc507]/20 border-none transition-all">
                   Upgrade to Pro
                 </Button>
               </Link>

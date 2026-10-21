@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { ArrowRight, Network, Workflow } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function Navbar() {
   const { isSignedIn } = useUser();
@@ -27,15 +26,13 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* Action Controls & Theme Toggle */}
+        {/* Action Controls */}
         <div className="flex items-center gap-2.5 sm:gap-3">
-          <ThemeToggle />
-
           {isSignedIn ? (
             <div className="flex items-center gap-3">
               <Link href="/dashboard">
-                <Button variant="default" size="sm" className="gap-2 font-medium bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-zinc-950 shadow-xs">
-                  <Workflow className="h-4 w-4" />
+                <Button variant="default" size="sm" className="gap-2 font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 hover:shadow-md hover:shadow-[#ffc507]/20 border-none transition-all shadow-xs">
+                  <Workflow className="h-4 w-4 text-zinc-950" />
                   <span className="hidden sm:inline">Go to Canvas</span>
                   <span className="sm:hidden">Canvas</span>
                 </Button>
@@ -50,9 +47,9 @@ export default function Navbar() {
                 </Button>
               </Link>
               <Link href="/dashboard">
-                <Button size="sm" className="group font-medium bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-zinc-950 shadow-xs">
+                <Button size="sm" className="group font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 hover:shadow-md hover:shadow-[#ffc507]/20 border-none transition-all shadow-xs">
                   <span>Start Designing</span>
-                  <ArrowRight className="ml-1.5 h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                  <ArrowRight className="ml-1.5 h-3.5 w-3.5 transition-transform group-hover:translate-x-1 text-zinc-950" />
                 </Button>
               </Link>
             </div>

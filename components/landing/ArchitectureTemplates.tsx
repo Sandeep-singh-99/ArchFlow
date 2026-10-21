@@ -157,8 +157,8 @@ export default function ArchitectureTemplates() {
                 <div className="text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400">{current.qps}</div>
               </div>
               <Link href="/dashboard">
-                <Button size="sm" className="gap-1.5 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-zinc-950">
-                  <Workflow className="h-4 w-4" />
+                <Button size="sm" className="gap-1.5 font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 hover:shadow-md hover:shadow-[#ffc507]/20 border-none transition-all">
+                  <Workflow className="h-4 w-4 text-zinc-950" />
                   <span>Open in Canvas</span>
                 </Button>
               </Link>

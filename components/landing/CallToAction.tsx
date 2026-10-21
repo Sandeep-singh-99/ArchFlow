@@ -30,11 +30,11 @@ export default function CallToAction() {
           <Link href="/dashboard">
             <Button
               size="lg"
-              className="h-12 px-8 text-base rounded-lg font-semibold bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-zinc-950 shadow-sm"
+              className="h-12 px-8 text-base rounded-lg font-bold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 hover:shadow-lg hover:shadow-[#ffc507]/25 border-none transition-all shadow-sm"
             >
-              <Workflow className="mr-2 h-5 w-5" />
+              <Workflow className="mr-2 h-5 w-5 text-zinc-950" />
               Launch Canvas Free
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <ArrowRight className="ml-2 h-4 w-4 text-zinc-950" />
             </Button>
           </Link>
           <Link href="#templates">
