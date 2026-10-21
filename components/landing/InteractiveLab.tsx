@@ -596,18 +596,20 @@ export default function InteractiveLab() {
         </div>
 
         {/* Nodes Area with central square grid spotlight floating on pure black */}
-        <div className="relative w-full h-[480px] md:h-[520px] bg-black">
-          {/* Subtle square grid pattern with radial spotlight fade matching uploaded image */}
+        <div className="relative w-full h-[500px] md:h-[550px] bg-black">
+          {/* Compact architectural square grid (24px x 24px) with subtle major lines (48px) and smooth radial spotlight */}
           <div 
             className="absolute inset-0 pointer-events-none z-0"
             style={{
               backgroundImage: `
                 linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px)
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+                linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px)
               `,
-              backgroundSize: "80px 80px",
-              maskImage: "radial-gradient(ellipse 75% 70% at 50% 50%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 80%)",
-              WebkitMaskImage: "radial-gradient(ellipse 75% 70% at 50% 50%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 80%)",
+              backgroundSize: "48px 48px, 48px 48px, 24px 24px, 24px 24px",
+              maskImage: "radial-gradient(ellipse 70% 65% at 50% 50%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 80%)",
+              WebkitMaskImage: "radial-gradient(ellipse 70% 65% at 50% 50%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 80%)",
             }}
           />
 
