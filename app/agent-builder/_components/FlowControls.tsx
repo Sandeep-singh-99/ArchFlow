@@ -257,13 +257,13 @@ export default function FlowControls({
             {/* Floating Quick Reference Card */}
             {showShortcuts && (
               <div
-                className="absolute bottom-11 left-0 w-64 p-3 bg-card/95 dark:bg-zinc-900/95 backdrop-blur-md border border-border rounded-xl shadow-2xl z-50 text-xs flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-150"
+                className="absolute bottom-11 left-0 w-72 p-3 bg-card/95 dark:bg-zinc-900/95 backdrop-blur-md border border-border rounded-xl shadow-2xl z-50 text-xs flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-150"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between pb-1.5 border-b border-border/80">
                   <div className="flex items-center gap-1.5 font-semibold text-foreground">
                     <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
-                    <span>Canvas Gestures</span>
+                    <span>Canvas Gestures & Tips</span>
                   </div>
                   <button
                     onClick={() => setShowShortcuts(false)}
@@ -296,6 +296,15 @@ export default function FlowControls({
                     <span>Connect nodes</span>
                     <kbd className="px-1.5 py-0.5 bg-muted rounded font-mono text-[10px] text-foreground border border-border">
                       Drag Port
+                    </kbd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-foreground font-medium flex items-center gap-1">
+                      Disconnect nodes
+                      <span className="text-[9px] text-emerald-500 bg-emerald-500/10 px-1 py-0.2 rounded font-normal">Fast</span>
+                    </span>
+                    <kbd className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded font-mono text-[10px] font-semibold">
+                      Double-Click Line
                     </kbd>
                   </div>
                   <div className="flex items-center justify-between">

@@ -1,5 +1,5 @@
 "use client";
-import React, { useContext, useEffect, useState, useCallback } from "react";
+import React, { useContext, useEffect, useState, useCallback, useRef } from "react";
 import Header from "../_components/Header";
 import {
   ReactFlow,
@@ -7,6 +7,7 @@ import {
   applyNodeChanges,
   applyEdgeChanges,
   addEdge,
+  reconnectEdge,
   Background,
   BackgroundVariant,
   Panel,
@@ -116,6 +117,40 @@ export default function AgentBuilder() {
     [setNodeEdges]
   );
 
+  const edgeReconnectSuccessful = useRef(true);
+
+  const onReconnectStart = useCallback(() => {
+    edgeReconnectSuccessful.current = false;
+  }, []);
+
+  const onReconnect = useCallback(
+    (oldEdge: any, newConnection: any) => {
+      edgeReconnectSuccessful.current = true;
+      setNodeEdges((els: any) => reconnectEdge(oldEdge, newConnection, els || []));
+    },
+    [setNodeEdges]
+  );
+
+  const onReconnectEnd = useCallback(
+    (_: any, edge: any) => {
+      if (!edgeReconnectSuccessful.current) {
+        setNodeEdges((eds: any) => (eds || []).filter((e: any) => e.id !== edge.id));
+        toast.info("Connection disconnected");
+      }
+      edgeReconnectSuccessful.current = true;
+    },
+    [setNodeEdges]
+  );
+
+  const onEdgeDoubleClick = useCallback(
+    (event: React.MouseEvent, edge: any) => {
+      event.stopPropagation();
+      setNodeEdges((eds: any) => (eds || []).filter((e: any) => e.id !== edge.id));
+      toast.info("Connection removed");
+    },
+    [setNodeEdges]
+  );
+
   const onNodeSelect = useCallback(
     ({ nodes }: OnSelectionChangeParams) => {
       if (nodes && nodes.length > 0) {
@@ -146,10 +181,16 @@ export default function AgentBuilder() {
           onNodeDragStop={(e, node) => setSelectedNode(node)}
           onPaneClick={() => setSelectedNode(null)}
           onEdgeClick={() => setSelectedNode(null)}
+          onEdgeDoubleClick={onEdgeDoubleClick}
+          edgesReconnectable={!isLocked}
+          onReconnectStart={onReconnectStart}
+          onReconnect={onReconnect}
+          onReconnectEnd={onReconnectEnd}
           nodeTypes={nodeTypes}
           defaultEdgeOptions={{
             animated: true,
             style: { strokeWidth: 2 },
+            interactionWidth: 20,
           }}
           fitView
           nodesDraggable={!isLocked}
