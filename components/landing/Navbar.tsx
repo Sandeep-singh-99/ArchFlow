@@ -12,19 +12,35 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/90 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-8">
         {/* Brand Logo with Signature Gold Accent */}
-        <Link href="/" className="flex items-center gap-2.5 font-bold text-lg group">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 flex items-center justify-center transition-transform group-hover:scale-105 shadow-xs">
-            <Network className="h-4 w-4 text-zinc-950 font-bold" />
+        <div className="flex items-center gap-6">
+          <Link href="/" className="flex items-center gap-2.5 font-bold text-lg group">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 flex items-center justify-center transition-transform group-hover:scale-105 shadow-xs">
+              <Network className="h-4 w-4 text-zinc-950 font-bold" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold tracking-tight text-foreground">
+                ArchFlow
+              </span>
+              <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#ffc507]/10 text-[#ffee72] border border-[#ffdf27]/20 font-semibold">
+                Studio
+              </span>
+            </div>
+          </Link>
+
+          {/* Navigation Links */}
+          <div className="hidden md:flex items-center gap-4 text-sm">
+            <Link
+              href="/node-graph"
+              className="flex items-center gap-1.5 text-zinc-300 hover:text-white transition-colors px-2.5 py-1 rounded-md hover:bg-white/5"
+            >
+              <Network className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Node Graph Visualizer</span>
+              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                New
+              </span>
+            </Link>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="font-bold tracking-tight text-foreground">
-              ArchFlow
-            </span>
-            <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#ffc507]/10 text-[#ffee72] border border-[#ffdf27]/20 font-semibold">
-              Studio
-            </span>
-          </div>
-        </Link>
+        </div>
 
         {/* Action Controls */}
         <div className="flex items-center gap-2.5 sm:gap-3">
