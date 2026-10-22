@@ -93,7 +93,7 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
         </Link>
         <div className="h-4 w-px bg-border" />
         <div className="flex items-center gap-2">
-          <Workflow className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <Workflow className="h-4 w-4 text-primary" />
           <h2 className="font-bold text-sm text-foreground">
             {agentDetail?.name || "System Architecture Canvas"}
           </h2>
@@ -110,14 +110,14 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
           onClick={() => setOpen(true)}
           className="h-8 gap-1.5 text-xs font-semibold"
         >
-          <FileCode className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+          <FileCode className="h-3.5 w-3.5 text-muted-foreground" />
           <span>Export Mermaid</span>
         </Button>
 
         <Button
           size="sm"
           onClick={handlePublish}
-          className="h-8 gap-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-zinc-950 shadow-xs"
+          className="h-8 gap-1.5 text-xs font-semibold shadow-xs"
         >
           <Share2 className="h-3.5 w-3.5" />
           <span>Share & Publish</span>
@@ -128,7 +128,7 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
           <DialogContent className="sm:max-w-xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-base">
-                <FileCode className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <FileCode className="h-4 w-4 text-primary" />
                 <span>Architecture Mermaid.js Code</span>
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
@@ -148,7 +148,7 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
               >
                 {copied ? (
                   <>
-                    <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                    <Check className="h-3 w-3 text-primary" />
                     <span>Copied</span>
                   </>
                 ) : (
