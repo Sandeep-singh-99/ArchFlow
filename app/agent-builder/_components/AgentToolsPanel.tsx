@@ -18,8 +18,8 @@ export default function AgentToolsPanel() {
         settings: {
           name: "New Component",
           role: "frontend",
-          action: "Landing Page / UI",
-          tech: "Next.js / React",
+          action: "",
+          tech: "",
           protocol: "HTTPS",
           latency: "5.0ms",
           qps: "50k req/s",

@@ -294,7 +294,7 @@ export default function CustomNode({ data }: any) {
     ? (data?.settings?.tech && !data?.settings?.tech.includes("Next") && !data?.settings?.tech.includes("React")
         ? data.settings.tech
         : (dbFormat === "nosql" ? "NoSQL Database" : "SQL Database"))
-    : (data?.settings?.tech || "Custom Stack");
+    : (data?.settings?.tech || (roleKey === "frontend" ? "" : "Custom Stack"));
 
   // Dynamically size container width for database schema nodes so field names & types are never hidden or cramped
   const containerClasses = isDatabase
@@ -309,7 +309,9 @@ export default function CustomNode({ data }: any) {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-xs font-bold text-foreground truncate">{label}</h3>
-          <p className="text-[10px] font-mono text-muted-foreground truncate">{tech}</p>
+          {tech ? (
+            <p className="text-[10px] font-mono text-muted-foreground truncate">{tech}</p>
+          ) : null}
         </div>
       </div>
 
@@ -414,10 +416,14 @@ export default function CustomNode({ data }: any) {
         </div>
       )}
 
-      <div className="mt-2.5 pt-2 border-t border-border/60 flex items-center justify-between text-[10px] font-mono text-muted-foreground">
-        <span className="capitalize font-semibold text-foreground/80">{roleKey}</span>
-        <span className={`font-semibold ${config.color} truncate max-w-[130px]`}>{action}</span>
-      </div>
+      {roleKey !== "frontend" && (
+        <div className="mt-2.5 pt-2 border-t border-border/60 flex items-center justify-between text-[10px] font-mono text-muted-foreground">
+          <span className="capitalize font-semibold text-foreground/80">{roleKey}</span>
+          {action ? (
+            <span className={`font-semibold ${config.color} truncate max-w-[130px]`}>{action}</span>
+          ) : null}
+        </div>
+      )}
 
       <Handle
         type="target"

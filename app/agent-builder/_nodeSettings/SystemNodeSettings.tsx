@@ -195,8 +195,8 @@ export default function SystemNodeSettings({
         // Reset role-specific defaults when switching away from database
         if (roleId === "frontend") {
           updates.name = (!prev.name || prev.name === prev.dbTableName || prev.name === "users_table" || prev.name === "users_collection" || prev.name === "Database") ? "Frontend UI" : prev.name;
-          updates.action = "Landing Page / UI";
-          updates.tech = "Next.js / React";
+          updates.action = "";
+          updates.tech = "";
           updates.protocol = "HTTPS";
         } else if (roleId === "backend") {
           updates.name = (!prev.name || prev.name === prev.dbTableName || prev.name === "users_table" || prev.name === "users_collection" || prev.name === "Database") ? "Backend API" : prev.name;
@@ -226,6 +226,9 @@ export default function SystemNodeSettings({
       finalData.name = formData.dbTableName || "Database";
       finalData.action = formData.dbFormat === "nosql" ? "NoSQL Document Store" : "SQL Relational Store";
       finalData.notes = formData.dbDescription || "";
+    } else if (formData.role === "frontend") {
+      finalData.action = "";
+      finalData.tech = "";
     }
     updateFormData(finalData);
   };
@@ -282,7 +285,7 @@ export default function SystemNodeSettings({
         </div>
       </div>
 
-      {/* Component Label and Action (hidden for database) */}
+      {/* Component Label and Action (Action hidden for database and frontend) */}
       {formData.role !== "database" && (
         <>
           <div className="space-y-1.5">
@@ -295,15 +298,17 @@ export default function SystemNodeSettings({
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-foreground">What this node does / Action</label>
-            <Input
-              value={formData.action}
-              onChange={(e) => handleChange("action", e.target.value)}
-              placeholder="e.g. Landing to navigate dashboard, user auth service..."
-              className="h-8 text-xs font-medium"
-            />
-          </div>
+          {formData.role !== "frontend" && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">What this node does / Action</label>
+              <Input
+                value={formData.action}
+                onChange={(e) => handleChange("action", e.target.value)}
+                placeholder="e.g. User auth service, core processing..."
+                className="h-8 text-xs font-medium"
+              />
+            </div>
+          )}
         </>
       )}
 
@@ -498,40 +503,6 @@ export default function SystemNodeSettings({
         </div>
       )}
 
-      {formData.role === "frontend" && (
-        <div className="space-y-1.5 p-2 rounded-lg bg-muted/40 border border-border">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block">
-            Frontend Presets
-          </span>
-          <div className="flex flex-wrap gap-1">
-            {[
-              { label: "Landing Page", action: "Public Landing to Navigate App", tech: "Next.js SSR", protocol: "HTTPS", qps: "80k req/s" },
-              { label: "User Dashboard", action: "Main Interactive Dashboard", tech: "React SPA / Next.js", protocol: "HTTPS / WS", qps: "40k req/s" },
-              { label: "Checkout Funnel", action: "Order & Payment Flow", tech: "Secure Stripe Flow", protocol: "HTTPS / TLS 1.3", qps: "25k req/s" },
-              { label: "Mobile App Screen", action: "iOS / Android Mobile View", tech: "React Native", protocol: "HTTPS", qps: "50k req/s" },
-            ].map((preset) => (
-              <button
-                key={preset.label}
-                type="button"
-                onClick={() => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    name: prev.name === "New Component" || prev.name === "Frontend UI" ? preset.label : prev.name,
-                    action: preset.action,
-                    tech: preset.tech,
-                    protocol: preset.protocol,
-                    qps: preset.qps,
-                  }));
-                }}
-                className="text-[10px] px-2 py-0.5 rounded bg-card hover:bg-muted text-muted-foreground hover:text-foreground border border-border hover:border-[#ffdf27]/40 transition-colors cursor-pointer"
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {formData.role === "backend" && (
         <div className="space-y-1.5 p-2 rounded-lg bg-muted/40 border border-border">
           <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block">
@@ -599,50 +570,54 @@ export default function SystemNodeSettings({
         </div>
       )}
 
-      {/* Technology, Protocol, Latency, and Architecture Notes (hidden for database) */}
+      {/* Technology, Protocol, Latency, and Architecture Notes (hidden for database and frontend) */}
       {formData.role !== "database" && (
         <>
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-foreground">Technology / Framework</label>
-            <Input
-              value={formData.tech}
-              onChange={(e) => handleChange("tech", e.target.value)}
-              placeholder="e.g. Next.js, Go, Python, Claude 3.5"
-              className="h-8 text-xs font-mono"
-            />
-          </div>
+          {formData.role !== "frontend" && (
+            <>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Technology / Framework</label>
+                <Input
+                  value={formData.tech}
+                  onChange={(e) => handleChange("tech", e.target.value)}
+                  placeholder="e.g. Next.js, Go, Python, Claude 3.5"
+                  className="h-8 text-xs font-mono"
+                />
+              </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-foreground">Protocol</label>
-              <Select
-                value={formData.protocol}
-                onValueChange={(val) => handleChange("protocol", val)}
-              >
-                <SelectTrigger className="h-8 text-xs font-mono">
-                  <SelectValue placeholder="Protocol" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="HTTPS">HTTPS</SelectItem>
-                  <SelectItem value="HTTP/2 / HTTP/3">HTTP/2 / HTTP/3</SelectItem>
-                  <SelectItem value="gRPC / Protobuf">gRPC / Protobuf</SelectItem>
-                  <SelectItem value="WebSocket">WebSocket</SelectItem>
-                  <SelectItem value="Kafka Binary">Kafka Binary</SelectItem>
-                  <SelectItem value="TCP / UDP">TCP / UDP</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-foreground">Protocol</label>
+                  <Select
+                    value={formData.protocol}
+                    onValueChange={(val) => handleChange("protocol", val)}
+                  >
+                    <SelectTrigger className="h-8 text-xs font-mono">
+                      <SelectValue placeholder="Protocol" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="HTTPS">HTTPS</SelectItem>
+                      <SelectItem value="HTTP/2 / HTTP/3">HTTP/2 / HTTP/3</SelectItem>
+                      <SelectItem value="gRPC / Protobuf">gRPC / Protobuf</SelectItem>
+                      <SelectItem value="WebSocket">WebSocket</SelectItem>
+                      <SelectItem value="Kafka Binary">Kafka Binary</SelectItem>
+                      <SelectItem value="TCP / UDP">TCP / UDP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-foreground">Est. Latency / SLA</label>
-              <Input
-                value={formData.latency}
-                onChange={(e) => handleChange("latency", e.target.value)}
-                placeholder="e.g. 5.0ms"
-                className="h-8 text-xs font-mono"
-              />
-            </div>
-          </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-foreground">Est. Latency / SLA</label>
+                  <Input
+                    value={formData.latency}
+                    onChange={(e) => handleChange("latency", e.target.value)}
+                    placeholder="e.g. 5.0ms"
+                    className="h-8 text-xs font-mono"
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-foreground">Architecture Notes</label>
