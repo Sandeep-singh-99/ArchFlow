@@ -425,22 +425,59 @@ export default function CustomNode({ data }: any) {
         </div>
       )}
 
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="left"
-        isConnectableStart={true}
-        isConnectableEnd={true}
-        className="w-3.5 h-3.5 rounded-full bg-zinc-400 dark:bg-zinc-500 border-2 border-background hover:scale-125 hover:bg-[#ffdf27] transition-all cursor-crosshair z-30"
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="right"
-        isConnectableStart={true}
-        isConnectableEnd={true}
-        className="w-3.5 h-3.5 rounded-full bg-[#ffdf27] border-2 border-background hover:scale-125 hover:bg-[#ffee72] transition-all cursor-crosshair z-30"
-      />
+      {/* Handles: Frontend has top & bottom (down) connection dots supporting bidirectional connections */}
+      {roleKey === "frontend" ? (
+        <>
+          {/* Top Handle - allows both dragging out and receiving connections */}
+          <Handle
+            type="target"
+            position={Position.Top}
+            id="top"
+            isConnectable={true}
+            className="w-3.5 h-3.5 rounded-full bg-zinc-400 dark:bg-zinc-500 border-2 border-background hover:scale-125 hover:bg-[#ffdf27] transition-all cursor-crosshair z-30"
+          />
+          <Handle
+            type="source"
+            position={Position.Top}
+            id="top-source"
+            isConnectable={true}
+            className="w-3.5 h-3.5 rounded-full bg-zinc-400 dark:bg-zinc-500 border-2 border-background hover:scale-125 hover:bg-[#ffdf27] transition-all cursor-crosshair z-30"
+          />
+
+          {/* Bottom Handle - allows both dragging out and receiving connections */}
+          <Handle
+            type="source"
+            position={Position.Bottom}
+            id="bottom"
+            isConnectable={true}
+            className="w-3.5 h-3.5 rounded-full bg-[#ffdf27] border-2 border-background hover:scale-125 hover:bg-[#ffee72] transition-all cursor-crosshair z-30"
+          />
+          <Handle
+            type="target"
+            position={Position.Bottom}
+            id="bottom-target"
+            isConnectable={true}
+            className="w-3.5 h-3.5 rounded-full bg-[#ffdf27] border-2 border-background hover:scale-125 hover:bg-[#ffee72] transition-all cursor-crosshair z-30"
+          />
+        </>
+      ) : (
+        <>
+          <Handle
+            type="target"
+            position={Position.Left}
+            id="left"
+            isConnectable={true}
+            className="w-3.5 h-3.5 rounded-full bg-zinc-400 dark:bg-zinc-500 border-2 border-background hover:scale-125 hover:bg-[#ffdf27] transition-all cursor-crosshair z-30"
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="right"
+            isConnectable={true}
+            className="w-3.5 h-3.5 rounded-full bg-[#ffdf27] border-2 border-background hover:scale-125 hover:bg-[#ffee72] transition-all cursor-crosshair z-30"
+          />
+        </>
+      )}
     </div>
   );
 }

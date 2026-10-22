@@ -94,10 +94,9 @@ export default function AgentBuilder() {
 
   const onNodesChange = useCallback(
     (changes: any) =>
-      setAddedNodes((nodesSnapshot: any) => {
-        const updated = applyNodeChanges(changes, nodesSnapshot || []);
-        return updated;
-      }),
+      setAddedNodes((nodesSnapshot: any) =>
+        applyNodeChanges(changes, nodesSnapshot || [])
+      ),
     [setAddedNodes]
   );
 
@@ -144,6 +143,7 @@ export default function AgentBuilder() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={(e, node) => setSelectedNode(node)}
+          onNodeDragStop={(e, node) => setSelectedNode(node)}
           onPaneClick={() => setSelectedNode(null)}
           onEdgeClick={() => setSelectedNode(null)}
           nodeTypes={nodeTypes}

@@ -13,18 +13,27 @@ export default function SettingPanel({
 
   const onUpdateNodeData = (formData: any) => {
     if (!selectedNode) return;
+
+    const currentNodes = addedNodes || [];
+    // Always find the latest live node in canvas state to preserve its exact dragged/aligned position
+    const liveNode =
+      currentNodes.find((node: any) => node.id === selectedNode.id) || selectedNode;
+
     const updateNode = {
-      ...selectedNode,
+      ...liveNode,
+      // Strictly preserve the live aligned position
+      position: { ...(liveNode.position || selectedNode.position) },
       data: {
-        ...selectedNode.data,
-        label: formData.name,
+        ...liveNode.data,
+        label: formData.name || liveNode.data?.label || selectedNode.data?.label,
         settings: formData,
       },
     };
-    const currentNodes = addedNodes || [];
+
     const updatedNodes = currentNodes.map((node: any) =>
       node.id === selectedNode.id ? updateNode : node
     );
+
     setAddedNodes(updatedNodes);
     setSelectedNode(updateNode);
     onSave(updatedNodes);
