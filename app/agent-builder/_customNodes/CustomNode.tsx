@@ -268,7 +268,7 @@ export default function CustomNode({ data }: any) {
   const config = ROLE_CONFIG[roleKey] || ROLE_CONFIG.custom;
   const Icon = config.icon;
 
-  const isDatabase = roleKey === "database" || Boolean(data?.settings?.dbTableName) || Boolean(data?.settings?.dbData);
+  const isDatabase = roleKey === "database" || data?.type === "DatabaseNode";
   const dbFormat = (
     data?.settings?.dbFormat ||
     (data?.settings?.tech?.toLowerCase().includes("mongo") || data?.settings?.action?.toLowerCase().includes("nosql") ? "nosql" : "sql")
@@ -276,20 +276,24 @@ export default function CustomNode({ data }: any) {
 
   const tableName = data?.settings?.dbTableName || (dbFormat === "nosql" ? "collection_data" : "table_data");
 
-  const sqlColumns = dbFormat === "sql" ? parseSqlData(data?.settings?.dbData, data?.settings?.dbFields) : [];
-  const nosqlEntries = dbFormat === "nosql" ? parseNoSqlData(data?.settings?.dbData, data?.settings?.dbFields) : [];
+  const sqlColumns = isDatabase && dbFormat === "sql" ? parseSqlData(data?.settings?.dbData, data?.settings?.dbFields) : [];
+  const nosqlEntries = isDatabase && dbFormat === "nosql" ? parseNoSqlData(data?.settings?.dbData, data?.settings?.dbFields) : [];
   const fieldCount = dbFormat === "sql" ? sqlColumns.length : nosqlEntries.length;
 
   const label = isDatabase
-    ? (data?.settings?.dbTableName || data?.label || "Database")
-    : (data?.label || data?.settings?.name || "Custom Component");
+    ? (data?.settings?.dbTableName || data?.label || data?.settings?.name || "Database")
+    : (data?.settings?.name || data?.label || "Custom Component");
 
   const action = isDatabase
-    ? (dbFormat === "nosql" ? "NoSQL Document Store" : "SQL Relational Store")
+    ? (data?.settings?.action && !data?.settings?.action.includes("Landing") && !data?.settings?.action.includes("UI")
+        ? data.settings.action
+        : (dbFormat === "nosql" ? "NoSQL Document Store" : "SQL Relational Store"))
     : (data?.settings?.action || data?.settings?.rendering || data?.settings?.latency || "Active Component");
 
   const tech = isDatabase
-    ? (dbFormat === "nosql" ? "NoSQL Database" : "SQL Database")
+    ? (data?.settings?.tech && !data?.settings?.tech.includes("Next") && !data?.settings?.tech.includes("React")
+        ? data.settings.tech
+        : (dbFormat === "nosql" ? "NoSQL Database" : "SQL Database"))
     : (data?.settings?.tech || "Custom Stack");
 
   // Dynamically size container width for database schema nodes so field names & types are never hidden or cramped

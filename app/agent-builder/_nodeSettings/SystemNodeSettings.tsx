@@ -191,6 +191,29 @@ export default function SystemNodeSettings({
           updates.tech = fmt === "nosql" ? "MongoDB" : "PostgreSQL";
           updates.protocol = fmt === "nosql" ? "Mongo Wire" : "Postgres Wire";
         }
+      } else if (prev.role === "database") {
+        // Reset role-specific defaults when switching away from database
+        if (roleId === "frontend") {
+          updates.name = (!prev.name || prev.name === prev.dbTableName || prev.name === "users_table" || prev.name === "users_collection" || prev.name === "Database") ? "Frontend UI" : prev.name;
+          updates.action = "Landing Page / UI";
+          updates.tech = "Next.js / React";
+          updates.protocol = "HTTPS";
+        } else if (roleId === "backend") {
+          updates.name = (!prev.name || prev.name === prev.dbTableName || prev.name === "users_table" || prev.name === "users_collection" || prev.name === "Database") ? "Backend API" : prev.name;
+          updates.action = "API Gateway / Service";
+          updates.tech = "Node.js / Express";
+          updates.protocol = "REST / HTTPS";
+        } else if (roleId === "ai") {
+          updates.name = (!prev.name || prev.name === prev.dbTableName || prev.name === "users_table" || prev.name === "users_collection" || prev.name === "Database") ? "AI Agent" : prev.name;
+          updates.action = "Reasoning & Agent Decisions";
+          updates.tech = "Claude 3.5 Sonnet";
+          updates.protocol = "HTTPS Streaming";
+        } else if (roleId === "custom") {
+          updates.name = (!prev.name || prev.name === prev.dbTableName || prev.name === "users_table" || prev.name === "users_collection" || prev.name === "Database") ? "Custom Service" : prev.name;
+          updates.action = "Custom Workflow Logic";
+          updates.tech = "Custom Stack";
+          updates.protocol = "HTTPS / gRPC";
+        }
       }
       return updates;
     });
