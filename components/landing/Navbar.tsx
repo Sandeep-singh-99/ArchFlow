@@ -26,20 +26,6 @@ export default function Navbar() {
               </span>
             </div>
           </Link>
-
-          {/* Navigation Links */}
-          <div className="hidden md:flex items-center gap-4 text-sm">
-            <Link
-              href="/node-graph"
-              className="flex items-center gap-1.5 text-zinc-300 hover:text-white transition-colors px-2.5 py-1 rounded-md hover:bg-white/5"
-            >
-              <Network className="h-3.5 w-3.5 text-emerald-400" />
-              <span>Node Graph Visualizer</span>
-              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                New
-              </span>
-            </Link>
-          </div>
         </div>
 
         {/* Action Controls */}
