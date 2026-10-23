@@ -81,16 +81,10 @@ export default function AgentToolsPanel() {
       type: "IfElseNode",
       position: { x: 340 + randomOffset, y: 160 + randomOffset },
       data: {
-        label: "Condition Check",
+        label: "If / Else",
         type: "IfElseNode",
-        condition: "is_valid === true",
-        trueLabel: "True",
-        falseLabel: "False",
         settings: {
-          name: "Condition Check",
-          condition: "is_valid === true",
-          trueLabel: "True",
-          falseLabel: "False",
+          name: "If / Else",
         },
       },
     };

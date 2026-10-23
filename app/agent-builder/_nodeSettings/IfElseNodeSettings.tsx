@@ -12,62 +12,31 @@ interface Props {
   onClose?: () => void;
 }
 
-const CONDITION_PRESETS = [
-  "isAuthenticated === true",
-  "status === 200",
-  "role === 'admin'",
-  "has_error === false",
-  "data !== null",
-  "token.isValid",
-];
-
 export default function IfElseNodeSettings({
   selectedNode,
   updateFormData,
   onDeleteNode,
   onClose,
 }: Props) {
-  const [formData, setFormData] = useState({
-    name: "Condition Check",
-    condition: "is_valid === true",
-    trueLabel: "True",
-    falseLabel: "False",
-  });
+  const [name, setName] = useState("If / Else");
 
   useEffect(() => {
     if (selectedNode) {
       const settings = selectedNode.data?.settings || {};
-      setFormData({
-        name:
-          selectedNode.data?.label ||
-          selectedNode.data?.name ||
-          settings.name ||
-          "Condition Check",
-        condition:
-          selectedNode.data?.condition ||
-          settings.condition ||
-          "is_valid === true",
-        trueLabel:
-          selectedNode.data?.trueLabel ||
-          settings.trueLabel ||
-          "True",
-        falseLabel:
-          selectedNode.data?.falseLabel ||
-          settings.falseLabel ||
-          "False",
-      });
+      setName(
+        selectedNode.data?.label ||
+        selectedNode.data?.name ||
+        settings.name ||
+        "If / Else"
+      );
     }
   }, [selectedNode]);
-
-  const handleChange = (key: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [key]: value }));
-  };
 
   const handleSave = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     updateFormData({
-      ...formData,
-      label: formData.name,
+      name,
+      label: name,
       type: "IfElseNode",
     });
   };
@@ -107,69 +76,11 @@ export default function IfElseNodeSettings({
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-foreground">Decision Title</label>
         <Input
-          value={formData.name}
-          onChange={(e) => handleChange("name", e.target.value)}
-          placeholder="e.g. Is Authenticated?, Validate Token"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. If / Else"
           className="h-8 text-xs font-medium"
         />
-      </div>
-
-      {/* Condition Expression */}
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-foreground">Condition Expression</label>
-        <Input
-          value={formData.condition}
-          onChange={(e) => handleChange("condition", e.target.value)}
-          placeholder="e.g. isAuthenticated === true"
-          className="h-8 text-xs font-mono"
-        />
-
-        {/* Quick Presets */}
-        <div className="flex flex-wrap gap-1 pt-1">
-          {CONDITION_PRESETS.map((preset) => (
-            <button
-              key={preset}
-              type="button"
-              onClick={() => handleChange("condition", preset)}
-              className={`text-[9.5px] px-2 py-0.5 rounded border font-mono transition-colors cursor-pointer ${
-                formData.condition === preset
-                  ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/40 font-semibold"
-                  : "bg-card hover:bg-muted text-muted-foreground hover:text-foreground border-border"
-              }`}
-            >
-              {preset}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Branch Labels (True / False) */}
-      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/40">
-        <div className="space-y-1">
-          <label className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            True (Right ➔)
-          </label>
-          <Input
-            value={formData.trueLabel}
-            onChange={(e) => handleChange("trueLabel", e.target.value)}
-            placeholder="True"
-            className="h-7 text-xs"
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-            False (Down ↓)
-          </label>
-          <Input
-            value={formData.falseLabel}
-            onChange={(e) => handleChange("falseLabel", e.target.value)}
-            placeholder="False"
-            className="h-7 text-xs"
-          />
-        </div>
       </div>
 
       {/* Action Buttons */}
