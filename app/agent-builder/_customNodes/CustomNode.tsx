@@ -288,13 +288,13 @@ export default function CustomNode({ data }: any) {
     ? (data?.settings?.action && !data?.settings?.action.includes("Landing") && !data?.settings?.action.includes("UI")
         ? data.settings.action
         : (dbFormat === "nosql" ? "NoSQL Document Store" : "SQL Relational Store"))
-    : (data?.settings?.action || data?.settings?.rendering || data?.settings?.latency || "Active Component");
+    : (data?.settings?.action || (roleKey === "backend" ? "" : (data?.settings?.rendering || data?.settings?.latency || "Active Component")));
 
   const tech = isDatabase
     ? (data?.settings?.tech && !data?.settings?.tech.includes("Next") && !data?.settings?.tech.includes("React")
         ? data.settings.tech
         : (dbFormat === "nosql" ? "NoSQL Database" : "SQL Database"))
-    : (data?.settings?.tech || (roleKey === "frontend" ? "" : "Custom Stack"));
+    : (data?.settings?.tech || (roleKey === "frontend" || roleKey === "backend" ? "" : "Custom Stack"));
 
   // Dynamically size container width for database schema nodes so field names & types are never hidden or cramped
   const containerClasses = isDatabase

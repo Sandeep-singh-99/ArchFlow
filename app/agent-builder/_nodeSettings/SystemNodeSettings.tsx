@@ -160,6 +160,10 @@ export default function SystemNodeSettings({
   const handleRoleChange = (roleId: string) => {
     setFormData((prev: any) => {
       const updates: any = { ...prev, role: roleId };
+      if (roleId === "frontend" || roleId === "backend") {
+        updates.action = "";
+        updates.tech = "";
+      }
       if (roleId === "database") {
         const fmt = prev.dbFormat || "sql";
         updates.dbFormat = fmt;
@@ -200,9 +204,9 @@ export default function SystemNodeSettings({
           updates.protocol = "HTTPS";
         } else if (roleId === "backend") {
           updates.name = (!prev.name || prev.name === prev.dbTableName || prev.name === "users_table" || prev.name === "users_collection" || prev.name === "Database") ? "Backend API" : prev.name;
-          updates.action = "API Gateway / Service";
-          updates.tech = "Node.js / Express";
-          updates.protocol = "REST / HTTPS";
+          updates.action = "";
+          updates.tech = "";
+          updates.protocol = "HTTPS";
         } else if (roleId === "ai") {
           updates.name = (!prev.name || prev.name === prev.dbTableName || prev.name === "users_table" || prev.name === "users_collection" || prev.name === "Database") ? "AI Agent" : prev.name;
           updates.action = "Reasoning & Agent Decisions";
@@ -226,7 +230,7 @@ export default function SystemNodeSettings({
       finalData.name = formData.dbTableName || "Database";
       finalData.action = formData.dbFormat === "nosql" ? "NoSQL Document Store" : "SQL Relational Store";
       finalData.notes = formData.dbDescription || "";
-    } else if (formData.role === "frontend") {
+    } else if (formData.role === "frontend" || formData.role === "backend") {
       finalData.action = "";
       finalData.tech = "";
     }
@@ -285,7 +289,7 @@ export default function SystemNodeSettings({
         </div>
       </div>
 
-      {/* Component Label and Action (Action hidden for database and frontend) */}
+      {/* Component Label and Action (Action hidden for database, frontend, and backend) */}
       {formData.role !== "database" && (
         <>
           <div className="space-y-1.5">
@@ -298,7 +302,7 @@ export default function SystemNodeSettings({
             />
           </div>
 
-          {formData.role !== "frontend" && (
+          {formData.role !== "frontend" && formData.role !== "backend" && (
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-foreground">What this node does / Action</label>
               <Input
@@ -503,40 +507,6 @@ export default function SystemNodeSettings({
         </div>
       )}
 
-      {formData.role === "backend" && (
-        <div className="space-y-1.5 p-2 rounded-lg bg-muted/40 border border-border">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block">
-            Backend Presets
-          </span>
-          <div className="flex flex-wrap gap-1">
-            {[
-              { label: "API Gateway", action: "Routing & Rate Limiting", tech: "Envoy / Kong", protocol: "HTTP/2, gRPC", latency: "1.5ms" },
-              { label: "Core Microservice", action: "Business Logic Service", tech: "Go / Node.js", protocol: "REST & gRPC", latency: "8.0ms" },
-              { label: "Auth Service", action: "User Auth & JWT Tokens", tech: "OAuth 2.0 / Clerk", protocol: "HTTPS REST", latency: "4.0ms" },
-              { label: "Background Worker", action: "Async Queue Job Worker", tech: "BullMQ / Temporal", protocol: "TCP / AMQP", latency: "12ms" },
-            ].map((preset) => (
-              <button
-                key={preset.label}
-                type="button"
-                onClick={() => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    name: prev.name === "New Component" || prev.name === "Backend Service" ? preset.label : prev.name,
-                    action: preset.action,
-                    tech: preset.tech,
-                    protocol: preset.protocol,
-                    latency: preset.latency,
-                  }));
-                }}
-                className="text-[10px] px-2 py-0.5 rounded bg-card hover:bg-muted text-muted-foreground hover:text-foreground border border-border hover:border-[#ffdf27]/40 transition-colors cursor-pointer"
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {formData.role === "ai" && (
         <div className="space-y-1.5 p-2 rounded-lg bg-muted/40 border border-border">
           <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block">
@@ -570,10 +540,10 @@ export default function SystemNodeSettings({
         </div>
       )}
 
-      {/* Technology, Protocol, Latency, and Architecture Notes (hidden for database and frontend) */}
+      {/* Technology, Protocol, Latency, and Architecture Notes (hidden for database, frontend, and backend) */}
       {formData.role !== "database" && (
         <>
-          {formData.role !== "frontend" && (
+          {formData.role !== "frontend" && formData.role !== "backend" && (
             <>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-foreground">Technology / Framework</label>
