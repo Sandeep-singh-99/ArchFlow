@@ -1,6 +1,6 @@
 "use client";
 import { WorkflowContext } from "@/context/WorkflowContext";
-import { Type, Boxes, Menu, Play, CheckCircle2 } from "lucide-react";
+import { Type, Boxes, Menu, Play, CheckCircle2, GitFork } from "lucide-react";
 import React, { useContext } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -72,6 +72,29 @@ export default function AgentToolsPanel() {
       },
     };
     setAddedNodes((prev: any) => [...(prev || []), newEndNode]);
+  };
+
+  const onAddIfElseNode = () => {
+    const randomOffset = Math.floor(Math.random() * 50);
+    const newIfElseNode = {
+      id: `ifelse-${Date.now()}`,
+      type: "IfElseNode",
+      position: { x: 340 + randomOffset, y: 160 + randomOffset },
+      data: {
+        label: "Condition Check",
+        type: "IfElseNode",
+        condition: "is_valid === true",
+        trueLabel: "True",
+        falseLabel: "False",
+        settings: {
+          name: "Condition Check",
+          condition: "is_valid === true",
+          trueLabel: "True",
+          falseLabel: "False",
+        },
+      },
+    };
+    setAddedNodes((prev: any) => [...(prev || []), newIfElseNode]);
   };
 
   const onAddTextNode = () => {
@@ -158,6 +181,19 @@ export default function AgentToolsPanel() {
             <div>
               <div className="font-semibold text-foreground">End Node</div>
               <div className="text-[10px] text-muted-foreground">Response / Terminal Exit</div>
+            </div>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={onAddIfElseNode}
+            className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium cursor-pointer rounded-lg hover:bg-muted transition-colors"
+          >
+            <div className="p-1.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
+              <GitFork className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="font-semibold text-foreground">If / Else Node</div>
+              <div className="text-[10px] text-muted-foreground">Decision & Branching</div>
             </div>
           </DropdownMenuItem>
 

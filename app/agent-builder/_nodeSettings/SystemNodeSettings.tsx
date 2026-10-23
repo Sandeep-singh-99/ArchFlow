@@ -56,6 +56,7 @@ export default function SystemNodeSettings({
     qps: "50k req/s",
     redundancy: "Multi-AZ Active",
     notes: "",
+    fontSize: "base",
     dbFormat: "sql",
     dbTableName: "users_table",
     dbFields: DEFAULT_SQL_FIELDS,
@@ -94,6 +95,7 @@ export default function SystemNodeSettings({
         qps: settings.qps || "50k req/s",
         redundancy: settings.redundancy || "Multi-AZ Active",
         notes: settings.notes || "",
+        fontSize: settings.fontSize || selectedNode.data?.fontSize || "base",
         dbFormat: inferredFormat,
         dbTableName:
           settings.dbTableName ||
@@ -301,6 +303,38 @@ export default function SystemNodeSettings({
               className="h-8 text-xs font-medium"
             />
           </div>
+
+          {(formData.role === "frontend" || formData.role === "backend") && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-foreground">Font & Node Size</label>
+                <span className="text-[10px] font-mono text-muted-foreground uppercase font-semibold">
+                  {formData.fontSize || "base"}
+                </span>
+              </div>
+              <div className="grid grid-cols-4 gap-1 p-1 bg-muted/60 rounded-lg border border-border/60">
+                {[
+                  { id: "sm", label: "Small" },
+                  { id: "base", label: "Normal" },
+                  { id: "lg", label: "Large" },
+                  { id: "xl", label: "Title" },
+                ].map((size) => (
+                  <button
+                    key={size.id}
+                    type="button"
+                    onClick={() => handleChange("fontSize", size.id)}
+                    className={`py-1 px-2 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                      (formData.fontSize || "base") === size.id
+                        ? "bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 font-bold shadow-xs"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {size.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {formData.role !== "frontend" && formData.role !== "backend" && (
             <div className="space-y-1.5">

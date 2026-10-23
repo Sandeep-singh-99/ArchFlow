@@ -30,6 +30,9 @@ export default function FlowMiniMap({ className = "" }: FlowMiniMapProps) {
         return "#10b981"; // emerald
       case "end":
         return "#f43f5e"; // rose
+      case "ifelse":
+      case "decision":
+        return "#f59e0b"; // amber
       case "frontend":
         return "#06b6d4"; // cyan
       case "backend":

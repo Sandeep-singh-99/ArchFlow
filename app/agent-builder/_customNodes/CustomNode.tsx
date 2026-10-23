@@ -296,23 +296,46 @@ export default function CustomNode({ data }: any) {
         : (dbFormat === "nosql" ? "NoSQL Database" : "SQL Database"))
     : (data?.settings?.tech || (roleKey === "frontend" || roleKey === "backend" ? "" : "Custom Stack"));
 
-  // Dynamically size container width for database schema nodes so field names & types are never hidden or cramped
+  const isSimpleNode = roleKey === "frontend" || roleKey === "backend";
+
+  const fontSizeSetting = data?.settings?.fontSize || data?.fontSize || "base";
+  const titleFontSizeClass = isSimpleNode
+    ? fontSizeSetting === "sm"
+      ? "text-sm font-semibold"
+      : fontSizeSetting === "lg"
+      ? "text-lg font-bold"
+      : fontSizeSetting === "xl"
+      ? "text-xl font-bold"
+      : fontSizeSetting === "2xl"
+      ? "text-2xl font-extrabold"
+      : "text-base font-bold"
+    : "text-xs font-bold";
+
+  // Dynamically size container width for database schema nodes or text-based frontend/backend nodes
   const containerClasses = isDatabase
     ? `relative rounded-xl border border-border bg-card p-3.5 shadow-md min-w-[280px] sm:min-w-[320px] max-w-[440px] w-auto transition-all group hover:${config.border}`
+    : isSimpleNode
+    ? `relative rounded-xl border border-border bg-card px-6 py-4 shadow-sm w-fit min-w-[160px] max-w-[500px] flex flex-col items-center justify-center text-center transition-all group hover:${config.border}`
     : `relative rounded-xl border border-border bg-card p-3.5 shadow-sm min-w-[240px] max-w-[300px] transition-colors group hover:${config.border}`;
 
   return (
     <div className={containerClasses}>
-      <div className="flex items-center gap-2.5">
+      <div className={`flex items-center ${isSimpleNode ? "justify-center text-center w-full" : "gap-2.5"}`}>
         {roleKey !== "frontend" && roleKey !== "backend" && (
           <div className={`h-8 w-8 rounded-lg ${config.bg} ${config.color} flex items-center justify-center border ${config.border} shrink-0`}>
             <Icon className="h-4 w-4" />
           </div>
         )}
-        <div className="flex-1 min-w-0">
-          <h3 className="text-xs font-bold text-foreground truncate">{label}</h3>
+        <div className={`flex-1 min-w-0 ${isSimpleNode ? "text-center w-full" : ""}`}>
+          <h3
+            className={`${titleFontSizeClass} text-foreground ${
+              isSimpleNode ? "whitespace-nowrap text-center block w-full" : "truncate"
+            }`}
+          >
+            {label}
+          </h3>
           {tech ? (
-            <p className="text-[10px] font-mono text-muted-foreground truncate">{tech}</p>
+            <p className={`text-[10px] font-mono text-muted-foreground truncate ${isSimpleNode ? "text-center" : ""}`}>{tech}</p>
           ) : null}
         </div>
       </div>
@@ -418,7 +441,7 @@ export default function CustomNode({ data }: any) {
         </div>
       )}
 
-      {roleKey !== "frontend" && (
+      {roleKey !== "frontend" && roleKey !== "backend" && (
         <div className="mt-2.5 pt-2 border-t border-border/60 flex items-center justify-between text-[10px] font-mono text-muted-foreground">
           <span className="capitalize font-semibold text-foreground/80">{roleKey}</span>
           {action ? (

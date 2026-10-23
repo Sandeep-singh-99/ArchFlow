@@ -5,6 +5,7 @@ import SystemNodeSettings from "../_nodeSettings/SystemNodeSettings";
 import TextNodeSettings from "../_nodeSettings/TextNodeSettings";
 import StartNodeSettings from "../_nodeSettings/StartNodeSettings";
 import EndNodeSettings from "../_nodeSettings/EndNodeSettings";
+import IfElseNodeSettings from "../_nodeSettings/IfElseNodeSettings";
 
 export default function SettingPanel({
   onSave,
@@ -43,6 +44,9 @@ export default function SettingPanel({
         triggerType: formData.triggerType !== undefined ? formData.triggerType : liveNode.data?.triggerType,
         responseType: formData.responseType !== undefined ? formData.responseType : liveNode.data?.responseType,
         description: formData.description !== undefined ? formData.description : liveNode.data?.description,
+        condition: formData.condition !== undefined ? formData.condition : liveNode.data?.condition,
+        trueLabel: formData.trueLabel !== undefined ? formData.trueLabel : liveNode.data?.trueLabel,
+        falseLabel: formData.falseLabel !== undefined ? formData.falseLabel : liveNode.data?.falseLabel,
         settings: formData,
       },
     };
@@ -72,6 +76,8 @@ export default function SettingPanel({
     selectedNode.type === "StartNode" || selectedNode.data?.type === "StartNode";
   const isEndNode =
     selectedNode.type === "EndNode" || selectedNode.data?.type === "EndNode";
+  const isIfElseNode =
+    selectedNode.type === "IfElseNode" || selectedNode.data?.type === "IfElseNode";
 
   return (
     <div className="p-4 sm:p-5 bg-card border border-border rounded-xl w-[340px] shadow-xl max-h-[85vh] overflow-y-auto">
@@ -91,6 +97,13 @@ export default function SettingPanel({
         />
       ) : isEndNode ? (
         <EndNodeSettings
+          selectedNode={selectedNode}
+          updateFormData={onUpdateNodeData}
+          onDeleteNode={onDeleteNode}
+          onClose={() => setSelectedNode(null)}
+        />
+      ) : isIfElseNode ? (
+        <IfElseNodeSettings
           selectedNode={selectedNode}
           updateFormData={onUpdateNodeData}
           onDeleteNode={onDeleteNode}
