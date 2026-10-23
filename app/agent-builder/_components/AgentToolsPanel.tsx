@@ -1,6 +1,6 @@
 "use client";
 import { WorkflowContext } from "@/context/WorkflowContext";
-import { Type, Boxes, Menu } from "lucide-react";
+import { Type, Boxes, Menu, Play, CheckCircle2 } from "lucide-react";
 import React, { useContext } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +38,40 @@ export default function AgentToolsPanel() {
       type: "CustomNode",
     };
     setAddedNodes((prev: any) => [...(prev || []), newNode]);
+  };
+
+  const onAddStartNode = () => {
+    const randomOffset = Math.floor(Math.random() * 50);
+    const newStartNode = {
+      id: `start-${Date.now()}`,
+      type: "StartNode",
+      position: { x: 140 + randomOffset, y: 160 + randomOffset },
+      data: {
+        label: "Start",
+        type: "StartNode",
+        settings: {
+          name: "Start",
+        },
+      },
+    };
+    setAddedNodes((prev: any) => [...(prev || []), newStartNode]);
+  };
+
+  const onAddEndNode = () => {
+    const randomOffset = Math.floor(Math.random() * 50);
+    const newEndNode = {
+      id: `end-${Date.now()}`,
+      type: "EndNode",
+      position: { x: 520 + randomOffset, y: 160 + randomOffset },
+      data: {
+        label: "End",
+        type: "EndNode",
+        settings: {
+          name: "End",
+        },
+      },
+    };
+    setAddedNodes((prev: any) => [...(prev || []), newEndNode]);
   };
 
   const onAddTextNode = () => {
@@ -98,6 +132,32 @@ export default function AgentToolsPanel() {
             <div>
               <div className="font-semibold text-foreground">Architecture Node</div>
               <div className="text-[10px] text-muted-foreground">Frontend, Backend, DB, AI</div>
+            </div>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={onAddStartNode}
+            className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium cursor-pointer rounded-lg hover:bg-muted transition-colors"
+          >
+            <div className="p-1.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
+              <Play className="h-4 w-4 fill-emerald-500/20 stroke-[2.5]" />
+            </div>
+            <div>
+              <div className="font-semibold text-foreground">Start Node</div>
+              <div className="text-[10px] text-muted-foreground">Trigger / Entry Point</div>
+            </div>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={onAddEndNode}
+            className="flex items-center gap-2.5 px-2.5 py-2 text-xs font-medium cursor-pointer rounded-lg hover:bg-muted transition-colors"
+          >
+            <div className="p-1.5 rounded-md bg-rose-500/15 text-rose-600 dark:text-rose-400 shrink-0">
+              <CheckCircle2 className="h-4 w-4 stroke-[2.5]" />
+            </div>
+            <div>
+              <div className="font-semibold text-foreground">End Node</div>
+              <div className="text-[10px] text-muted-foreground">Response / Terminal Exit</div>
             </div>
           </DropdownMenuItem>
 

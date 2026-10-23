@@ -26,6 +26,10 @@ export default function FlowMiniMap({ className = "" }: FlowMiniMapProps) {
   const getNodeColor = (node: any) => {
     const role = (node?.data?.settings?.role || node?.type?.replace("Node", "") || "").toLowerCase();
     switch (role) {
+      case "start":
+        return "#10b981"; // emerald
+      case "end":
+        return "#f43f5e"; // rose
       case "frontend":
         return "#06b6d4"; // cyan
       case "backend":

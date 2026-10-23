@@ -1,9 +1,13 @@
 import CustomNode from "./CustomNode";
 import TextNode from "./TextNode";
+import StartNode from "./StartNode";
+import EndNode from "./EndNode";
 
 export const nodeTypes = {
   CustomNode,
   TextNode,
+  StartNode,
+  EndNode,
   // Fallbacks so previously saved canvas nodes render seamlessly
   FrontendNode: CustomNode,
   ServiceNode: CustomNode,

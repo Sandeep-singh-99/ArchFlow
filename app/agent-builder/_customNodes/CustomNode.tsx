@@ -304,9 +304,11 @@ export default function CustomNode({ data }: any) {
   return (
     <div className={containerClasses}>
       <div className="flex items-center gap-2.5">
-        <div className={`h-8 w-8 rounded-lg ${config.bg} ${config.color} flex items-center justify-center border ${config.border} shrink-0`}>
-          <Icon className="h-4 w-4" />
-        </div>
+        {roleKey !== "frontend" && roleKey !== "backend" && (
+          <div className={`h-8 w-8 rounded-lg ${config.bg} ${config.color} flex items-center justify-center border ${config.border} shrink-0`}>
+            <Icon className="h-4 w-4" />
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <h3 className="text-xs font-bold text-foreground truncate">{label}</h3>
           {tech ? (

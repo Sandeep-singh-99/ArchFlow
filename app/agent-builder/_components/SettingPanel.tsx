@@ -3,6 +3,8 @@ import { WorkflowContext } from "@/context/WorkflowContext";
 import React, { useContext } from "react";
 import SystemNodeSettings from "../_nodeSettings/SystemNodeSettings";
 import TextNodeSettings from "../_nodeSettings/TextNodeSettings";
+import StartNodeSettings from "../_nodeSettings/StartNodeSettings";
+import EndNodeSettings from "../_nodeSettings/EndNodeSettings";
 
 export default function SettingPanel({
   onSave,
@@ -38,7 +40,10 @@ export default function SettingPanel({
         text: formData.text !== undefined ? formData.text : liveNode.data?.text,
         color: formData.color || liveNode.data?.color,
         fontSize: formData.fontSize || liveNode.data?.fontSize || "base",
-        ...(isText ? {} : { settings: formData }),
+        triggerType: formData.triggerType !== undefined ? formData.triggerType : liveNode.data?.triggerType,
+        responseType: formData.responseType !== undefined ? formData.responseType : liveNode.data?.responseType,
+        description: formData.description !== undefined ? formData.description : liveNode.data?.description,
+        settings: formData,
       },
     };
 
@@ -63,6 +68,10 @@ export default function SettingPanel({
 
   const isTextNode =
     selectedNode.type === "TextNode" || selectedNode.data?.type === "TextNode";
+  const isStartNode =
+    selectedNode.type === "StartNode" || selectedNode.data?.type === "StartNode";
+  const isEndNode =
+    selectedNode.type === "EndNode" || selectedNode.data?.type === "EndNode";
 
   return (
     <div className="p-4 sm:p-5 bg-card border border-border rounded-xl w-[340px] shadow-xl max-h-[85vh] overflow-y-auto">
@@ -70,6 +79,20 @@ export default function SettingPanel({
         <TextNodeSettings
           selectedNode={selectedNode}
           onUpdate={onUpdateNodeData}
+          onDeleteNode={onDeleteNode}
+          onClose={() => setSelectedNode(null)}
+        />
+      ) : isStartNode ? (
+        <StartNodeSettings
+          selectedNode={selectedNode}
+          updateFormData={onUpdateNodeData}
+          onDeleteNode={onDeleteNode}
+          onClose={() => setSelectedNode(null)}
+        />
+      ) : isEndNode ? (
+        <EndNodeSettings
+          selectedNode={selectedNode}
+          updateFormData={onUpdateNodeData}
           onDeleteNode={onDeleteNode}
           onClose={() => setSelectedNode(null)}
         />
