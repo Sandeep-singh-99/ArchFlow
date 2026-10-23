@@ -23,6 +23,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import MermaidImportDialog from "./MermaidImportDialog";
 
 type Props = {
   agentDetail: Agent | undefined;
@@ -104,6 +105,8 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
       </div>
 
       <div className="flex items-center gap-2.5 sm:gap-3">
+        <MermaidImportDialog agentDetail={agentDetail} />
+
         <Button
           variant="outline"
           size="sm"
