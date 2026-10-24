@@ -34,6 +34,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { fullDatabaseDemoNodes, fullDatabaseDemoEdges } from "@/lib/fullDatabaseDemo";
+import { postgresEcommerceNodes, postgresEcommerceEdges } from "@/lib/postgresEcommerceDemo";
 import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -362,7 +363,26 @@ export default function AgentToolsPanel() {
           sideOffset={8}
           className="w-[360px] p-2 shadow-2xl border-border bg-card/98 backdrop-blur-xl rounded-xl z-50 animate-in fade-in zoom-in-95 max-h-[85vh] overflow-y-auto"
         >
-          <div className="pb-1.5 mb-1.5 border-b border-border/60">
+          <div className="pb-1.5 mb-1.5 border-b border-border/60 space-y-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setAddedNodes(postgresEcommerceNodes);
+                setNodeEdges(postgresEcommerceEdges);
+                toast.success("Loaded PostgreSQL E-Commerce ER Schema (1:1, 1:N, Many:Many)!");
+                setOpen(false);
+              }}
+              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 hover:from-emerald-500/25 hover:via-teal-500/25 hover:to-cyan-500/25 text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer text-xs font-semibold"
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                <span>E-Commerce ER (Many:Many)</span>
+              </div>
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-emerald-500/40 text-emerald-400 bg-emerald-500/20">
+                10 Tables
+              </Badge>
+            </button>
+
             <button
               type="button"
               onClick={() => {
@@ -371,13 +391,13 @@ export default function AgentToolsPanel() {
                 toast.success("Loaded Full Database Architecture Demo (All 14 Nodes)!");
                 setOpen(false);
               }}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 hover:from-emerald-500/20 hover:via-teal-500/20 hover:to-cyan-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 transition-all cursor-pointer text-xs font-semibold"
+              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-zinc-900/60 hover:bg-zinc-800 text-zinc-300 border border-white/10 transition-all cursor-pointer text-xs font-semibold"
             >
               <div className="flex items-center gap-2">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>Load Full Database Demo</span>
+                <Sparkles className="h-3.5 w-3.5 text-zinc-400" />
+                <span>Polyglot Architecture Demo</span>
               </div>
-              <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/15">
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-white/10 text-zinc-400 bg-white/5">
                 14 Nodes
               </Badge>
             </button>

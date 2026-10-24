@@ -21,6 +21,7 @@ import {
 import { useState, useContext } from "react";
 import { WorkflowContext } from "@/context/WorkflowContext";
 import { fullDatabaseDemoNodes, fullDatabaseDemoEdges } from "@/lib/fullDatabaseDemo";
+import { postgresEcommerceNodes, postgresEcommerceEdges } from "@/lib/postgresEcommerceDemo";
 import { useReactFlow } from "@xyflow/react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -44,6 +45,19 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
     setAddedNodes(fullDatabaseDemoNodes);
     setNodeEdges(fullDatabaseDemoEdges);
     toast.success("Loaded Full Database Architecture Demo (All 14 Nodes)!");
+    setTimeout(() => {
+      try {
+        fitView({ padding: 0.2, duration: 600 });
+      } catch (err) {
+        console.log(err);
+      }
+    }, 150);
+  };
+
+  const handleLoadEcommerceDemo = () => {
+    setAddedNodes(postgresEcommerceNodes);
+    setNodeEdges(postgresEcommerceEdges);
+    toast.success("Loaded PostgreSQL E-Commerce ER Schema (1:1, 1:N, Many:Many)!");
     setTimeout(() => {
       try {
         fitView({ padding: 0.2, duration: 600 });
@@ -122,11 +136,20 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
         <Button
           variant="outline"
           size="sm"
-          onClick={handleLoadFullDemo}
-          className="h-8 gap-1.5 text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 cursor-pointer shadow-xs"
+          onClick={handleLoadEcommerceDemo}
+          className="h-8 gap-1.5 text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-500 dark:text-emerald-400 border-emerald-500/40 cursor-pointer shadow-xs"
         >
-          <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
-          <span>Full Database Demo</span>
+          <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+          <span>E-Commerce ER (Many:Many)</span>
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleLoadFullDemo}
+          className="h-8 gap-1.5 text-xs font-semibold bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 border-white/10 cursor-pointer shadow-xs hidden md:inline-flex"
+        >
+          <span>Full Polyglot Demo</span>
         </Button>
 
         <MermaidImportDialog agentDetail={agentDetail} />
