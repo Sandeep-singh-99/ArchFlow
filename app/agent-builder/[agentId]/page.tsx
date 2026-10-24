@@ -7,6 +7,7 @@ import {
   applyNodeChanges,
   applyEdgeChanges,
   addEdge,
+  useReactFlow,
   Background,
   BackgroundVariant,
   Panel,
@@ -16,7 +17,6 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import { nodeTypes } from "../_customNodes/nodeTypes";
-import { edgeTypes } from "../_customEdges/edgeTypes";
 
 import AgentToolsPanel from "../_components/AgentToolsPanel";
 import SettingPanel from "../_components/SettingPanel";
@@ -40,6 +40,8 @@ export default function AgentBuilder() {
     selectedNode,
     setSelectedNode,
   } = useContext(WorkflowContext);
+
+  const { deleteElements } = useReactFlow();
 
   const { agentId } = useParams();
   const convex = useConvex();
@@ -132,12 +134,18 @@ export default function AgentBuilder() {
 
   const disconnectEdge = useCallback(
     (edge: any) => {
-      const edgeId = edge?.id;
+      const edgeId = typeof edge === "string" ? edge : edge?.id;
       if (!edgeId) return;
+
+      // Delete via React Flow internal engine
+      deleteElements({ edges: [{ id: edgeId }] });
+
+      // Filter out from local workflow state
       setNodeEdges((eds: any) => (eds || []).filter((e: any) => e.id !== edgeId));
+
       toast.info("Connection disconnected");
     },
-    [setNodeEdges]
+    [deleteElements, setNodeEdges]
   );
 
   const onEdgeClick = useCallback(
@@ -207,7 +215,6 @@ export default function AgentBuilder() {
           deleteKeyCode={null}
           edgesReconnectable={false}
           nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
           defaultEdgeOptions={{
             animated: true,
             style: { stroke: "#10b981", strokeWidth: 2 },

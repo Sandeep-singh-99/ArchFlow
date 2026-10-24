@@ -374,46 +374,6 @@ html {
   user-select: none !important;
 }
 
-/* HTML-based Edge Label Renderer support (Single badge box) */
-.react-flow__edgelabel-renderer {
-  pointer-events: all !important;
-}
-
-.react-flow__edgelabel-renderer > div {
-  background: transparent !important;
-  border: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  box-shadow: none !important;
-}
-
-.edge-label-badge {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  text-align: center !important;
-  background-color: rgba(0, 0, 0, 0.8) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  color: #ffffff !important;
-  border: 1px solid #ffffff !important;
-  border-radius: 8px !important;
-  padding: 4px 12px !important;
-  margin: 0 !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.02em !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
-  cursor: pointer !important;
-  transition: transform 0.15s ease, border-color 0.15s ease !important;
-}
-
-.edge-label-badge:hover {
-  border-color: #ffffff !important;
-  transform: scale(1.05) !important;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.4) !important;
-}
-
 /* Hover state on connection text badge */
 .react-flow__edge-textwrapper:hover .react-flow__edge-textbg {
   stroke: #ffffff !important;
