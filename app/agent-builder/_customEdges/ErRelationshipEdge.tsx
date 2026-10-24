@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useContext } from "react";
+import React, { useContext } from "react";
 import {
   BaseEdge,
   EdgeLabelRenderer,
   getSmoothStepPath,
+  Position,
   type EdgeProps,
 } from "@xyflow/react";
 import { WorkflowContext } from "@/context/WorkflowContext";
@@ -16,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { GitFork, Link2, Sparkles, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 export type CardinalityType =
   | "1:N"
@@ -82,14 +83,41 @@ const CARDINALITY_CONFIG: Record<
   },
 };
 
+/**
+ * Calculates a fixed offset point directly outward from the handle face.
+ * This guarantees the marker (1 or N) is ALWAYS positioned outside the node
+ * on the visible edge line, regardless of where nodes are dragged or moved.
+ */
+function getHandleOutwardPoint(
+  x: number,
+  y: number,
+  position: Position | string,
+  offset = 24
+) {
+  switch (position) {
+    case Position.Right:
+      return { x: x + offset, y };
+    case Position.Left:
+      return { x: x - offset, y };
+    case Position.Top:
+      return { x, y: y - offset };
+    case Position.Bottom:
+      return { x, y: y + offset };
+    default:
+      return { x: x + offset, y };
+  }
+}
+
 export default function ErRelationshipEdge({
   id,
+  source,
+  target,
   sourceX,
   sourceY,
   targetX,
   targetY,
-  sourcePosition,
-  targetPosition,
+  sourcePosition = Position.Right,
+  targetPosition = Position.Left,
   style = {},
   markerEnd,
   label,
@@ -98,26 +126,64 @@ export default function ErRelationshipEdge({
 }: EdgeProps) {
   const { setNodeEdges } = useContext(WorkflowContext);
 
-  // Compute smooth ER step path
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-    borderRadius: 8,
-  });
+  const isSelf = source === target;
 
-  // Calculate endpoint marker positions along the path
-  const dx = targetX - sourceX;
-  const dy = targetY - sourceY;
-  const angle = Math.atan2(dy, dx);
+  let edgePath: string;
+  let labelX: number;
+  let labelY: number;
 
-  const sourceMarkerX = sourceX + Math.cos(angle) * 26;
-  const sourceMarkerY = sourceY + Math.sin(angle) * 26;
-  const targetMarkerX = targetX - Math.cos(angle) * 26;
-  const targetMarkerY = targetY - Math.sin(angle) * 26;
+  if (isSelf) {
+    // Self-referencing relationship (connecting columns on its own node)
+    const loopOffset = 55;
+    const dy = targetY - sourceY;
+
+    if (sourcePosition === Position.Right && targetPosition === Position.Right) {
+      // Loop out to the right of the node
+      const maxX = Math.max(sourceX, targetX) + loopOffset;
+      edgePath = `M ${sourceX} ${sourceY} C ${maxX} ${sourceY}, ${maxX} ${targetY}, ${targetX} ${targetY}`;
+      labelX = maxX + 10;
+      labelY = (sourceY + targetY) / 2;
+    } else if (sourcePosition === Position.Left && targetPosition === Position.Left) {
+      // Loop out to the left of the node
+      const minX = Math.min(sourceX, targetX) - loopOffset;
+      edgePath = `M ${sourceX} ${sourceY} C ${minX} ${sourceY}, ${minX} ${targetY}, ${targetX} ${targetY}`;
+      labelX = minX - 10;
+      labelY = (sourceY + targetY) / 2;
+    } else {
+      // Loop around node via smooth step
+      const [path, lx, ly] = getSmoothStepPath({
+        sourceX,
+        sourceY,
+        sourcePosition,
+        targetX,
+        targetY,
+        targetPosition,
+        borderRadius: 14,
+        offset: 35,
+      });
+      edgePath = path;
+      labelX = lx;
+      labelY = ly;
+    }
+  } else {
+    // Normal node-to-node edge with responsive smooth routing
+    const [path, lx, ly] = getSmoothStepPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+      borderRadius: 10,
+    });
+    edgePath = path;
+    labelX = lx;
+    labelY = ly;
+  }
+
+  // Compute fixed outward positions for 1 and N so they NEVER hide when moving nodes
+  const sourcePoint = getHandleOutwardPoint(sourceX, sourceY, sourcePosition, 22);
+  const targetPoint = getHandleOutwardPoint(targetX, targetY, targetPosition, 22);
 
   // Determine active cardinality
   let rawCardinality = (data as any)?.cardinality;
@@ -134,8 +200,12 @@ export default function ErRelationshipEdge({
     setNodeEdges((eds: any[]) =>
       (eds || []).map((e: any) => {
         if (e.id === id) {
-          const baseLabel = typeof e.label === "string" ? e.label.replace(/^(1:1|1:N|N:M|N:1|\|\|—\|\{|\|\|—o\{|\|\|—\|\|)\s*/, "").trim() : "";
-          const newLabel = baseLabel ? `${CARDINALITY_CONFIG[newType].label} ${baseLabel}` : CARDINALITY_CONFIG[newType].label;
+          const baseLabel = typeof e.label === "string"
+            ? e.label.replace(/^(1:1|1:N|N:M|N:1|\|\|—\|\{|\|\|—o\{|\|\|—\|\|)\s*/, "").trim()
+            : "";
+          const newLabel = baseLabel
+            ? `${CARDINALITY_CONFIG[newType].label} ${baseLabel}`
+            : CARDINALITY_CONFIG[newType].label;
           return {
             ...e,
             label: newLabel,
@@ -168,28 +238,30 @@ export default function ErRelationshipEdge({
 
       {/* Edge Labels & Interactive Cardinality Pill */}
       <EdgeLabelRenderer>
-        {/* Source Cardinality Marker (e.g. 1 or ||) */}
+        {/* Source Cardinality Marker (1 / ||) - Always outside handle with high z-index */}
         <div
           style={{
             position: "absolute",
-            transform: `translate(-50%, -50%) translate(${sourceMarkerX}px,${sourceMarkerY}px)`,
+            transform: `translate(-50%, -50%) translate(${sourcePoint.x}px,${sourcePoint.y}px)`,
+            zIndex: 1000,
           }}
-          className="pointer-events-none select-none z-10"
+          className="pointer-events-none select-none transition-transform"
         >
-          <span className="px-1 py-0.2 rounded text-[9.5px] font-mono font-bold bg-background/90 text-foreground border border-border shadow-xs backdrop-blur-xs">
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-background text-foreground border border-border shadow-md">
             {config.source}
           </span>
         </div>
 
-        {/* Target Cardinality Marker (e.g. N or |{) */}
+        {/* Target Cardinality Marker (N / M / |{) - Always outside handle with high z-index */}
         <div
           style={{
             position: "absolute",
-            transform: `translate(-50%, -50%) translate(${targetMarkerX}px,${targetMarkerY}px)`,
+            transform: `translate(-50%, -50%) translate(${targetPoint.x}px,${targetPoint.y}px)`,
+            zIndex: 1000,
           }}
-          className="pointer-events-none select-none z-10"
+          className="pointer-events-none select-none transition-transform"
         >
-          <span className="px-1 py-0.2 rounded text-[9.5px] font-mono font-bold bg-background/90 text-foreground border border-border shadow-xs backdrop-blur-xs">
+          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-background text-foreground border border-border shadow-md">
             {config.target}
           </span>
         </div>
@@ -199,20 +271,21 @@ export default function ErRelationshipEdge({
           style={{
             position: "absolute",
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            zIndex: 1001,
           }}
-          className="nodrag nopan pointer-events-auto z-20"
+          className="nodrag nopan pointer-events-auto"
         >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className={`group flex items-center gap-1 px-2 py-0.8 rounded-full border text-[11px] font-mono font-semibold shadow-xs backdrop-blur-md cursor-pointer transition-all hover:scale-105 ${config.badgeColor} ${
-                  selected ? "ring-2 ring-primary/40 shadow-sm" : ""
+                className={`group flex items-center gap-1 px-2 py-0.8 rounded-full border text-[11px] font-mono font-semibold shadow-md bg-card/95 backdrop-blur-md cursor-pointer transition-all hover:scale-105 ${config.badgeColor} ${
+                  selected ? "ring-2 ring-primary/40 shadow-lg" : ""
                 }`}
-                title="Click to change relationship cardinality (1:1, 1:N, N:M, Crow's Foot)"
+                title="Click to customize relationship cardinality (1:1, 1:N, N:M, Crow's Foot)"
               >
                 <span>{config.label}</span>
                 {relationshipTitle && !relationshipTitle.includes(config.label) && (
-                  <span className="text-[10px] text-foreground/80 font-sans font-normal truncate max-w-[100px]">
+                  <span className="text-[10px] text-foreground/80 font-sans font-normal truncate max-w-[120px]">
                     {relationshipTitle}
                   </span>
                 )}
@@ -220,7 +293,7 @@ export default function ErRelationshipEdge({
               </button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="center" className="w-60 p-1.5 text-xs font-mono">
+            <DropdownMenuContent align="center" className="w-64 p-1.5 text-xs font-mono z-[1100]">
               <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1">
                 Relationship Cardinality
               </DropdownMenuLabel>

@@ -341,6 +341,19 @@ export const postgresEcommerceEdges = [
     animated: true,
   },
 
+  // 1:N Self-Referencing Relationship (Categories.id <-> Categories.parent_id on Own Node)
+  {
+    id: "edge-categories-self",
+    source: "table-categories",
+    sourceHandle: "col-cat1-right",
+    target: "table-categories",
+    targetHandle: "col-cat4-left",
+    type: "erRelationship",
+    data: { cardinality: "1:N" },
+    label: "1:N (parent_id)",
+    animated: true,
+  },
+
   // View Analytics Link
   { id: "edge-items-view", source: "table-order-items", target: "view-sales-analytics", animated: true, label: "Aggregates Sales" },
 ];
