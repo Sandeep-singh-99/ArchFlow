@@ -18,7 +18,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useContext } from "react";
+import { WorkflowContext } from "@/context/WorkflowContext";
+import { fullDatabaseDemoNodes, fullDatabaseDemoEdges } from "@/lib/fullDatabaseDemo";
+import { useReactFlow } from "@xyflow/react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
@@ -34,6 +37,21 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const publishAgent = useMutation(api.agent.PublishAgent);
+  const { setAddedNodes, setNodeEdges } = useContext(WorkflowContext);
+  const { fitView } = useReactFlow();
+
+  const handleLoadFullDemo = () => {
+    setAddedNodes(fullDatabaseDemoNodes);
+    setNodeEdges(fullDatabaseDemoEdges);
+    toast.success("Loaded Full Database Architecture Demo (All 14 Nodes)!");
+    setTimeout(() => {
+      try {
+        fitView({ padding: 0.2, duration: 600 });
+      } catch (err) {
+        console.log(err);
+      }
+    }, 150);
+  };
 
   const handlePublish = async () => {
     if (!agentDetail?._id) return;
@@ -68,11 +86,7 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
       mermaidCode += "    %% Connect your nodes on the canvas to generate edges\n";
     }
   } else {
-    mermaidCode += "    Client[\"Web & Mobile Clients\"] --> Gateway[\"Envoy API Gateway\"]\n";
-    mermaidCode += "    Gateway --> Service[\"Microservice Cluster\"]\n";
-    mermaidCode += "    Service --> Cache[(\"Redis Cache\")]\n";
-    mermaidCode += "    Service --> DB[(\"PostgreSQL Database\")]\n";
-    mermaidCode += "    Service --> Kafka[\"Kafka Event Bus\"]\n";
+    mermaidCode = "erDiagram\n    USERS ||--o{ ORDERS : places\n    ORDERS ||--|{ ORDER_ITEMS : contains\n    PRODUCTS ||--o{ ORDER_ITEMS : ordered_in\n";
   }
 
   const copyToClipboard = () => {
@@ -105,6 +119,16 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
       </div>
 
       <div className="flex items-center gap-2.5 sm:gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleLoadFullDemo}
+          className="h-8 gap-1.5 text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 cursor-pointer shadow-xs"
+        >
+          <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
+          <span>Full Database Demo</span>
+        </Button>
+
         <MermaidImportDialog agentDetail={agentDetail} />
 
         <Button

@@ -492,7 +492,7 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
       const inDeg = inDegree.get(info.id) || 0;
       const outDeg = (adj.get(info.id) || []).length;
 
-      let nodeType = "default";
+      let nodeType = isErDiagram ? "SqlTableNode" : "default";
       let role = isErDiagram ? "database" : "custom";
       let dbFormat: "sql" | "nosql" | undefined = isErDiagram ? "sql" : undefined;
 
@@ -557,6 +557,21 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
         dataPayload.settings.sqlSchema = generatedSql;
         dataPayload.settings.tech = "Relational Entity";
         dataPayload.settings.action = `${fields.length || 3} Columns Schema`;
+        dataPayload.columns = fields.map((f, i) => ({
+          id: `col-${i + 1}`,
+          name: f.name,
+          type: mapErTypeToSql(f.type),
+          isPk: f.isPk,
+          isFk: f.isFk,
+          isNullable: !f.isPk,
+          isUnique: f.isPk,
+        }));
+        if (!dataPayload.columns.length) {
+          dataPayload.columns = [
+            { id: "1", name: "id", type: "UUID", isPk: true, isNullable: false },
+            { id: "2", name: "created_at", type: "TIMESTAMP", isNullable: false },
+          ];
+        }
       } else {
         dataPayload.settings.role = role;
         if (role === "database") {
