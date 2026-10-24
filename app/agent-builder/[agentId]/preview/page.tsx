@@ -101,10 +101,20 @@ export default function PreviewAgent() {
             <h2>Preview</h2>
           <div style={{ width: "100%", height: "90vh", backgroundColor: '#f8f8f8', borderRadius: 20 }}>
             <ReactFlow
+              colorMode="dark"
               connectionMode={ConnectionMode.Loose}
               nodes={agentDetail?.nodes || []}
               edges={agentDetail?.edges || []}
               nodeTypes={nodeTypes}
+              defaultEdgeOptions={{
+                animated: true,
+                style: { stroke: "#10b981", strokeWidth: 2 },
+                interactionWidth: 20,
+                labelStyle: { fill: "#ffffff", fontWeight: 500, fontSize: 11 },
+                labelBgStyle: { fill: "rgba(0, 0, 0, 0.75)", stroke: "#ffffff", strokeWidth: 1 },
+                labelBgPadding: [12, 6],
+                labelBgBorderRadius: 8,
+              }}
               fitView
               draggable={false}
             >

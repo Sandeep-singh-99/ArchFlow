@@ -625,7 +625,11 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
       ...(targetHandle ? { targetHandle } : {}),
       animated: true,
       label: displayLabel,
-      style: e.style || { strokeWidth: 2 },
+      labelStyle: { fill: "#ffffff", fontWeight: 500, fontSize: 11 },
+      labelBgStyle: { fill: "rgba(0, 0, 0, 0.75)", stroke: "#ffffff", strokeWidth: 1 },
+      labelBgPadding: [12, 6],
+      labelBgBorderRadius: 8,
+      style: e.style || { stroke: "#10b981", strokeWidth: 2 },
     });
   }
 

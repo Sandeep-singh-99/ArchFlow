@@ -7,7 +7,6 @@ import {
   applyNodeChanges,
   applyEdgeChanges,
   addEdge,
-  reconnectEdge,
   Background,
   BackgroundVariant,
   Panel,
@@ -17,6 +16,7 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import { nodeTypes } from "../_customNodes/nodeTypes";
+import { edgeTypes } from "../_customEdges/edgeTypes";
 
 import AgentToolsPanel from "../_components/AgentToolsPanel";
 import SettingPanel from "../_components/SettingPanel";
@@ -112,43 +112,64 @@ export default function AgentBuilder() {
   const onConnect = useCallback(
     (params: any) =>
       setNodeEdges((edgesSnapshot: any) =>
-        addEdge({ ...params, animated: true }, edgesSnapshot || [])
+        addEdge(
+          {
+            ...params,
+            animated: true,
+            style: { stroke: "#10b981", strokeWidth: 2 },
+            labelStyle: { fill: "#ffffff", fontWeight: 500, fontSize: 11 },
+            labelBgStyle: { fill: "rgba(0, 0, 0, 0.75)", stroke: "#ffffff", strokeWidth: 1 },
+            labelBgPadding: [12, 6],
+            labelBgBorderRadius: 8,
+          },
+          edgesSnapshot || []
+        )
       ),
     [setNodeEdges]
   );
 
-  const edgeReconnectSuccessful = useRef(true);
+  const lastEdgeClickRef = useRef<{ id: string; time: number } | null>(null);
 
-  const onReconnectStart = useCallback(() => {
-    edgeReconnectSuccessful.current = false;
-  }, []);
-
-  const onReconnect = useCallback(
-    (oldEdge: any, newConnection: any) => {
-      edgeReconnectSuccessful.current = true;
-      setNodeEdges((els: any) => reconnectEdge(oldEdge, newConnection, els || []));
+  const disconnectEdge = useCallback(
+    (edge: any) => {
+      const edgeId = edge?.id;
+      if (!edgeId) return;
+      setNodeEdges((eds: any) => (eds || []).filter((e: any) => e.id !== edgeId));
+      toast.info("Connection disconnected");
     },
     [setNodeEdges]
   );
 
-  const onReconnectEnd = useCallback(
-    (_: any, edge: any) => {
-      if (!edgeReconnectSuccessful.current) {
-        setNodeEdges((eds: any) => (eds || []).filter((e: any) => e.id !== edge.id));
-        toast.info("Connection disconnected");
+  const onEdgeClick = useCallback(
+    (event: React.MouseEvent, edge: any) => {
+      event?.stopPropagation?.();
+      setSelectedNode(null);
+
+      const now = Date.now();
+      const isFastClick =
+        lastEdgeClickRef.current &&
+        lastEdgeClickRef.current.id === edge?.id &&
+        now - lastEdgeClickRef.current.time < 500;
+
+      // Handle double click reliably via click count (event.detail >= 2) or rapid consecutive clicks
+      if (event.detail >= 2 || isFastClick) {
+        disconnectEdge(edge);
+        lastEdgeClickRef.current = null;
+        return;
       }
-      edgeReconnectSuccessful.current = true;
+
+      lastEdgeClickRef.current = { id: edge?.id, time: now };
     },
-    [setNodeEdges]
+    [disconnectEdge, setSelectedNode]
   );
 
   const onEdgeDoubleClick = useCallback(
     (event: React.MouseEvent, edge: any) => {
-      event.stopPropagation();
-      setNodeEdges((eds: any) => (eds || []).filter((e: any) => e.id !== edge.id));
-      toast.info("Connection removed");
+      event?.stopPropagation?.();
+      disconnectEdge(edge);
+      lastEdgeClickRef.current = null;
     },
-    [setNodeEdges]
+    [disconnectEdge]
   );
 
   const onNodeSelect = useCallback(
@@ -171,6 +192,7 @@ export default function AgentBuilder() {
       <Header agentDetail={agentDetail} />
       <div className="flex-1 w-full relative">
         <ReactFlow
+          colorMode="dark"
           connectionMode={ConnectionMode.Loose}
           nodes={addedNodes || []}
           edges={nodeEdges || []}
@@ -180,17 +202,20 @@ export default function AgentBuilder() {
           onNodeClick={(e, node) => setSelectedNode(node)}
           onNodeDragStop={(e, node) => setSelectedNode(node)}
           onPaneClick={() => setSelectedNode(null)}
-          onEdgeClick={() => setSelectedNode(null)}
+          onEdgeClick={onEdgeClick}
           onEdgeDoubleClick={onEdgeDoubleClick}
-          edgesReconnectable={!isLocked}
-          onReconnectStart={onReconnectStart}
-          onReconnect={onReconnect}
-          onReconnectEnd={onReconnectEnd}
+          deleteKeyCode={null}
+          edgesReconnectable={false}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           defaultEdgeOptions={{
             animated: true,
-            style: { strokeWidth: 2 },
-            interactionWidth: 20,
+            style: { stroke: "#10b981", strokeWidth: 2 },
+            interactionWidth: 36,
+            labelStyle: { fill: "#ffffff", fontWeight: 500, fontSize: 11 },
+            labelBgStyle: { fill: "rgba(0, 0, 0, 0.75)", stroke: "#ffffff", strokeWidth: 1 },
+            labelBgPadding: [12, 6],
+            labelBgBorderRadius: 8,
           }}
           fitView
           nodesDraggable={!isLocked}

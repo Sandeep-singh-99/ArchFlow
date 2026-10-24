@@ -263,6 +263,165 @@ html {
   stroke-linecap: round !important;
 }
 
+/* ========================================================
+   Animated Connection Line (Green Dot Animation)
+   ======================================================== */
+
+@keyframes flowDashGreen {
+  from {
+    stroke-dashoffset: 20;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Animated connecting edges: emerald green circular dot animation */
+.react-flow__edge.animated path.react-flow__edge-path,
+.react-flow__edge.animated .react-flow__edge-path {
+  stroke: #10b981 !important;
+  stroke-dasharray: 4 6 !important;
+  stroke-linecap: round !important;
+  stroke-width: 2px !important;
+  animation: flowDashGreen 0.75s linear infinite !important;
+  filter: drop-shadow(0 0 3px rgba(16, 185, 129, 0.45));
+}
+
+/* Selected animated edge: brighter emerald glow */
+.react-flow__edge.animated.selected path.react-flow__edge-path,
+.react-flow__edge.animated.selected .react-flow__edge-path {
+  stroke: #34d399 !important;
+  stroke-width: 2.5px !important;
+  filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.75));
+}
+
+/* Edge interaction hit area for fast, reliable double-click & disconnect */
+.react-flow__edge {
+  pointer-events: all !important;
+  cursor: pointer !important;
+}
+
+.react-flow__edge-path {
+  pointer-events: stroke !important;
+  cursor: pointer !important;
+}
+
+.react-flow__edge-interaction {
+  pointer-events: stroke !important;
+  cursor: pointer !important;
+  stroke: #ffffff !important;
+  stroke-opacity: 0.001 !important;
+  stroke-width: 36px !important;
+  fill: none !important;
+}
+
+/* Hover highlight on connection line for immediate visual feedback */
+.react-flow__edge:hover path.react-flow__edge-path,
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: #34d399 !important;
+  stroke-width: 2.8px !important;
+  filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.8)) !important;
+}
+
+/* Real-time dragging connection line */
+.react-flow__connection-path {
+  stroke: #10b981 !important;
+  stroke-dasharray: 4 6 !important;
+  stroke-linecap: round !important;
+  stroke-width: 2px !important;
+  animation: flowDashGreen 0.75s linear infinite !important;
+}
+
+/* ========================================================
+   React Flow Edge Labels & Animated Connection Line Text Styling
+   (Transparent glass effect, crisp white border, centered text with margin)
+   ======================================================== */
+
+:root,
+.dark,
+.react-flow {
+  --xy-edge-label-background-color: rgba(0, 0, 0, 0.75) !important;
+  --xy-edge-label-color: #ffffff !important;
+  --xy-edge-label-background-color-default: rgba(0, 0, 0, 0.75) !important;
+  --xy-edge-label-color-default: #ffffff !important;
+}
+
+/* SVG Edge text wrapper */
+.react-flow__edge-textwrapper {
+  pointer-events: all !important;
+}
+
+/* Edge text background rect: transparent effect (semi-transparent black + glassmorphism) with white border */
+.react-flow__edge-textbg {
+  fill: rgba(0, 0, 0, 0.75) !important;
+  fill-opacity: 0.8 !important;
+  stroke: #ffffff !important;
+  stroke-width: 1px !important;
+  stroke-opacity: 0.9 !important;
+  rx: 8px !important;
+  ry: 8px !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+/* Edge text label: centered crisp white text */
+.react-flow__edge-text {
+  fill: #ffffff !important;
+  color: #ffffff !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.02em !important;
+  user-select: none !important;
+}
+
+/* HTML-based Edge Label Renderer support (Single badge box) */
+.react-flow__edgelabel-renderer {
+  pointer-events: all !important;
+}
+
+.react-flow__edgelabel-renderer > div {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+.edge-label-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  color: #ffffff !important;
+  border: 1px solid #ffffff !important;
+  border-radius: 8px !important;
+  padding: 4px 12px !important;
+  margin: 0 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.02em !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease, border-color 0.15s ease !important;
+}
+
+.edge-label-badge:hover {
+  border-color: #ffffff !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Hover state on connection text badge */
+.react-flow__edge-textwrapper:hover .react-flow__edge-textbg {
+  stroke: #ffffff !important;
+  stroke-width: 1.5px !important;
+  fill-opacity: 0.9 !important;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.5)) !important;
+}
+
 /* Subtle attribution */
 .react-flow__attribution {
   display: none !important;
