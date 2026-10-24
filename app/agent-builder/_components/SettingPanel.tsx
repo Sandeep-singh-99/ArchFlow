@@ -18,8 +18,14 @@ export default function SettingPanel({
 }: {
   onSave: (nodes: any) => void;
 }) {
-  const { selectedNode, addedNodes, setAddedNodes, setSelectedNode } =
-    useContext(WorkflowContext);
+  const {
+    selectedNode,
+    addedNodes,
+    setAddedNodes,
+    setSelectedNode,
+    nodeEdges,
+    setNodeEdges,
+  } = useContext(WorkflowContext);
 
   const [formData, setFormData] = useState<any>({});
 
@@ -71,6 +77,31 @@ export default function SettingPanel({
       },
     });
     onSave(updated);
+  };
+
+  const connectedEdges = (nodeEdges || []).filter(
+    (edge: any) => edge.source === selectedNode?.id || edge.target === selectedNode?.id
+  );
+
+  const updateEdgeLabel = (edgeId: string, newLabel: string) => {
+    setNodeEdges((eds: any) =>
+      (eds || []).map((e: any) =>
+        e.id === edgeId
+          ? {
+              ...e,
+              label: newLabel.trim() === "" ? undefined : newLabel,
+              labelStyle: { fill: "#ffffff", fontWeight: 500, fontSize: 11 },
+              labelBgStyle: { fill: "rgba(0, 0, 0, 0.75)", stroke: "#ffffff", strokeWidth: 1 },
+              labelBgPadding: [12, 6],
+              labelBgBorderRadius: 8,
+            }
+          : e
+      )
+    );
+  };
+
+  const removeEdge = (edgeId: string) => {
+    setNodeEdges((eds: any) => (eds || []).filter((e: any) => e.id !== edgeId));
   };
 
   const onDeleteNode = () => {
@@ -761,6 +792,56 @@ export default function SettingPanel({
                 onChange={(e) => updateNodeData({ name: e.target.value })}
                 className="h-8 text-xs font-mono"
               />
+            </div>
+          </div>
+        )}
+
+        {/* Connected Line Labels Section */}
+        {connectedEdges.length > 0 && (
+          <div className="space-y-2 pt-2 border-t border-border/50">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Connection Line Labels ({connectedEdges.length})
+              </Label>
+              <span className="text-[10px] text-muted-foreground">Type to show on line</span>
+            </div>
+
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {connectedEdges.map((edge: any) => {
+                const isSource = edge.source === selectedNode.id;
+                const otherNodeId = isSource ? edge.target : edge.source;
+                const otherNode = (addedNodes || []).find((n: any) => n.id === otherNodeId);
+                const otherNodeName =
+                  otherNode?.data?.name || otherNode?.data?.label || otherNodeId;
+
+                return (
+                  <div
+                    key={edge.id}
+                    className="p-2.5 rounded-lg bg-zinc-950/60 border border-white/10 space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                      <span className="font-medium text-zinc-300 truncate max-w-[170px]">
+                        {isSource ? `→ To: ${otherNodeName}` : `← From: ${otherNodeName}`}
+                      </span>
+                      <button
+                        onClick={() => removeEdge(edge.id)}
+                        className="text-zinc-500 hover:text-red-400 p-0.5 rounded cursor-pointer transition-colors"
+                        title="Disconnect line"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+
+                    <Input
+                      placeholder="Type text (e.g. 1:N, Sends Token, API...)"
+                      value={edge.label || ""}
+                      onChange={(e) => updateEdgeLabel(edge.id, e.target.value)}
+                      className="h-7 text-xs bg-black/60 border-white/15 focus:border-emerald-500 font-mono text-white placeholder:text-zinc-600"
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
