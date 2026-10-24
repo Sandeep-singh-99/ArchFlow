@@ -18,11 +18,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ImageIcon, Download, Loader2, Sparkles, FileImage, ShieldCheck } from "lucide-react";
+import { ImageIcon, Download, Loader2, Sparkles, FileImage } from "lucide-react";
 import { toPng, toSvg } from "html-to-image";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
-import { useReactFlow } from "@xyflow/react";
+import { useReactFlow, getNodesBounds, getViewportForBounds } from "@xyflow/react";
 
 interface ExportImageDialogProps {
   architectureName?: string;
@@ -33,7 +33,7 @@ export default function ExportImageDialog({ architectureName = "database-schema"
   const [format, setFormat] = useState<"png" | "svg">("png");
   const [background, setBackground] = useState<"transparent" | "dark" | "light">("dark");
   const [isExporting, setIsExporting] = useState(false);
-  const { fitView } = useReactFlow();
+  const { getNodes } = useReactFlow();
 
   const handleExport = async (overrideFormat?: "png" | "svg", overrideBg?: "transparent" | "dark" | "light") => {
     const targetFormat = overrideFormat || format;
@@ -42,12 +42,34 @@ export default function ExportImageDialog({ architectureName = "database-schema"
     try {
       setIsExporting(true);
 
-      // Find ReactFlow container or viewport
-      const viewportElement = document.querySelector(".react-flow__viewport") as HTMLElement;
-      const flowElement = document.querySelector(".react-flow") as HTMLElement;
-      const targetElement = viewportElement || flowElement;
+      const nodes = getNodes();
+      if (!nodes || nodes.length === 0) {
+        toast.error("No schema components on canvas to export");
+        setIsExporting(false);
+        return;
+      }
 
-      if (!targetElement) {
+      // 1. Calculate the entire bounding box of all nodes across the canvas
+      const nodesBounds = getNodesBounds(nodes);
+
+      // 2. Set export dimensions with padding so the entire diagram fits perfectly regardless of user zoom
+      const padding = 0.15;
+      const baseWidth = Math.max(1280, Math.ceil(nodesBounds.width * 1.35));
+      const baseHeight = Math.max(800, Math.ceil(nodesBounds.height * 1.35));
+
+      // 3. Compute viewport transform that displays the entire diagram
+      const viewport = getViewportForBounds(
+        nodesBounds,
+        baseWidth,
+        baseHeight,
+        0.1,
+        2.5,
+        padding
+      );
+
+      // Find the ReactFlow viewport element
+      const viewportElement = document.querySelector(".react-flow__viewport") as HTMLElement;
+      if (!viewportElement) {
         toast.error("Could not find canvas elements to export");
         setIsExporting(false);
         return;
@@ -60,10 +82,17 @@ export default function ExportImageDialog({ architectureName = "database-schema"
           ? "#09090b"
           : "#ffffff";
 
-      // Options for high resolution
+      // Options for whole-diagram high-resolution export
       const imageOptions = {
         backgroundColor: bgColor,
-        pixelRatio: targetFormat === "png" ? 2.5 : 1, // High-res retina
+        width: baseWidth,
+        height: baseHeight,
+        style: {
+          width: `${baseWidth}px`,
+          height: `${baseHeight}px`,
+          transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+        },
+        pixelRatio: targetFormat === "png" ? 2.5 : 1, // Retina crispness
         quality: 1,
         filter: (node: HTMLElement) => {
           // Exclude floating controls, minimap, panels from exported image
@@ -83,9 +112,9 @@ export default function ExportImageDialog({ architectureName = "database-schema"
 
       let dataUrl: string;
       if (targetFormat === "svg") {
-        dataUrl = await toSvg(targetElement, imageOptions);
+        dataUrl = await toSvg(viewportElement, imageOptions);
       } else {
-        dataUrl = await toPng(targetElement, imageOptions);
+        dataUrl = await toPng(viewportElement, imageOptions);
       }
 
       // Trigger automatic download
@@ -98,7 +127,7 @@ export default function ExportImageDialog({ architectureName = "database-schema"
       link.click();
       document.body.removeChild(link);
 
-      toast.success(`Exported ${targetFormat.toUpperCase()} high-res schema image!`);
+      toast.success(`Exported complete ${targetFormat.toUpperCase()} schema diagram!`);
       setOpen(false);
     } catch (err) {
       console.error("Export error:", err);
@@ -122,9 +151,9 @@ export default function ExportImageDialog({ architectureName = "database-schema"
           </Button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" className="w-52 p-1.5 text-xs">
+        <DropdownMenuContent align="end" className="w-56 p-1.5 text-xs">
           <DropdownMenuLabel className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground px-2 py-1">
-            Quick 1-Click Export
+            Export Entire Schema
           </DropdownMenuLabel>
           <DropdownMenuItem
             onClick={() => handleExport("png", "dark")}
@@ -132,7 +161,7 @@ export default function ExportImageDialog({ architectureName = "database-schema"
           >
             <FileImage className="h-4 w-4 text-sky-500" />
             <div className="flex flex-col">
-              <span className="font-semibold text-xs">High-Res PNG</span>
+              <span className="font-semibold text-xs">Whole Diagram PNG</span>
               <span className="text-[10px] text-muted-foreground">Dark Studio Background</span>
             </div>
           </DropdownMenuItem>
@@ -144,7 +173,7 @@ export default function ExportImageDialog({ architectureName = "database-schema"
             <Sparkles className="h-4 w-4 text-emerald-500" />
             <div className="flex flex-col">
               <span className="font-semibold text-xs">Transparent PNG</span>
-              <span className="text-[10px] text-muted-foreground">For Docs & Notion</span>
+              <span className="text-[10px] text-muted-foreground">Whole Diagram for Notion/PRs</span>
             </div>
           </DropdownMenuItem>
 
@@ -155,7 +184,7 @@ export default function ExportImageDialog({ architectureName = "database-schema"
             <Download className="h-4 w-4 text-violet-500" />
             <div className="flex flex-col">
               <span className="font-semibold text-xs">Vector SVG</span>
-              <span className="text-[10px] text-muted-foreground">Lossless Scalable Vector</span>
+              <span className="text-[10px] text-muted-foreground">Whole Lossless Scalable Vector</span>
             </div>
           </DropdownMenuItem>
 
@@ -176,10 +205,10 @@ export default function ExportImageDialog({ architectureName = "database-schema"
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <FileImage className="h-4 w-4 text-sky-500" />
-              <span>Export High-Resolution Schema Image</span>
+              <span>Export Entire Schema Diagram</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Download presentation-ready architecture graphics for pull requests, RFCs, and team wikis.
+              Always captures the full database architecture centered with padding, regardless of current canvas zoom or pan.
             </DialogDescription>
           </DialogHeader>
 
@@ -198,7 +227,7 @@ export default function ExportImageDialog({ architectureName = "database-schema"
                   }`}
                 >
                   <div className="font-bold text-xs">PNG (2.5x Retina)</div>
-                  <div className="text-[10px] text-muted-foreground">Crystal clear bitmap</div>
+                  <div className="text-[10px] text-muted-foreground">Full diagram high-res bitmap</div>
                 </button>
 
                 <button
@@ -211,7 +240,7 @@ export default function ExportImageDialog({ architectureName = "database-schema"
                   }`}
                 >
                   <div className="font-bold text-xs">Vector SVG</div>
-                  <div className="text-[10px] text-muted-foreground">Infinitely zoomable</div>
+                  <div className="text-[10px] text-muted-foreground">Full diagram vector graphics</div>
                 </button>
               </div>
             </div>
@@ -275,12 +304,12 @@ export default function ExportImageDialog({ architectureName = "database-schema"
               {isExporting ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  <span>Rendering...</span>
+                  <span>Rendering Full Schema...</span>
                 </>
               ) : (
                 <>
                   <Download className="h-3.5 w-3.5" />
-                  <span>Download {format.toUpperCase()}</span>
+                  <span>Download Whole {format.toUpperCase()}</span>
                 </>
               )}
             </Button>

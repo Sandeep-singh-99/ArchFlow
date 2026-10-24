@@ -155,10 +155,20 @@ export default function AgentBuilder() {
     [deleteElements, setNodeEdges]
   );
 
+  const onPaneClick = useCallback(() => {
+    setSelectedNode(null);
+    setAddedNodes((nds: any[]) =>
+      (nds || []).map((n) => (n.selected ? { ...n, selected: false } : n))
+    );
+  }, [setSelectedNode, setAddedNodes]);
+
   const onEdgeClick = useCallback(
     (event: React.MouseEvent, edge: any) => {
       event?.stopPropagation?.();
       setSelectedNode(null);
+      setAddedNodes((nds: any[]) =>
+        (nds || []).map((n) => (n.selected ? { ...n, selected: false } : n))
+      );
 
       const now = Date.now();
       const isFastClick =
@@ -175,16 +185,17 @@ export default function AgentBuilder() {
 
       lastEdgeClickRef.current = { id: edge?.id, time: now };
     },
-    [disconnectEdge, setSelectedNode]
+    [disconnectEdge, setSelectedNode, setAddedNodes]
   );
 
   const onEdgeDoubleClick = useCallback(
     (event: React.MouseEvent, edge: any) => {
       event?.stopPropagation?.();
+      setSelectedNode(null);
       disconnectEdge(edge);
       lastEdgeClickRef.current = null;
     },
-    [disconnectEdge]
+    [disconnectEdge, setSelectedNode]
   );
 
   const onNodeSelect = useCallback(
@@ -202,10 +213,28 @@ export default function AgentBuilder() {
     onChange: onNodeSelect,
   });
 
+  const handleCanvasWrapperClick = useCallback(
+    (e: React.MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const isNode = target.closest(".react-flow__node");
+      const isPanel =
+        target.closest(".react-flow__panel") ||
+        target.closest("[role='dialog']") ||
+        target.closest("[role='menu']");
+      if (!isNode && !isPanel) {
+        setSelectedNode(null);
+        setAddedNodes((nds: any[]) =>
+          (nds || []).map((n) => (n.selected ? { ...n, selected: false } : n))
+        );
+      }
+    },
+    [setSelectedNode, setAddedNodes]
+  );
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-background">
       <Header agentDetail={agentDetail} />
-      <div className="flex-1 w-full relative">
+      <div className="flex-1 w-full relative" onClick={handleCanvasWrapperClick}>
         <ReactFlow
           colorMode="dark"
           connectionMode={ConnectionMode.Loose}
@@ -216,7 +245,7 @@ export default function AgentBuilder() {
           onConnect={onConnect}
           onNodeClick={(e, node) => setSelectedNode(node)}
           onNodeDragStop={(e, node) => setSelectedNode(node)}
-          onPaneClick={() => setSelectedNode(null)}
+          onPaneClick={onPaneClick}
           onEdgeClick={onEdgeClick}
           onEdgeDoubleClick={onEdgeDoubleClick}
           deleteKeyCode={null}

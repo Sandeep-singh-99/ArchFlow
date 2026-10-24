@@ -198,8 +198,14 @@ export default function SettingPanel({
           </h3>
         </div>
         <button
-          onClick={() => setSelectedNode(null)}
+          onClick={() => {
+            setSelectedNode(null);
+            setAddedNodes((nds: any[]) =>
+              (nds || []).map((n: any) => (n.selected ? { ...n, selected: false } : n))
+            );
+          }}
           className="text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors cursor-pointer"
+          title="Close Inspector"
         >
           <X className="h-4 w-4" />
         </button>
