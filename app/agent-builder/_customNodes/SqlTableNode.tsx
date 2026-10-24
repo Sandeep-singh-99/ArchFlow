@@ -85,7 +85,7 @@ function SqlTableNode({ data, selected }: { data: SqlTableNodeData; selected?: b
       </div>
 
       {/* Columns List with Row-Level ER Handles */}
-      <div className="divide-y divide-border/40 py-1 max-h-[340px] overflow-y-auto">
+      <div className="divide-y divide-border/40 py-1 overflow-visible [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {columns.map((col, idx) => {
           const colHandleKey = col.id || col.name || `col-${idx}`;
           return (

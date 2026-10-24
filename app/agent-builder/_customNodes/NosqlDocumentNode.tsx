@@ -54,7 +54,7 @@ function NosqlDocumentNode({ data, selected }: { data: NosqlDocumentNodeData; se
           <Braces className="h-3 w-3" />
           <span>BSON / JSON Structure</span>
         </div>
-        <pre className="text-[10px] font-mono text-muted-foreground bg-background/80 p-2 rounded-md overflow-x-auto max-h-[140px] whitespace-pre-wrap border border-border/40">
+        <pre className="text-[10px] font-mono text-muted-foreground bg-background/80 p-2 rounded-md overflow-x-auto max-h-[140px] whitespace-pre-wrap border border-border/40 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {sampleJson}
         </pre>
       </div>

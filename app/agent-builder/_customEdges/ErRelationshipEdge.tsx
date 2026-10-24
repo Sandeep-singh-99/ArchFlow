@@ -123,6 +123,7 @@ export default function ErRelationshipEdge({
   label,
   data,
   selected,
+  animated = true,
 }: EdgeProps) {
   const { setNodeEdges } = useContext(WorkflowContext);
 
@@ -224,13 +225,16 @@ export default function ErRelationshipEdge({
 
   return (
     <>
-      {/* Base connecting line */}
+      {/* Base connecting line with dot animation */}
       <BaseEdge
         id={id}
         path={edgePath}
+        className={animated ? "react-flow__edge-path animated" : "react-flow__edge-path"}
         style={{
           strokeWidth: selected ? 2.5 : 2,
           stroke: selected ? "#10b981" : "#059669",
+          strokeDasharray: animated ? "5 5" : undefined,
+          animation: animated ? "react-flow__dash 0.5s linear infinite" : undefined,
           ...style,
         }}
         markerEnd={markerEnd}

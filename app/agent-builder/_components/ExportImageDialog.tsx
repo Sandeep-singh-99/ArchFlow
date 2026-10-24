@@ -91,6 +91,7 @@ export default function ExportImageDialog({ architectureName = "database-schema"
           width: `${baseWidth}px`,
           height: `${baseHeight}px`,
           transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+          overflow: "hidden",
         },
         pixelRatio: targetFormat === "png" ? 2.5 : 1, // Retina crispness
         quality: 1,
@@ -112,7 +113,62 @@ export default function ExportImageDialog({ architectureName = "database-schema"
 
       let dataUrl: string;
       if (targetFormat === "svg") {
-        dataUrl = await toSvg(viewportElement, imageOptions);
+        const rawSvgDataUrl = await toSvg(viewportElement, imageOptions);
+
+        let svgContent: string;
+        if (rawSvgDataUrl.startsWith("data:image/svg+xml;charset=utf-8,")) {
+          svgContent = decodeURIComponent(
+            rawSvgDataUrl.replace("data:image/svg+xml;charset=utf-8,", "")
+          );
+        } else if (rawSvgDataUrl.startsWith("data:image/svg+xml;base64,")) {
+          svgContent = atob(
+            rawSvgDataUrl.replace("data:image/svg+xml;base64,", "")
+          );
+        } else {
+          svgContent = rawSvgDataUrl;
+        }
+
+        // Embed edge dot animation and ONLY remove scrollbars on nodes (not webpage scrollbar)
+        const svgEmbeddedStyle = `
+          <style>
+            @keyframes react-flow__dash {
+              from {
+                stroke-dashoffset: 10;
+              }
+              to {
+                stroke-dashoffset: 0;
+              }
+            }
+
+            .react-flow__edge-path,
+            .animated path,
+            path.animated,
+            path[stroke-dasharray] {
+              stroke-dasharray: 5 5 !important;
+              animation: react-flow__dash 0.5s linear infinite !important;
+            }
+
+            /* ONLY remove inner node scrollbars - do NOT remove webpage scrollbar */
+            .react-flow__node,
+            .react-flow__node * {
+              scrollbar-width: none !important;
+              -ms-overflow-style: none !important;
+            }
+            .react-flow__node *::-webkit-scrollbar {
+              display: none !important;
+              width: 0px !important;
+              height: 0px !important;
+            }
+          </style>
+        `;
+
+        let cleanedSvg = svgContent;
+        if (cleanedSvg.includes("<svg")) {
+          cleanedSvg = cleanedSvg.replace(/(<svg[^>]*>)/i, `$1${svgEmbeddedStyle}`);
+        }
+
+        const blob = new Blob([cleanedSvg], { type: "image/svg+xml;charset=utf-8" });
+        dataUrl = URL.createObjectURL(blob);
       } else {
         dataUrl = await toPng(viewportElement, imageOptions);
       }
@@ -126,6 +182,9 @@ export default function ExportImageDialog({ architectureName = "database-schema"
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      if (targetFormat === "svg") {
+        setTimeout(() => URL.revokeObjectURL(dataUrl), 1000);
+      }
 
       toast.success(`Exported complete ${targetFormat.toUpperCase()} schema diagram!`);
       setOpen(false);

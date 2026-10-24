@@ -56,7 +56,7 @@ function SqlViewNode({ data, selected }: { data: SqlViewNodeData; selected?: boo
           <Code className="h-3 w-3" />
           <span>Definition Query</span>
         </div>
-        <pre className="text-[10px] font-mono text-muted-foreground bg-muted/50 p-2 rounded-md overflow-x-auto max-h-[100px] whitespace-pre-wrap">
+        <pre className="text-[10px] font-mono text-muted-foreground bg-muted/50 p-2 rounded-md overflow-x-auto max-h-[100px] whitespace-pre-wrap [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {query}
         </pre>
       </div>
