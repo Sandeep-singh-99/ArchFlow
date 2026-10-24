@@ -264,8 +264,8 @@ const ROLE_CONFIG: Record<string, { icon: any; color: string; bg: string; border
 };
 
 export default function CustomNode({ data }: any) {
-  const roleKey = (data?.settings?.role || data?.type?.replace("Node", "") || "custom").toLowerCase();
-  const config = ROLE_CONFIG[roleKey] || ROLE_CONFIG.custom;
+  const roleKey = (data?.settings?.role || data?.type?.replace("Node", "") || "backend").toLowerCase();
+  const config = ROLE_CONFIG[roleKey] || ROLE_CONFIG.backend;
   const Icon = config.icon;
 
   const isDatabase = roleKey === "database" || data?.type === "DatabaseNode";

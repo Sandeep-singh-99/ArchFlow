@@ -3,14 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Save, Sliders, Trash2, X, Layout, Cpu, Database, Bot, Sparkles, Table2, Braces, Plus } from "lucide-react";
+import { Save, Sliders, Trash2, X, Cpu, Database, Table2, Braces } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface Props {
@@ -21,11 +14,8 @@ interface Props {
 }
 
 const ROLES = [
-  { id: "frontend", label: "Frontend", icon: Layout },
   { id: "backend", label: "Backend", icon: Cpu },
   { id: "database", label: "Database", icon: Database },
-  { id: "ai", label: "AI", icon: Bot },
-  { id: "custom", label: "Custom", icon: Sparkles },
 ];
 
 const DEFAULT_SQL_FIELDS = [
@@ -48,7 +38,7 @@ export default function SystemNodeSettings({
 }: Props) {
   const [formData, setFormData] = useState({
     name: "",
-    role: "frontend",
+    role: "backend",
     action: "",
     tech: "",
     protocol: "HTTPS",
@@ -87,7 +77,7 @@ export default function SystemNodeSettings({
 
       setFormData({
         name: selectedNode.data?.label || selectedNode.data?.name || "Component Node",
-        role: settings.role || "frontend",
+        role: settings.role === "database" ? "database" : "backend",
         action: settings.action || settings.rendering || settings.latency || "Core Functionality",
         tech: settings.tech || "",
         protocol: settings.protocol || "HTTPS",
@@ -162,7 +152,7 @@ export default function SystemNodeSettings({
   const handleRoleChange = (roleId: string) => {
     setFormData((prev: any) => {
       const updates: any = { ...prev, role: roleId };
-      if (roleId === "frontend" || roleId === "backend") {
+      if (roleId === "backend") {
         updates.action = "";
         updates.tech = "";
       }
@@ -198,28 +188,17 @@ export default function SystemNodeSettings({
           updates.protocol = fmt === "nosql" ? "Mongo Wire" : "Postgres Wire";
         }
       } else if (prev.role === "database") {
-        // Reset role-specific defaults when switching away from database
-        if (roleId === "frontend") {
-          updates.name = (!prev.name || prev.name === prev.dbTableName || prev.name === "users_table" || prev.name === "users_collection" || prev.name === "Database") ? "Frontend UI" : prev.name;
-          updates.action = "";
-          updates.tech = "";
-          updates.protocol = "HTTPS";
-        } else if (roleId === "backend") {
-          updates.name = (!prev.name || prev.name === prev.dbTableName || prev.name === "users_table" || prev.name === "users_collection" || prev.name === "Database") ? "Backend API" : prev.name;
-          updates.action = "";
-          updates.tech = "";
-          updates.protocol = "HTTPS";
-        } else if (roleId === "ai") {
-          updates.name = (!prev.name || prev.name === prev.dbTableName || prev.name === "users_table" || prev.name === "users_collection" || prev.name === "Database") ? "AI Agent" : prev.name;
-          updates.action = "Reasoning & Agent Decisions";
-          updates.tech = "Claude 3.5 Sonnet";
-          updates.protocol = "HTTPS Streaming";
-        } else if (roleId === "custom") {
-          updates.name = (!prev.name || prev.name === prev.dbTableName || prev.name === "users_table" || prev.name === "users_collection" || prev.name === "Database") ? "Custom Service" : prev.name;
-          updates.action = "Custom Workflow Logic";
-          updates.tech = "Custom Stack";
-          updates.protocol = "HTTPS / gRPC";
-        }
+        updates.name =
+          !prev.name ||
+          prev.name === prev.dbTableName ||
+          prev.name === "users_table" ||
+          prev.name === "users_collection" ||
+          prev.name === "Database"
+            ? "Backend API"
+            : prev.name;
+        updates.action = "";
+        updates.tech = "";
+        updates.protocol = "HTTPS";
       }
       return updates;
     });
@@ -232,7 +211,7 @@ export default function SystemNodeSettings({
       finalData.name = formData.dbTableName || "Database";
       finalData.action = formData.dbFormat === "nosql" ? "NoSQL Document Store" : "SQL Relational Store";
       finalData.notes = formData.dbDescription || "";
-    } else if (formData.role === "frontend" || formData.role === "backend") {
+    } else {
       finalData.action = "";
       finalData.tech = "";
     }
@@ -265,10 +244,10 @@ export default function SystemNodeSettings({
         </div>
       </div>
 
-      {/* Role Selector: Frontend, Backend, Database, AI, Custom */}
+      {/* Role Selector: Backend, Database */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-foreground">Node Role / Category</label>
-        <div className="grid grid-cols-5 gap-1 p-1 bg-muted/60 rounded-lg border border-border/60">
+        <div className="grid grid-cols-2 gap-1.5 p-1 bg-muted/60 rounded-lg border border-border/60">
           {ROLES.map((r) => {
             const Icon = r.icon;
             const isActive = formData.role === r.id;
@@ -277,76 +256,72 @@ export default function SystemNodeSettings({
                 key={r.id}
                 type="button"
                 onClick={() => handleRoleChange(r.id)}
-                className={`flex flex-col items-center justify-center gap-1 py-1.5 px-1 rounded-md text-[10px] font-semibold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                   isActive
                     ? "bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 font-bold shadow-xs"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
               >
-                <Icon className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{r.label}</span>
+                <Icon className="h-4 w-4 shrink-0" />
+                <span>{r.label}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Component Label and Action (Action hidden for database, frontend, and backend) */}
-      {formData.role !== "database" && (
+      {/* Component Label and Font Size for Backend Node */}
+      {formData.role === "backend" && (
         <>
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-foreground">Component Label</label>
             <Input
               value={formData.name}
               onChange={(e) => handleChange("name", e.target.value)}
-              placeholder="e.g. Landing Page, Products DB, Auth API"
+              placeholder="e.g. Auth API, Payment Gateway, Worker Service"
               className="h-8 text-xs font-medium"
             />
           </div>
 
-          {(formData.role === "frontend" || formData.role === "backend") && (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-foreground">Font & Node Size</label>
-                <span className="text-[10px] font-mono text-muted-foreground uppercase font-semibold">
-                  {formData.fontSize || "base"}
-                </span>
-              </div>
-              <div className="grid grid-cols-4 gap-1 p-1 bg-muted/60 rounded-lg border border-border/60">
-                {[
-                  { id: "sm", label: "Small" },
-                  { id: "base", label: "Normal" },
-                  { id: "lg", label: "Large" },
-                  { id: "xl", label: "Title" },
-                ].map((size) => (
-                  <button
-                    key={size.id}
-                    type="button"
-                    onClick={() => handleChange("fontSize", size.id)}
-                    className={`py-1 px-2 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
-                      (formData.fontSize || "base") === size.id
-                        ? "bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 font-bold shadow-xs"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {size.label}
-                  </button>
-                ))}
-              </div>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-foreground">Font & Node Size</label>
+              <span className="text-[10px] font-mono text-muted-foreground uppercase font-semibold">
+                {formData.fontSize || "base"}
+              </span>
             </div>
-          )}
+            <div className="grid grid-cols-4 gap-1 p-1 bg-muted/60 rounded-lg border border-border/60">
+              {[
+                { id: "sm", label: "Small" },
+                { id: "base", label: "Normal" },
+                { id: "lg", label: "Large" },
+                { id: "xl", label: "Title" },
+              ].map((size) => (
+                <button
+                  key={size.id}
+                  type="button"
+                  onClick={() => handleChange("fontSize", size.id)}
+                  className={`py-1 px-2 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                    (formData.fontSize || "base") === size.id
+                      ? "bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 font-bold shadow-xs"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  {size.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-          {formData.role !== "frontend" && formData.role !== "backend" && (
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-foreground">What this node does / Action</label>
-              <Input
-                value={formData.action}
-                onChange={(e) => handleChange("action", e.target.value)}
-                placeholder="e.g. User auth service, core processing..."
-                className="h-8 text-xs font-medium"
-              />
-            </div>
-          )}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Architecture Notes</label>
+            <Textarea
+              value={formData.notes}
+              onChange={(e) => handleChange("notes", e.target.value)}
+              placeholder="e.g. Handles API requests, business logic, and database operations..."
+              className="text-xs min-h-[60px] resize-none"
+            />
+          </div>
         </>
       )}
 
@@ -539,100 +514,6 @@ export default function SystemNodeSettings({
             />
           </div>
         </div>
-      )}
-
-      {formData.role === "ai" && (
-        <div className="space-y-1.5 p-2 rounded-lg bg-muted/40 border border-border">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block">
-            AI Model Presets
-          </span>
-          <div className="flex flex-wrap gap-1">
-            {[
-              { label: "Claude 3.5 Sonnet", action: "Reasoning & Agent Decisions", tech: "Anthropic API", latency: "380ms", protocol: "HTTPS Streaming" },
-              { label: "OpenAI GPT-4o", action: "Multimodal LLM Agent", tech: "OpenAI API", latency: "420ms", protocol: "HTTPS Streaming" },
-              { label: "RAG & Vector Agent", action: "Semantic Context Retrieval", tech: "Vector DB + LLM", latency: "250ms", protocol: "gRPC / HTTPS" },
-            ].map((preset) => (
-              <button
-                key={preset.label}
-                type="button"
-                onClick={() => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    name: prev.name === "New Component" || prev.name === "AI Agent" ? preset.label : prev.name,
-                    action: preset.action,
-                    tech: preset.tech,
-                    protocol: preset.protocol,
-                    latency: preset.latency,
-                  }));
-                }}
-                className="text-[10px] px-2 py-0.5 rounded bg-card hover:bg-muted text-muted-foreground hover:text-foreground border border-border hover:border-[#ffdf27]/40 transition-colors cursor-pointer"
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Technology, Protocol, Latency, and Architecture Notes (hidden for database, frontend, and backend) */}
-      {formData.role !== "database" && (
-        <>
-          {formData.role !== "frontend" && formData.role !== "backend" && (
-            <>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-foreground">Technology / Framework</label>
-                <Input
-                  value={formData.tech}
-                  onChange={(e) => handleChange("tech", e.target.value)}
-                  placeholder="e.g. Next.js, Go, Python, Claude 3.5"
-                  className="h-8 text-xs font-mono"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-foreground">Protocol</label>
-                  <Select
-                    value={formData.protocol}
-                    onValueChange={(val) => handleChange("protocol", val)}
-                  >
-                    <SelectTrigger className="h-8 text-xs font-mono">
-                      <SelectValue placeholder="Protocol" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="HTTPS">HTTPS</SelectItem>
-                      <SelectItem value="HTTP/2 / HTTP/3">HTTP/2 / HTTP/3</SelectItem>
-                      <SelectItem value="gRPC / Protobuf">gRPC / Protobuf</SelectItem>
-                      <SelectItem value="WebSocket">WebSocket</SelectItem>
-                      <SelectItem value="Kafka Binary">Kafka Binary</SelectItem>
-                      <SelectItem value="TCP / UDP">TCP / UDP</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-foreground">Est. Latency / SLA</label>
-                  <Input
-                    value={formData.latency}
-                    onChange={(e) => handleChange("latency", e.target.value)}
-                    placeholder="e.g. 5.0ms"
-                    className="h-8 text-xs font-mono"
-                  />
-                </div>
-              </div>
-            </>
-          )}
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-foreground">Architecture Notes</label>
-            <Textarea
-              value={formData.notes}
-              onChange={(e) => handleChange("notes", e.target.value)}
-              placeholder="e.g. Handles checkout requests and sends confirmation emails..."
-              className="text-xs min-h-[60px] resize-none"
-            />
-          </div>
-        </>
       )}
 
       {/* Action Buttons */}

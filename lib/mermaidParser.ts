@@ -1,11 +1,13 @@
 /**
  * Comprehensive Mermaid to ReactFlow Parser and Auto-Layout Engine.
  * Supports:
- * - Directives: graph TD, graph TB, graph LR, graph RL, flowchart TD, flowchart LR, etc.
+ * - Directives: graph TD, graph TB, graph LR, graph RL, flowchart TD, flowchart LR, sequenceDiagram, erDiagram
  * - Shapes: [Rectangle], (Rounded), ([Pill/Stadium]), [(Cylinder/DB)], {Diamond/Decision}, {{Hexagon}}
  * - Edges: -->, ---, -.->, ==>, labeled edges (-->|label| or -- label -->), and chained arrows (A --> B --> C)
+ * - Sequence Diagrams: actor, participant, A->>B: msg, A-->>B: resp, activation, loop, alt, autonumber
+ * - Entity-Relationship Diagrams (erDiagram): entities, fields (PK/FK/types), cardinalities (||--o{, }o--||, etc.)
  * - Automatic semantic node type inference (StartNode, EndNode, IfElseNode, Database, Frontend, Backend, AI)
- * - Topological rank-based layered DAG layout (vertical TD and horizontal LR)
+ * - Kahn's topological DAG rank-based auto-layout with branch lane routing
  */
 
 export interface ParsedMermaidResult {
@@ -22,8 +24,10 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
   }
 
   const rawLines = mermaidCode.split(/\r?\n/);
+  const isSequence = /^\s*sequenceDiagram/im.test(mermaidCode);
+  const isErDiagram = /^\s*erDiagram/im.test(mermaidCode);
 
-  let direction: "TD" | "LR" = "TD";
+  let direction: "TD" | "LR" = isSequence || isErDiagram ? "LR" : "TD";
   const nodeMap = new Map<
     string,
     {
@@ -41,8 +45,39 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
     label?: string;
     animated?: boolean;
     style?: any;
+    isResponse?: boolean;
   }
   const rawEdges: RawEdge[] = [];
+
+  // Helper to format camelCase / snake_case into human-readable labels
+  const formatParticipantLabel = (name: string): string => {
+    let formatted = name.replace(/[_-]+/g, " ");
+    formatted = formatted.replace(/([a-z])([A-Z])/g, "$1 $2");
+    formatted = formatted.replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2");
+    return formatted.trim();
+  };
+
+  // Helper to map ER types to SQL data types
+  const mapErTypeToSql = (typeStr: string): string => {
+    const t = typeStr.toLowerCase();
+    if (t === "string" || t === "varchar") return "VARCHAR(255)";
+    if (t === "text") return "TEXT";
+    if (t === "int" || t === "integer") return "INTEGER";
+    if (t === "decimal" || t === "float" || t === "double" || t === "numeric") return "DECIMAL(10,2)";
+    if (t === "datetime" || t === "timestamp") return "TIMESTAMP";
+    if (t === "date") return "DATE";
+    if (t === "boolean" || t === "bool") return "BOOLEAN";
+    return typeStr.toUpperCase();
+  };
+
+  // Helper to format ER cardinality symbols
+  const formatCardinality = (sym: string): string => {
+    if (sym.includes("--o{") || sym.includes("--|{")) return "1:N";
+    if (sym.includes("}o--") || sym.includes("|{--")) return "N:1";
+    if (sym.includes("}o--o{") || sym.includes("}o--|{")) return "M:N";
+    if (sym.includes("||--||")) return "1:1";
+    return "";
+  };
 
   // Helper to register or update node in map
   const registerNode = (id: string, label?: string, rawShape?: string) => {
@@ -57,6 +92,8 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
       finalLabel = existing.label;
     } else if (label !== undefined && label.trim() !== "") {
       finalLabel = label.trim();
+    } else {
+      finalLabel = formatParticipantLabel(cleanId);
     }
 
     let finalShape = rawShape || "box";
@@ -75,7 +112,6 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
   };
 
   // Helper to extract node token with bracket shapes
-  // e.g. NodeA["My Label"] or NodeB[(Database)] or NodeC{"Check Condition"}
   const parseNodeToken = (token: string): { id: string; label?: string; shape?: string } => {
     const t = token.trim();
 
@@ -124,6 +160,13 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
     return { id: t, label: t, shape: "box" };
   };
 
+  // ER Diagram State
+  let currentErEntity: string | null = null;
+  const erEntityFields = new Map<
+    string,
+    { type: string; name: string; isPk: boolean; isFk: boolean }[]
+  >();
+
   // Process line by line
   for (let line of rawLines) {
     line = line.trim();
@@ -131,7 +174,138 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
     // Ignore empty lines and Mermaid comments
     if (!line || line.startsWith("%%") || line.startsWith("//")) continue;
 
-    // Check header direction: graph TD/LR/TB/RL or flowchart TD/LR
+    // --- Entity-Relationship Diagram Mode ---
+    if (isErDiagram) {
+      if (line.startsWith("erDiagram")) continue;
+
+      // Inside entity block: ENTITY {
+      const entityStartMatch = line.match(/^([A-Za-z0-9_]+)\s*\{$/);
+      if (entityStartMatch) {
+        currentErEntity = entityStartMatch[1];
+        registerNode(currentErEntity, formatParticipantLabel(currentErEntity), "entity");
+        if (!erEntityFields.has(currentErEntity)) erEntityFields.set(currentErEntity, []);
+        continue;
+      }
+
+      if (currentErEntity) {
+        if (line === "}" || line.startsWith("}")) {
+          currentErEntity = null;
+          continue;
+        }
+
+        const fieldMatch = line.match(
+          /^\s*([A-Za-z0-9_()]+)\s+([A-Za-z0-9_]+)(?:\s+(PK|FK|UK|FK\s+PK|PK\s+FK))?(?:\s+["'][^"']*["'])?\s*$/i
+        );
+        if (fieldMatch) {
+          const type = fieldMatch[1];
+          const name = fieldMatch[2];
+          const constraint = (fieldMatch[3] || "").toUpperCase();
+          const isPk = constraint.includes("PK");
+          const isFk = constraint.includes("FK");
+
+          erEntityFields.get(currentErEntity)!.push({
+            type,
+            name,
+            isPk,
+            isFk,
+          });
+          continue;
+        }
+      }
+
+      // Relationship: USER ||--o{ ORDER : places
+      const relMatch = line.match(
+        /^([A-Za-z0-9_]+)\s*([|o}{]+--[|o}{]+)\s*([A-Za-z0-9_]+)\s*(?::\s*["']?([^"'\r\n]+)["']?)?$/
+      );
+      if (relMatch) {
+        const sourceId = relMatch[1].trim();
+        const cardSym = relMatch[2].trim();
+        const targetId = relMatch[3].trim();
+        const relLabel = relMatch[4]?.trim() || "";
+
+        registerNode(sourceId, formatParticipantLabel(sourceId), "entity");
+        registerNode(targetId, formatParticipantLabel(targetId), "entity");
+
+        const cardText = formatCardinality(cardSym);
+        const displayLabel = relLabel
+          ? cardText
+            ? `${relLabel} (${cardText})`
+            : relLabel
+          : cardText;
+
+        rawEdges.push({
+          source: sourceId,
+          target: targetId,
+          label: displayLabel || undefined,
+          animated: true,
+        });
+        continue;
+      }
+    }
+
+    // --- Sequence Diagram Mode ---
+    if (isSequence) {
+      if (
+        line.startsWith("sequenceDiagram") ||
+        line.startsWith("autonumber") ||
+        line.startsWith("activate ") ||
+        line.startsWith("deactivate ") ||
+        line.startsWith("loop ") ||
+        line.startsWith("alt ") ||
+        line.startsWith("else ") ||
+        line.startsWith("opt ") ||
+        line.startsWith("par ") ||
+        line === "end" ||
+        line.startsWith("Note ")
+      ) {
+        continue;
+      }
+
+      // Check actor: actor User [as "Customer"]
+      const actorMatch = line.match(/^actor\s+([\w\-.:]+)(?:\s+as\s+["']?([^"']+)["']?)?$/i);
+      if (actorMatch) {
+        const id = actorMatch[1];
+        const label = actorMatch[2] || formatParticipantLabel(id);
+        registerNode(id, label, "actor");
+        continue;
+      }
+
+      // Check participant: participant Frontend [as "Web App"]
+      const partMatch = line.match(/^participant\s+([\w\-.:]+)(?:\s+as\s+["']?([^"']+)["']?)?$/i);
+      if (partMatch) {
+        const id = partMatch[1];
+        const label = partMatch[2] || formatParticipantLabel(id);
+        registerNode(id, label, "participant");
+        continue;
+      }
+
+      // Check sequence message: Sender->>Receiver: Message or Sender-->>Receiver: Response
+      const seqArrowMatch = line.match(
+        /^([A-Za-z0-9_.:]+)\s*(-->>|->>|-->|->|-\)|--\)|-x|--x)\s*([+-]?)\s*([A-Za-z0-9_.:]+)\s*:\s*(.*)$/
+      );
+      if (seqArrowMatch) {
+        const sourceId = seqArrowMatch[1].trim();
+        const arrow = seqArrowMatch[2].trim();
+        const targetId = seqArrowMatch[4].trim();
+        const msg = seqArrowMatch[5]?.trim();
+        const isResponse = arrow.startsWith("--");
+
+        registerNode(sourceId, formatParticipantLabel(sourceId));
+        registerNode(targetId, formatParticipantLabel(targetId));
+
+        rawEdges.push({
+          source: sourceId,
+          target: targetId,
+          label: msg,
+          isResponse,
+          animated: true,
+          style: isResponse ? { strokeDasharray: "5 5", strokeWidth: 2 } : { strokeWidth: 2 },
+        });
+        continue;
+      }
+    }
+
+    // --- Standard Graph / Flowchart Mode ---
     const headerMatch = line.match(/^(?:graph|flowchart)\s+(TD|TB|LR|RL)/i);
     if (headerMatch) {
       const dir = headerMatch[1].toUpperCase();
@@ -139,7 +313,6 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
       continue;
     }
 
-    // Ignore styling commands
     if (
       line.startsWith("classDef") ||
       line.startsWith("class ") ||
@@ -151,9 +324,7 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
       continue;
     }
 
-    // Regex for edge connectors:
-    // e.g. -->|label|, -- label -->, -->, -.->, ==>
-    // We split by edge operators while capturing them
+    // Regex for edge connectors
     const edgePattern =
       /(?:-->\|([^|]+)\|)|(?:--\s*["']?([^"'-]+?)["']?\s*-->)|(?:==\s*["']?([^"'-]+?)["']?\s*==>)|(?:-\.\s*["']?([^"'-]+?)["']?\s*\.->)|(?:-->)|(?:==>)|(?:-\.->)|(?:---)/g;
 
@@ -169,7 +340,6 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
     }
 
     if (matches.length > 0) {
-      // Line contains one or more edge connections (possibly chained like A --> B --> C)
       let prevTokenEnd = 0;
       const nodeSegments: { token: string; edgeLabelToNext?: string }[] = [];
 
@@ -183,13 +353,11 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
         prevTokenEnd = m.index + m.text.length;
       }
 
-      // Last node token after last edge operator
       const lastToken = line.substring(prevTokenEnd).trim();
       if (lastToken) {
         nodeSegments.push({ token: lastToken });
       }
 
-      // Parse each node and create edges between consecutive nodes
       for (let i = 0; i < nodeSegments.length - 1; i++) {
         const sourceData = parseNodeToken(nodeSegments[i].token);
         const targetData = parseNodeToken(nodeSegments[i + 1].token);
@@ -207,7 +375,6 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
         }
       }
     } else {
-      // Standalone node declaration (e.g. A[My Service])
       const nodeData = parseNodeToken(line);
       if (nodeData.id) {
         registerNode(nodeData.id, nodeData.label, nodeData.shape);
@@ -215,8 +382,7 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
     }
   }
 
-  // --- Topological Layering & Layout Engine ---
-  // 1. Build adjacency list and in-degrees
+  // --- Topological Layering & Layout Engine (Kahn's Algorithm) ---
   const adj = new Map<string, string[]>();
   const inDegree = new Map<string, number>();
 
@@ -226,34 +392,33 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
   }
 
   for (const edge of rawEdges) {
+    if (isSequence && edge.isResponse) continue;
+
     if (adj.has(edge.source) && inDegree.has(edge.target)) {
       adj.get(edge.source)!.push(edge.target);
       inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1);
     }
   }
 
-  // 2. Compute Longest-Path Rank / Layer for each node
+  // Compute Longest-Path Rank using Kahn's algorithm
   const rank = new Map<string, number>();
+  const remainingInDegree = new Map<string, number>();
   const queue: string[] = [];
 
   for (const [id, deg] of inDegree) {
+    remainingInDegree.set(id, deg);
+    rank.set(id, 0);
     if (deg === 0) {
       queue.push(id);
-      rank.set(id, 0);
     }
   }
 
-  // Fallback if cyclic: initialize any unranked nodes
   if (queue.length === 0 && nodeMap.size > 0) {
     const firstId = Array.from(nodeMap.keys())[0];
     queue.push(firstId);
-    rank.set(firstId, 0);
   }
 
-  // BFS traversal with cycle protection
   let head = 0;
-  const visitedCount = new Map<string, number>();
-
   while (head < queue.length) {
     const u = queue[head++];
     const currentRank = rank.get(u) || 0;
@@ -261,37 +426,59 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
 
     for (const v of neighbors) {
       const vRank = rank.get(v) || 0;
-      const newRank = Math.max(vRank, currentRank + 1);
-      rank.set(v, newRank);
+      rank.set(v, Math.max(vRank, currentRank + 1));
 
-      const vVisits = (visitedCount.get(v) || 0) + 1;
-      visitedCount.set(v, vVisits);
+      const remDeg = (remainingInDegree.get(v) || 1) - 1;
+      remainingInDegree.set(v, remDeg);
 
-      // Prevent infinite loops on cycles (max 3 re-evaluations)
-      if (vVisits <= 3 && !queue.includes(v)) {
+      if (remDeg === 0) {
         queue.push(v);
       }
     }
   }
 
-  // Assign rank 0 to any remaining disconnected nodes
+  // Assign sequential ranks to any nodes remaining in cycles
   for (const [id] of nodeMap) {
-    if (!rank.has(id)) {
-      rank.set(id, 0);
+    if (!queue.includes(id)) {
+      const maxRank = Math.max(0, ...Array.from(rank.values()));
+      rank.set(id, maxRank + 1);
+      queue.push(id);
     }
   }
 
-  // Group nodes by their rank/layer
+  // Group nodes by layer/rank
   const layers = new Map<number, string[]>();
   for (const [id, r] of rank) {
     if (!layers.has(r)) layers.set(r, []);
     layers.get(r)!.push(id);
   }
 
-  // Sort ranks
   const sortedRanks = Array.from(layers.keys()).sort((a, b) => a - b);
 
-  // 3. Convert parsed nodes to ReactFlow nodes with inferred types & coordinates
+  // Identify nodes that belong to side branches (e.g. Yes branch of a Decision node)
+  const branchOffsetMap = new Map<string, number>();
+  for (const edge of rawEdges) {
+    const sourceInfo = nodeMap.get(edge.source);
+    if (sourceInfo?.rawShape === "diamond") {
+      const lbl = (edge.label || "").toLowerCase();
+      const isPositive = lbl.includes("yes") || lbl.includes("true") || lbl.includes("valid");
+      if (isPositive) {
+        // Mark target and its direct linear descendants for lateral branch shift
+        let curr: string | undefined = edge.target;
+        while (curr) {
+          branchOffsetMap.set(curr, 160); // Shift right by 160px
+          const nextNeighbors: string[] = adj.get(curr) || [];
+          if (nextNeighbors.length === 1 && (inDegree.get(nextNeighbors[0]) || 0) === 1) {
+            curr = nextNeighbors[0];
+          } else {
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Convert parsed nodes to ReactFlow nodes
   const rfNodes: any[] = [];
   const nodeIfElseOutCount = new Map<string, number>();
 
@@ -302,33 +489,52 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
     nodesInLayer.forEach((id, idx) => {
       const info = nodeMap.get(id)!;
       const textLower = (info.label + " " + info.id).toLowerCase();
+      const inDeg = inDegree.get(info.id) || 0;
+      const outDeg = (adj.get(info.id) || []).length;
 
-      // Semantic Node Type Inference:
       let nodeType = "CustomNode";
       let role = "custom";
       let dbFormat: "sql" | "nosql" | undefined = undefined;
 
-      if (
+      const isIfElse =
         info.rawShape === "diamond" ||
-        textLower.includes("if") ||
-        textLower.includes("?") ||
-        textLower.includes("decision") ||
-        textLower.includes("check")
-      ) {
-        nodeType = "IfElseNode";
-      } else if (
+        /\b(?:if|else|condition|decision)\b/i.test(textLower) ||
+        /\bcheck\b/i.test(textLower) ||
+        textLower.includes("?");
+
+      const isStartCandidate =
+        info.rawShape === "actor" ||
         info.id.toLowerCase() === "start" ||
         info.label.toLowerCase() === "start" ||
         textLower.startsWith("start") ||
-        (info.rawShape === "pill" && textLower.includes("start"))
-      ) {
-        nodeType = "StartNode";
-      } else if (
+        (info.rawShape === "pill" &&
+          (inDeg === 0 ||
+            textLower.includes("start") ||
+            textLower.includes("input") ||
+            textLower.includes("prompt") ||
+            textLower.includes("begin")));
+
+      const isEndCandidate =
         info.id.toLowerCase() === "end" ||
         info.label.toLowerCase() === "end" ||
         textLower.startsWith("end") ||
-        (info.rawShape === "pill" && textLower.includes("end"))
-      ) {
+        (info.rawShape === "pill" &&
+          (outDeg === 0 ||
+            textLower.includes("end") ||
+            textLower.includes("output") ||
+            textLower.includes("response") ||
+            textLower.includes("finish") ||
+            textLower.includes("stop")));
+
+      if (isErDiagram) {
+        nodeType = "CustomNode";
+        role = "database";
+        dbFormat = "sql";
+      } else if (isIfElse) {
+        nodeType = "IfElseNode";
+      } else if (isStartCandidate) {
+        nodeType = "StartNode";
+      } else if (isEndCandidate) {
         nodeType = "EndNode";
       } else if (
         info.rawShape === "cylinder" ||
@@ -351,7 +557,9 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
         textLower.includes("llm") ||
         textLower.includes("gpt") ||
         textLower.includes("claude") ||
-        textLower.includes("agent")
+        textLower.includes("agent") ||
+        textLower.includes("perceive") ||
+        textLower.includes("prompt")
       ) {
         nodeType = "CustomNode";
         role = "ai";
@@ -371,7 +579,8 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
         textLower.includes("api") ||
         textLower.includes("server") ||
         textLower.includes("service") ||
-        textLower.includes("gateway")
+        textLower.includes("gateway") ||
+        textLower.includes("tool")
       ) {
         nodeType = "CustomNode";
         role = "backend";
@@ -381,16 +590,24 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
       let posX = 0;
       let posY = 0;
 
-      if (direction === "LR") {
-        // Horizontal Layout: Rank defines X, Layer Index defines Y
-        posX = r * 300 + 100;
-        const layerCenterOffset = ((countInLayer - 1) / 2) * 140;
-        posY = idx * 140 - layerCenterOffset + 240;
+      if (isErDiagram) {
+        posX = r * 440 + 80;
+        const layerCenterOffset = ((countInLayer - 1) / 2) * 260;
+        posY = idx * 260 - layerCenterOffset + 240;
+      } else if (direction === "LR") {
+        posX = r * 330 + 80;
+        const layerCenterOffset = ((countInLayer - 1) / 2) * 160;
+        posY = idx * 160 - layerCenterOffset + 240;
       } else {
-        // Vertical Layout (TD): Rank defines Y, Layer Index defines X
+        // Vertical TD Layout:
         posY = r * 220 + 80;
-        const layerCenterOffset = ((countInLayer - 1) / 2) * 280;
-        posX = idx * 280 - layerCenterOffset + 380;
+        const branchOffset = branchOffsetMap.get(id) || 0;
+        if (countInLayer === 1) {
+          posX = 380 + branchOffset;
+        } else {
+          const layerCenterOffset = ((countInLayer - 1) / 2) * 280;
+          posX = idx * 280 - layerCenterOffset + 380;
+        }
       }
 
       // Build data payload
@@ -405,7 +622,32 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
         },
       };
 
-      if (nodeType === "CustomNode") {
+      if (isErDiagram) {
+        const fields = erEntityFields.get(info.id) || [];
+        const colDefinitions = fields.map((f) => {
+          const sqlType = mapErTypeToSql(f.type);
+          const pkStr = f.isPk ? " PRIMARY KEY" : "";
+          const fkStr = f.isFk ? " /* FK */" : "";
+          return `  ${f.name} ${sqlType}${pkStr}${fkStr}`;
+        });
+
+        const fallbackCols = [
+          "  id VARCHAR(255) PRIMARY KEY",
+          "  name VARCHAR(255)",
+          "  created_at TIMESTAMP",
+        ];
+
+        const finalCols = colDefinitions.length > 0 ? colDefinitions : fallbackCols;
+        const generatedSql = `CREATE TABLE ${info.id.toLowerCase()} (\n${finalCols.join(",\n")}\n);`;
+
+        dataPayload.settings.role = "database";
+        dataPayload.settings.dbFormat = "sql";
+        dataPayload.settings.dbTableName = info.id.toLowerCase();
+        dataPayload.settings.dbSql = generatedSql;
+        dataPayload.settings.sqlSchema = generatedSql;
+        dataPayload.settings.tech = "Relational Entity";
+        dataPayload.settings.action = `${fields.length || 3} Columns Schema`;
+      } else if (nodeType === "CustomNode") {
         dataPayload.settings.role = role;
         if (role === "database") {
           dataPayload.settings.dbTableName = info.label.toLowerCase().replace(/\s+/g, "_");
@@ -421,10 +663,27 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
     });
   }
 
-  // 4. Convert edges to ReactFlow edges with intelligent handle routing
+  // 4. Combine duplicate consecutive calls and route handles
   const rfEdges: any[] = [];
+  const edgeDedupeMap = new Map<string, { edge: RawEdge; labels: string[] }>();
 
-  rawEdges.forEach((e, idx) => {
+  for (const e of rawEdges) {
+    const key = `${e.source}__${e.target}__${e.isResponse ? "resp" : "fwd"}`;
+    const existing = edgeDedupeMap.get(key);
+    if (existing) {
+      if (e.label && !existing.labels.includes(e.label)) {
+        existing.labels.push(e.label);
+      }
+    } else {
+      edgeDedupeMap.set(key, {
+        edge: e,
+        labels: e.label ? [e.label] : [],
+      });
+    }
+  }
+
+  let edgeIdx = 0;
+  for (const [, { edge: e, labels }] of edgeDedupeMap) {
     const sourceNode = rfNodes.find((n) => n.id === e.source);
     const targetNode = rfNodes.find((n) => n.id === e.target);
 
@@ -446,7 +705,7 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
       const outCount = nodeIfElseOutCount.get(e.source) || 0;
       nodeIfElseOutCount.set(e.source, outCount + 1);
 
-      const edgeLabelLower = (e.label || "").toLowerCase();
+      const edgeLabelLower = (labels.join(" ") || "").toLowerCase();
       const isNegative =
         edgeLabelLower.includes("false") ||
         edgeLabelLower.includes("no") ||
@@ -469,7 +728,6 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
       } else if (isNegative) {
         sourceHandle = "false";
       } else {
-        // Fallback: 1st edge is True (Right), 2nd edge is False (Left)
         sourceHandle = outCount === 0 ? "true" : "false";
       }
     }
@@ -483,7 +741,10 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
       if (sourceNode.data?.settings?.role === "frontend") {
         sourceHandle = "bottom";
       } else {
-        sourceHandle = "right";
+        const isBackEdge =
+          direction === "LR" &&
+          (sourceNode.position?.x || 0) > (targetNode?.position?.x || 0);
+        sourceHandle = isBackEdge ? "left" : "right";
       }
     }
 
@@ -491,21 +752,30 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
       if (targetNode.data?.settings?.role === "frontend") {
         targetHandle = "top";
       } else {
-        targetHandle = "left";
+        const isBackEdge =
+          direction === "LR" &&
+          (sourceNode?.position?.x || 0) > (targetNode.position?.x || 0);
+        targetHandle = isBackEdge ? "right" : "left";
       }
     }
 
+    if (targetNode?.type === "StartNode") {
+      targetHandle = "bottom";
+    }
+
+    const displayLabel = labels.length > 1 ? labels.join(" / ") : labels[0] || undefined;
+
     rfEdges.push({
-      id: `edge-${e.source}-${e.target}-${idx}`,
+      id: `edge-${e.source}-${e.target}-${edgeIdx++}`,
       source: e.source,
       target: e.target,
       ...(sourceHandle ? { sourceHandle } : {}),
       ...(targetHandle ? { targetHandle } : {}),
       animated: true,
-      label: e.label || undefined,
-      style: { strokeWidth: 2 },
+      label: displayLabel,
+      style: e.style || { strokeWidth: 2 },
     });
-  });
+  }
 
   return {
     nodes: rfNodes,

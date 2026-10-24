@@ -26,7 +26,7 @@ export default function AgentToolsPanel() {
         type: "CustomNode",
         settings: {
           name: "New Component",
-          role: "frontend",
+          role: "backend",
           action: "",
           tech: "",
           protocol: "HTTPS",
@@ -148,7 +148,7 @@ export default function AgentToolsPanel() {
             </div>
             <div>
               <div className="font-semibold text-foreground">Architecture Node</div>
-              <div className="text-[10px] text-muted-foreground">Frontend, Backend, DB, AI</div>
+              <div className="text-[10px] text-muted-foreground">Backend & Database</div>
             </div>
           </DropdownMenuItem>
 

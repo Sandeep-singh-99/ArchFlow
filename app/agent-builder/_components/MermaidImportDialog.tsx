@@ -21,11 +21,7 @@ import { toast } from "sonner";
 import {
   Sparkles,
   GitGraph,
-  Play,
   RotateCcw,
-  Check,
-  Layers,
-  ArrowRight,
   FileCode2,
 } from "lucide-react";
 import { Agent } from "@/types/AgentTypes";
@@ -36,56 +32,6 @@ interface MermaidImportDialogProps {
   onOpenChange?: (open: boolean) => void;
   trigger?: React.ReactNode;
 }
-
-const PRESET_TEMPLATES = [
-  {
-    name: "Fullstack App",
-    badge: "Popular",
-    code: `graph TD
-    Start([Start]) --> WebApp["Frontend Web App"]
-    WebApp --> ApiGateway["API Gateway Server"]
-    ApiGateway --> AuthCheck{"Is Authenticated?"}
-    AuthCheck -->|Valid| MainDB[("PostgreSQL Database")]
-    AuthCheck -->|Invalid| End([End])
-    MainDB --> End([End])`,
-  },
-  {
-    name: "Auth & Decision",
-    badge: "Logic Flow",
-    code: `graph TD
-    Start([Start]) --> LoginScreen["User Login UI"]
-    LoginScreen --> AuthService["Auth Microservice"]
-    AuthService --> CheckUser{"Verify Credentials"}
-    CheckUser -->|Success| UserDashboard["Dashboard UI"]
-    CheckUser -->|Failure| ErrorToast["Error Handler"]
-    UserDashboard --> End([End])
-    ErrorToast --> End([End])`,
-  },
-  {
-    name: "AI Agent Pipeline",
-    badge: "AI & RAG",
-    code: `graph LR
-    Start([Start]) --> UserInput["User Chat Interface"]
-    UserInput --> ModelRouter{"Agent Router"}
-    ModelRouter -->|Code Task| CodeAgent["Claude Coding Specialist"]
-    ModelRouter -->|General| VectorDB[("Pinecone Vector Store")]
-    CodeAgent --> ResponseFormatter["Response Formatter"]
-    VectorDB --> ResponseFormatter
-    ResponseFormatter --> End([End])`,
-  },
-  {
-    name: "Microservices & Cache",
-    badge: "Backend",
-    code: `graph TD
-    Start([Start]) --> Ingress["Cloudflare Edge"]
-    Ingress --> ApiService["NestJS Backend"]
-    ApiService --> CacheCheck{"Cache Hit?"}
-    CacheCheck -->|Yes| RedisCache[("Redis Cache")]
-    CacheCheck -->|No| PrimaryDB[("PostgreSQL Primary")]
-    RedisCache --> End([End])
-    PrimaryDB --> End([End])`,
-  },
-];
 
 export default function MermaidImportDialog({
   agentDetail,
@@ -98,7 +44,7 @@ export default function MermaidImportDialog({
   const open = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? setControlledOpen! : setInternalOpen;
 
-  const [mermaidText, setMermaidText] = useState(PRESET_TEMPLATES[0].code);
+  const [mermaidText, setMermaidText] = useState("");
   const [mode, setMode] = useState<"replace" | "append">("replace");
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -238,26 +184,6 @@ export default function MermaidImportDialog({
             </div>
           </div>
         </DialogHeader>
-
-        {/* Preset Templates Bar */}
-        <div className="shrink-0 flex items-center gap-1.5 overflow-x-auto py-2 border-y border-border">
-          <span className="text-[11px] font-semibold text-muted-foreground shrink-0 flex items-center gap-1 mr-1">
-            <Sparkles className="h-3 w-3 text-amber-500" /> Presets:
-          </span>
-          {PRESET_TEMPLATES.map((tmpl) => (
-            <button
-              key={tmpl.name}
-              type="button"
-              onClick={() => setMermaidText(tmpl.code)}
-              className="px-2.5 py-1 rounded-md text-xs font-medium border border-border hover:border-primary/40 hover:bg-muted/80 text-foreground transition-all shrink-0 flex items-center gap-1.5 cursor-pointer"
-            >
-              <span>{tmpl.name}</span>
-              <span className="text-[10px] text-muted-foreground font-mono">
-                ({tmpl.badge})
-              </span>
-            </button>
-          ))}
-        </div>
 
         {/* Raw Mermaid Editor Area */}
         <div className="flex-1 flex flex-col min-h-[260px] max-h-[360px] relative my-3">
