@@ -1,11 +1,11 @@
 "use client";
+
+import React, { useContext, useState, useEffect } from "react";
 import { WorkflowContext } from "@/context/WorkflowContext";
-import React, { useContext } from "react";
-import SystemNodeSettings from "../_nodeSettings/SystemNodeSettings";
-import TextNodeSettings from "../_nodeSettings/TextNodeSettings";
-import StartNodeSettings from "../_nodeSettings/StartNodeSettings";
-import EndNodeSettings from "../_nodeSettings/EndNodeSettings";
-import IfElseNodeSettings from "../_nodeSettings/IfElseNodeSettings";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Trash2, X } from "lucide-react";
 
 export default function SettingPanel({
   onSave,
@@ -15,49 +15,39 @@ export default function SettingPanel({
   const { selectedNode, addedNodes, setAddedNodes, setSelectedNode } =
     useContext(WorkflowContext);
 
-  const onUpdateNodeData = (formData: any) => {
-    if (!selectedNode) return;
+  const [label, setLabel] = useState("");
 
+  useEffect(() => {
+    if (selectedNode) {
+      setLabel(selectedNode.data?.label || selectedNode.data?.name || "");
+    }
+  }, [selectedNode]);
+
+  if (!selectedNode) return null;
+
+  const onUpdateLabel = (newLabel: string) => {
+    setLabel(newLabel);
     const currentNodes = addedNodes || [];
-    // Always find the latest live node in canvas state to preserve its exact dragged/aligned position
-    const liveNode =
-      currentNodes.find((node: any) => node.id === selectedNode.id) || selectedNode;
-
-    const isText = liveNode.type === "TextNode" || liveNode.data?.type === "TextNode";
-
-    const updateNode = {
-      ...liveNode,
-      // Strictly preserve the live aligned position
-      position: { ...(liveNode.position || selectedNode.position) },
-      data: {
-        ...liveNode.data,
-        label:
-          formData.name ||
-          formData.title ||
-          (formData.text && formData.text.trim().length > 0
-            ? formData.text.slice(0, 25) + "..."
-            : liveNode.data?.label),
-        title: formData.title || liveNode.data?.title,
-        text: formData.text !== undefined ? formData.text : liveNode.data?.text,
-        color: formData.color || liveNode.data?.color,
-        fontSize: formData.fontSize || liveNode.data?.fontSize || "base",
-        triggerType: formData.triggerType !== undefined ? formData.triggerType : liveNode.data?.triggerType,
-        responseType: formData.responseType !== undefined ? formData.responseType : liveNode.data?.responseType,
-        description: formData.description !== undefined ? formData.description : liveNode.data?.description,
-        condition: formData.condition !== undefined ? formData.condition : liveNode.data?.condition,
-        trueLabel: formData.trueLabel !== undefined ? formData.trueLabel : liveNode.data?.trueLabel,
-        falseLabel: formData.falseLabel !== undefined ? formData.falseLabel : liveNode.data?.falseLabel,
-        settings: formData,
-      },
-    };
-
-    const updatedNodes = currentNodes.map((node: any) =>
-      node.id === selectedNode.id ? updateNode : node
+    const updated = currentNodes.map((n: any) =>
+      n.id === selectedNode.id
+        ? {
+            ...n,
+            data: {
+              ...n.data,
+              label: newLabel,
+            },
+          }
+        : n
     );
-
-    setAddedNodes(updatedNodes);
-    setSelectedNode(updateNode);
-    onSave(updatedNodes);
+    setAddedNodes(updated);
+    setSelectedNode({
+      ...selectedNode,
+      data: {
+        ...selectedNode.data,
+        label: newLabel,
+      },
+    });
+    onSave(updated);
   };
 
   const onDeleteNode = (nodeId: string) => {
@@ -68,55 +58,50 @@ export default function SettingPanel({
     onSave(filtered);
   };
 
-  if (!selectedNode) return null;
-
-  const isTextNode =
-    selectedNode.type === "TextNode" || selectedNode.data?.type === "TextNode";
-  const isStartNode =
-    selectedNode.type === "StartNode" || selectedNode.data?.type === "StartNode";
-  const isEndNode =
-    selectedNode.type === "EndNode" || selectedNode.data?.type === "EndNode";
-  const isIfElseNode =
-    selectedNode.type === "IfElseNode" || selectedNode.data?.type === "IfElseNode";
-
   return (
-    <div className="p-4 sm:p-5 bg-card border border-border rounded-xl w-[340px] shadow-xl max-h-[85vh] overflow-y-auto">
-      {isTextNode ? (
-        <TextNodeSettings
-          selectedNode={selectedNode}
-          onUpdate={onUpdateNodeData}
-          onDeleteNode={onDeleteNode}
-          onClose={() => setSelectedNode(null)}
-        />
-      ) : isStartNode ? (
-        <StartNodeSettings
-          selectedNode={selectedNode}
-          updateFormData={onUpdateNodeData}
-          onDeleteNode={onDeleteNode}
-          onClose={() => setSelectedNode(null)}
-        />
-      ) : isEndNode ? (
-        <EndNodeSettings
-          selectedNode={selectedNode}
-          updateFormData={onUpdateNodeData}
-          onDeleteNode={onDeleteNode}
-          onClose={() => setSelectedNode(null)}
-        />
-      ) : isIfElseNode ? (
-        <IfElseNodeSettings
-          selectedNode={selectedNode}
-          updateFormData={onUpdateNodeData}
-          onDeleteNode={onDeleteNode}
-          onClose={() => setSelectedNode(null)}
-        />
-      ) : (
-        <SystemNodeSettings
-          selectedNode={selectedNode}
-          updateFormData={onUpdateNodeData}
-          onDeleteNode={onDeleteNode}
-          onClose={() => setSelectedNode(null)}
-        />
-      )}
+    <div className="p-4 sm:p-5 bg-card border border-border rounded-xl w-[320px] shadow-xl">
+      <div className="flex items-center justify-between pb-3 border-b border-border">
+        <h3 className="font-semibold text-sm text-foreground">Node Settings</h3>
+        <button
+          onClick={() => setSelectedNode(null)}
+          className="text-muted-foreground hover:text-foreground p-1 rounded-md transition-colors cursor-pointer"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="py-4 space-y-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Node Label</Label>
+          <Input
+            value={label}
+            onChange={(e) => onUpdateLabel(e.target.value)}
+            placeholder="Enter node label..."
+            className="h-8 text-xs"
+          />
+        </div>
+
+        <div className="pt-2 text-xs text-muted-foreground space-y-1 border-t border-border/50">
+          <div className="flex justify-between">
+            <span>Type:</span>
+            <span className="font-mono text-foreground">{selectedNode?.type || "default"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>ID:</span>
+            <span className="font-mono text-foreground truncate max-w-[160px]">{selectedNode?.id}</span>
+          </div>
+        </div>
+      </div>
+
+      <Button
+        variant="destructive"
+        size="sm"
+        onClick={() => onDeleteNode(selectedNode.id)}
+        className="w-full gap-2 cursor-pointer"
+      >
+        <Trash2 className="h-4 w-4" />
+        Delete Node
+      </Button>
     </div>
   );
 }

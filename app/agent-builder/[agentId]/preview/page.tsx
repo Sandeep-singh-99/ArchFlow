@@ -49,61 +49,10 @@ export default function PreviewAgent() {
         const connectedEdges = edgeMap[node.id] || [];
         let next: any = null;
 
-        switch (node.type) {
-            case "IfElseNode": {
-                const ifEdge = connectedEdges.find((e: any) => e.sourceHandle === 'if')
-                const elseEdge = connectedEdges.find((e: any) => e.sourceHandle === 'else')
-
-                next = {
-                    if: ifEdge?.target || null,
-                    else: elseEdge?.target || null
-                };
-                break;
-            }
-
-            case "AgentNode": {
-                if (connectedEdges.length === 1) {
-                    next = connectedEdges[0].target;
-                } else if (connectedEdges.length > 1) {
-                    next = connectedEdges.map((e: any) => e.target);
-                }
-                break;
-            }
-
-            case "ApiNode": {
-                if (connectedEdges.length === 1) {
-                    next = connectedEdges[0].target;
-                }
-                break;
-            }
-
-            case "UserApprovalNode": {
-                if (connectedEdges.length === 1) {
-                    next = connectedEdges[0].target;
-                }
-                break;
-            }
-
-            case "StartNode": {
-                if (connectedEdges.length === 1) {
-                    next = connectedEdges[0].target;
-                }
-                break;
-            }
-
-            case "EndNode": {
-                next = null;
-                break;
-            }
-
-            default: {
-                if (connectedEdges.length === 1) {
-                    next = connectedEdges[0].target;
-                } else if (connectedEdges.length > 1) {
-                    next = connectedEdges.map((e: any) => e.target);
-                }
-                break;
-            }
+        if (connectedEdges.length === 1) {
+            next = connectedEdges[0].target;
+        } else if (connectedEdges.length > 1) {
+            next = connectedEdges.map((e: any) => e.target);
         }
 
         return {
@@ -112,35 +61,35 @@ export default function PreviewAgent() {
             label: node.data?.label || node.type,
             settings: node.data?.settings || {},
             next
-        }
+        };
     });
 
-    const startNode = agentDetail?.nodes?.find((n: any) => n.type === 'CustomNode' || n.type === 'FrontendNode' || n.type === 'ClientNode' || n.type === 'StartNode') || agentDetail?.nodes?.[0];
+    const startNode = agentDetail?.nodes?.[0];
 
     const config = {
         startNode: startNode?.id || null,
         flow
-    }
+    };
     setFlowConfig(config);
 
     console.log("Generated Workflow Config", JSON.stringify(config));
-  }
+  };
 
   const GenerateAgentToolConfig = async () => {
-    setLoading(true)
+    setLoading(true);
     const result = await axios.post(`/api/generate-agent-tool-config`, {
         jsonConfig: JSON.stringify(flowConfig)
-    })
-    setLoading(false)
+    });
+    setLoading(false);
     console.log("Generated Agent Tool Config", result.data);
 
     await updateAgentToolConfig({
         id: agentDetail?._id as any,
         agentToolConfig: result.data
-    })
+    });
 
     GetAgentDetail();
-  }
+  };
 
 
   return (
@@ -176,6 +125,3 @@ export default function PreviewAgent() {
     </div>
   );
 }
-
-
-// col-span-1 border-2 rounded-2xl m-5 p-5

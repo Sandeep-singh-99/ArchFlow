@@ -22,30 +22,9 @@ export default function FlowMiniMap({ className = "" }: FlowMiniMapProps) {
     return null;
   }
 
-  // Categorized architectural node colors for the canvas minimap
+  // Minimap node color
   const getNodeColor = (node: any) => {
-    const role = (node?.data?.settings?.role || node?.type?.replace("Node", "") || "").toLowerCase();
-    switch (role) {
-      case "start":
-        return "#10b981"; // emerald
-      case "end":
-        return "#f43f5e"; // rose
-      case "ifelse":
-      case "decision":
-        return "#f59e0b"; // amber
-      case "frontend":
-        return "#06b6d4"; // cyan
-      case "backend":
-      case "service":
-        return "#3b82f6"; // blue
-      case "database":
-        return "#a855f7"; // purple
-      case "ai":
-      case "aiagent":
-        return "#ffdf27"; // gold
-      default:
-        return isDark ? "#71717a" : "#94a3b8"; // zinc / slate
-    }
+    return isDark ? "#71717a" : "#94a3b8";
   };
 
   return (

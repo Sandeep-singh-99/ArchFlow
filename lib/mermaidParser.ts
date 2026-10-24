@@ -492,99 +492,9 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
       const inDeg = inDegree.get(info.id) || 0;
       const outDeg = (adj.get(info.id) || []).length;
 
-      let nodeType = "CustomNode";
-      let role = "custom";
-      let dbFormat: "sql" | "nosql" | undefined = undefined;
-
-      const isIfElse =
-        info.rawShape === "diamond" ||
-        /\b(?:if|else|condition|decision)\b/i.test(textLower) ||
-        /\bcheck\b/i.test(textLower) ||
-        textLower.includes("?");
-
-      const isStartCandidate =
-        info.rawShape === "actor" ||
-        info.id.toLowerCase() === "start" ||
-        info.label.toLowerCase() === "start" ||
-        textLower.startsWith("start") ||
-        (info.rawShape === "pill" &&
-          (inDeg === 0 ||
-            textLower.includes("start") ||
-            textLower.includes("input") ||
-            textLower.includes("prompt") ||
-            textLower.includes("begin")));
-
-      const isEndCandidate =
-        info.id.toLowerCase() === "end" ||
-        info.label.toLowerCase() === "end" ||
-        textLower.startsWith("end") ||
-        (info.rawShape === "pill" &&
-          (outDeg === 0 ||
-            textLower.includes("end") ||
-            textLower.includes("output") ||
-            textLower.includes("response") ||
-            textLower.includes("finish") ||
-            textLower.includes("stop")));
-
-      if (isErDiagram) {
-        nodeType = "CustomNode";
-        role = "database";
-        dbFormat = "sql";
-      } else if (isIfElse) {
-        nodeType = "IfElseNode";
-      } else if (isStartCandidate) {
-        nodeType = "StartNode";
-      } else if (isEndCandidate) {
-        nodeType = "EndNode";
-      } else if (
-        info.rawShape === "cylinder" ||
-        textLower.includes("db") ||
-        textLower.includes("database") ||
-        textLower.includes("sql") ||
-        textLower.includes("postgres") ||
-        textLower.includes("mongo") ||
-        textLower.includes("redis") ||
-        textLower.includes("store")
-      ) {
-        nodeType = "CustomNode";
-        role = "database";
-        dbFormat =
-          textLower.includes("mongo") || textLower.includes("redis") || textLower.includes("nosql")
-            ? "nosql"
-            : "sql";
-      } else if (
-        textLower.includes("ai") ||
-        textLower.includes("llm") ||
-        textLower.includes("gpt") ||
-        textLower.includes("claude") ||
-        textLower.includes("agent") ||
-        textLower.includes("perceive") ||
-        textLower.includes("prompt")
-      ) {
-        nodeType = "CustomNode";
-        role = "ai";
-      } else if (
-        textLower.includes("front") ||
-        textLower.includes("ui") ||
-        textLower.includes("client") ||
-        textLower.includes("web") ||
-        textLower.includes("app") ||
-        textLower.includes("react") ||
-        textLower.includes("next")
-      ) {
-        nodeType = "CustomNode";
-        role = "frontend";
-      } else if (
-        textLower.includes("back") ||
-        textLower.includes("api") ||
-        textLower.includes("server") ||
-        textLower.includes("service") ||
-        textLower.includes("gateway") ||
-        textLower.includes("tool")
-      ) {
-        nodeType = "CustomNode";
-        role = "backend";
-      }
+      let nodeType = "default";
+      let role = isErDiagram ? "database" : "custom";
+      let dbFormat: "sql" | "nosql" | undefined = isErDiagram ? "sql" : undefined;
 
       // Dynamic Coordinate Positioning:
       let posX = 0;
@@ -647,7 +557,7 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
         dataPayload.settings.sqlSchema = generatedSql;
         dataPayload.settings.tech = "Relational Entity";
         dataPayload.settings.action = `${fields.length || 3} Columns Schema`;
-      } else if (nodeType === "CustomNode") {
+      } else {
         dataPayload.settings.role = role;
         if (role === "database") {
           dataPayload.settings.dbTableName = info.label.toLowerCase().replace(/\s+/g, "_");
@@ -689,79 +599,6 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
 
     let sourceHandle: string | undefined = undefined;
     let targetHandle: string | undefined = undefined;
-
-    // Handle mapping for StartNode
-    if (sourceNode?.type === "StartNode") {
-      sourceHandle = direction === "LR" ? "right" : "bottom";
-    }
-
-    // Handle mapping for EndNode
-    if (targetNode?.type === "EndNode") {
-      targetHandle = "top";
-    }
-
-    // Handle mapping for IfElseNode
-    if (sourceNode?.type === "IfElseNode") {
-      const outCount = nodeIfElseOutCount.get(e.source) || 0;
-      nodeIfElseOutCount.set(e.source, outCount + 1);
-
-      const edgeLabelLower = (labels.join(" ") || "").toLowerCase();
-      const isNegative =
-        edgeLabelLower.includes("false") ||
-        edgeLabelLower.includes("no") ||
-        edgeLabelLower.includes("invalid") ||
-        edgeLabelLower.includes("fail") ||
-        edgeLabelLower.includes("err") ||
-        edgeLabelLower.includes("reject");
-
-      const isPositive =
-        !isNegative &&
-        (edgeLabelLower.includes("true") ||
-          edgeLabelLower.includes("yes") ||
-          edgeLabelLower.includes("valid") ||
-          edgeLabelLower.includes("ok") ||
-          edgeLabelLower.includes("success") ||
-          edgeLabelLower.includes("pass"));
-
-      if (isPositive) {
-        sourceHandle = "true";
-      } else if (isNegative) {
-        sourceHandle = "false";
-      } else {
-        sourceHandle = outCount === 0 ? "true" : "false";
-      }
-    }
-
-    if (targetNode?.type === "IfElseNode") {
-      targetHandle = "input";
-    }
-
-    // Handle mapping for CustomNode
-    if (sourceNode?.type === "CustomNode") {
-      if (sourceNode.data?.settings?.role === "frontend") {
-        sourceHandle = "bottom";
-      } else {
-        const isBackEdge =
-          direction === "LR" &&
-          (sourceNode.position?.x || 0) > (targetNode?.position?.x || 0);
-        sourceHandle = isBackEdge ? "left" : "right";
-      }
-    }
-
-    if (targetNode?.type === "CustomNode") {
-      if (targetNode.data?.settings?.role === "frontend") {
-        targetHandle = "top";
-      } else {
-        const isBackEdge =
-          direction === "LR" &&
-          (sourceNode?.position?.x || 0) > (targetNode.position?.x || 0);
-        targetHandle = isBackEdge ? "right" : "left";
-      }
-    }
-
-    if (targetNode?.type === "StartNode") {
-      targetHandle = "bottom";
-    }
 
     const displayLabel = labels.length > 1 ? labels.join(" / ") : labels[0] || undefined;
 
