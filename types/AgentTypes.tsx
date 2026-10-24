@@ -7,8 +7,12 @@ export type Agent = {
     config?: any;
     published: boolean;
     userId: Id<"UserTable">;
-    nodes?:any,
-    edges?:any,
-    agentToolConfig?:any,
-    _creationTime: number
-}
+    nodes?: any;
+    edges?: any;
+    agentToolConfig?: any;
+    _creationTime: number;
+};
+
+// Aliases for Database Schema Studio
+export type DatabaseSchema = Agent;
+export type DatabaseProject = Agent;

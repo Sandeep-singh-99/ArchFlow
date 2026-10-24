@@ -181,7 +181,7 @@ export default function AiAgentTab() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-muted p-1 border border-border">
           <TabsTrigger value="myagent" className="text-xs font-semibold data-[state=active]:bg-card cursor-pointer">
-            My Architectures
+            My Architectures / Projects
           </TabsTrigger>
           <TabsTrigger value="template" className="text-xs font-semibold data-[state=active]:bg-card cursor-pointer">
             Production Templates

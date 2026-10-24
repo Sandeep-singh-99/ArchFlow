@@ -228,26 +228,118 @@ export const postgresEcommerceEdges = [
   // Enum Connection
   { id: "edge-enum-orders", source: "enum-order-status", target: "table-orders", animated: true, label: "enum: status" },
 
-  // 1:1 Relationship (Users <-> User Profiles)
-  { id: "edge-users-profiles", source: "table-users", target: "table-user-profiles", animated: true, label: "1:1 (user_id)" },
+  // 1:1 Relationship (Users.id <-> User Profiles.user_id)
+  {
+    id: "edge-users-profiles",
+    source: "table-users",
+    sourceHandle: "col-u1-right",
+    target: "table-user-profiles",
+    targetHandle: "col-up1-left",
+    type: "erRelationship",
+    data: { cardinality: "1:1" },
+    label: "1:1 (user_id)",
+    animated: true,
+  },
 
-  // 1:N Relationship (Users <-> Orders)
-  { id: "edge-users-orders", source: "table-users", target: "table-orders", animated: true, label: "1:N (customer_id)" },
+  // 1:N Relationship (Users.id <-> Orders.customer_id)
+  {
+    id: "edge-users-orders",
+    source: "table-users",
+    sourceHandle: "col-u1-right",
+    target: "table-orders",
+    targetHandle: "col-o2-left",
+    type: "erRelationship",
+    data: { cardinality: "1:N" },
+    label: "1:N (customer_id)",
+    animated: true,
+  },
 
-  // 1:1 Relationship (Orders <-> Payments)
-  { id: "edge-orders-payments", source: "table-orders", target: "table-payments", animated: true, label: "1:1 (order_id)" },
+  // 1:1 Relationship (Orders.id <-> Payments.order_id)
+  {
+    id: "edge-orders-payments",
+    source: "table-orders",
+    sourceHandle: "col-o1-right",
+    target: "table-payments",
+    targetHandle: "col-p2-left",
+    type: "erRelationship",
+    data: { cardinality: "1:1" },
+    label: "1:1 (order_id)",
+    animated: true,
+  },
 
-  // Many-to-Many N:M (Orders <-> Products via Order Items)
-  { id: "edge-orders-items", source: "table-orders", target: "table-order-items", animated: true, label: "1:N (order_id)" },
-  { id: "edge-products-items", source: "table-products", target: "table-order-items", animated: true, label: "N:M (Many:Many items)" },
+  // Many-to-Many N:M (Orders.id <-> Order Items.order_id)
+  {
+    id: "edge-orders-items",
+    source: "table-orders",
+    sourceHandle: "col-o1-right",
+    target: "table-order-items",
+    targetHandle: "col-oi2-left",
+    type: "erRelationship",
+    data: { cardinality: "1:N" },
+    label: "1:N (order_id)",
+    animated: true,
+  },
+  // Products.id <-> Order Items.product_id
+  {
+    id: "edge-products-items",
+    source: "table-products",
+    sourceHandle: "col-prd1-right",
+    target: "table-order-items",
+    targetHandle: "col-oi3-left",
+    type: "erRelationship",
+    data: { cardinality: "N:M" },
+    label: "N:M (Many:Many items)",
+    animated: true,
+  },
 
-  // Many-to-Many N:M (Products <-> Categories via Product Categories)
-  { id: "edge-categories-prodcat", source: "table-categories", target: "table-product-categories", animated: true, label: "1:N (category_id)" },
-  { id: "edge-products-prodcat", source: "table-products", target: "table-product-categories", animated: true, label: "N:M (Many:Many category)" },
+  // Many-to-Many N:M (Categories.id <-> Product Categories.category_id)
+  {
+    id: "edge-categories-prodcat",
+    source: "table-categories",
+    sourceHandle: "col-cat1-right",
+    target: "table-product-categories",
+    targetHandle: "col-pc2-left",
+    type: "erRelationship",
+    data: { cardinality: "1:N" },
+    label: "1:N (category_id)",
+    animated: true,
+  },
+  // Products.id <-> Product Categories.product_id
+  {
+    id: "edge-products-prodcat",
+    source: "table-products",
+    sourceHandle: "col-prd1-right",
+    target: "table-product-categories",
+    targetHandle: "col-pc1-left",
+    type: "erRelationship",
+    data: { cardinality: "N:M" },
+    label: "N:M (Many:Many category)",
+    animated: true,
+  },
 
   // 1:N Relationships (Reviews)
-  { id: "edge-users-reviews", source: "table-users", target: "table-reviews", animated: true, label: "1:N (customer_id)" },
-  { id: "edge-products-reviews", source: "table-products", target: "table-reviews", animated: true, label: "1:N (product_id)" },
+  {
+    id: "edge-users-reviews",
+    source: "table-users",
+    sourceHandle: "col-u1-right",
+    target: "table-reviews",
+    targetHandle: "col-r2-left",
+    type: "erRelationship",
+    data: { cardinality: "1:N" },
+    label: "1:N (customer_id)",
+    animated: true,
+  },
+  {
+    id: "edge-products-reviews",
+    source: "table-products",
+    sourceHandle: "col-prd1-right",
+    target: "table-reviews",
+    targetHandle: "col-r3-left",
+    type: "erRelationship",
+    data: { cardinality: "1:N" },
+    label: "1:N (product_id)",
+    animated: true,
+  },
 
   // View Analytics Link
   { id: "edge-items-view", source: "table-order-items", target: "view-sales-analytics", animated: true, label: "Aggregates Sales" },

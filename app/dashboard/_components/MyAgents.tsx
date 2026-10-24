@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Clock,
   Layers,
+  Database,
 } from "lucide-react";
 import Link from "next/link";
 import React, { useContext, useEffect, useState } from "react";
@@ -69,12 +70,12 @@ export default function MyAgents({ onSelectTemplateTab }: MyAgentsProps) {
     if (!deleteId) return;
     try {
       await deleteAgentMutation({ agentId: deleteId });
-      toast.success("Architecture project deleted");
+      toast.success("Database schema deleted");
       GetUserAgents();
       setOpenAlert(false);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to delete architecture project");
+      toast.error("Failed to delete database schema");
     }
   };
 
@@ -99,14 +100,14 @@ export default function MyAgents({ onSelectTemplateTab }: MyAgentsProps) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-dashed border-border bg-card/40 my-8 space-y-5">
         <div className="h-14 w-14 rounded-2xl bg-[#ffc507]/10 text-[#ffee72] flex items-center justify-center border border-[#ffdf27]/20 shadow-xs">
-          <Workflow className="h-7 w-7 text-[#ffdf27]" />
+          <Database className="h-7 w-7 text-[#ffdf27]" />
         </div>
         <div className="space-y-1.5 max-w-md">
           <h3 className="font-bold text-lg text-foreground">
-            No System Architectures Yet
+            No Database Schemas Yet
           </h3>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Create your first distributed system architecture from scratch, or start with one of our production-ready templates.
+            Create your first relational or NoSQL database schema from scratch, or start with one of our production-ready templates.
           </p>
         </div>
         {onSelectTemplateTab && (
@@ -117,7 +118,7 @@ export default function MyAgents({ onSelectTemplateTab }: MyAgentsProps) {
             className="gap-2 text-xs font-semibold cursor-pointer hover:border-[#ffdf27]/40 hover:text-[#ffee72]"
           >
             <Layers className="h-3.5 w-3.5 text-[#ffdf27]" />
-            <span>Browse Architecture Templates</span>
+            <span>Browse Schema Templates</span>
           </Button>
         )}
       </div>
@@ -135,7 +136,7 @@ export default function MyAgents({ onSelectTemplateTab }: MyAgentsProps) {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="h-9 w-9 rounded-lg bg-[#ffc507]/10 text-[#ffee72] flex items-center justify-center border border-[#ffdf27]/20">
-                  <Network className="h-4 w-4 text-[#ffdf27]" />
+                  <Database className="h-4 w-4 text-[#ffdf27]" />
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border">
@@ -143,7 +144,7 @@ export default function MyAgents({ onSelectTemplateTab }: MyAgentsProps) {
                   </Badge>
                   <button
                     className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                    title="Delete Architecture"
+                    title="Delete Database Schema"
                     onClick={(e) => {
                       e.preventDefault();
                       setDeleteId(agent._id as Id<"AgentTable">);
@@ -168,11 +169,11 @@ export default function MyAgents({ onSelectTemplateTab }: MyAgentsProps) {
 
             <div className="pt-5 mt-4 border-t border-border/60 flex items-center justify-between">
               <span className="text-[11px] font-mono text-muted-foreground">
-                Topology Studio
+                Database Schema Studio
               </span>
               <Link href={`/agent-builder/${agent.agentId}`}>
                 <Button size="sm" variant="ghost" className="h-8 gap-1.5 text-xs font-semibold text-[#ffee72] hover:text-[#ffdf27] hover:bg-[#ffc507]/10 cursor-pointer">
-                  <span>Open Canvas</span>
+                  <span>Open Schema Canvas</span>
                   <ArrowRight className="h-3 w-3" />
                 </Button>
               </Link>
@@ -184,9 +185,9 @@ export default function MyAgents({ onSelectTemplateTab }: MyAgentsProps) {
       <AlertDialog open={openAlert} onOpenChange={setOpenAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this system architecture?</AlertDialogTitle>
+            <AlertDialogTitle>Delete this database schema?</AlertDialogTitle>
             <AlertDialogDescription className="text-xs text-muted-foreground">
-              This action cannot be undone. All nodes, flow connections, and configuration will be permanently deleted.
+              This action cannot be undone. All tables, columns, foreign keys, and indexes will be permanently deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -28,6 +28,8 @@ import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import MermaidImportDialog from "./MermaidImportDialog";
+import SqlExportDialog from "./SqlExportDialog";
+import ExportImageDialog from "./ExportImageDialog";
 
 type Props = {
   agentDetail: Agent | undefined;
@@ -124,15 +126,15 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
         <div className="flex items-center gap-2">
           <Workflow className="h-4 w-4 text-primary" />
           <h2 className="font-bold text-sm text-foreground">
-            {agentDetail?.name || "System Architecture Canvas"}
+            {agentDetail?.name || "Database Schema Studio"}
           </h2>
           <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border hidden sm:inline">
-            Canvas Studio
+            Database Schema Studio
           </Badge>
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5 sm:gap-3">
+      <div className="flex items-center gap-2 sm:gap-2.5">
         <Button
           variant="outline"
           size="sm"
@@ -147,10 +149,16 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
           variant="outline"
           size="sm"
           onClick={handleLoadFullDemo}
-          className="h-8 gap-1.5 text-xs font-semibold bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 border-white/10 cursor-pointer shadow-xs hidden md:inline-flex"
+          className="h-8 gap-1.5 text-xs font-semibold bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 border-white/10 cursor-pointer shadow-xs hidden xl:inline-flex"
         >
           <span>Full Polyglot Demo</span>
         </Button>
+
+        {/* 1. Real SQL DDL Exporter */}
+        <SqlExportDialog agentDetail={agentDetail} />
+
+        {/* 4. Export High-Res Image (PNG/SVG) */}
+        <ExportImageDialog architectureName={agentDetail?.name || "database-schema"} />
 
         <MermaidImportDialog agentDetail={agentDetail} />
 
@@ -158,7 +166,7 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
           variant="outline"
           size="sm"
           onClick={() => setOpen(true)}
-          className="h-8 gap-1.5 text-xs font-semibold"
+          className="h-8 gap-1.5 text-xs font-semibold hidden md:inline-flex"
         >
           <FileCode className="h-3.5 w-3.5 text-muted-foreground" />
           <span>Export Mermaid</span>

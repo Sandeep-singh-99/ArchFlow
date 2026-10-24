@@ -32,7 +32,7 @@ import { useContext, useEffect, useState } from "react";
 
 const MenuOptions = [
   {
-    title: "Architectures",
+    title: "My Architectures / Projects",
     url: "/dashboard",
     icon: Network,
   },
@@ -97,7 +97,7 @@ export function AppSidebar() {
                 ArchFlow
               </span>
               <span className="text-[10px] font-mono text-muted-foreground uppercase">
-                System AI Studio
+                Database Schema Studio
               </span>
             </div>
           )}

@@ -23,12 +23,12 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 
 const suggestedTemplates = [
-  "E-Commerce Order Pipeline",
-  "Ride-Hailing Geospatial Matcher",
-  "Distributed Rate Limiter",
-  "Video Transcoding & Streaming",
-  "Real-Time Chat & Pub/Sub",
-  "High-Throughput URL Shortener",
+  "E-Commerce PostgreSQL Schema",
+  "SaaS Multi-Tenant Database",
+  "FinTech Ledger & Transactions",
+  "Healthcare Patient Records",
+  "Social Network Graph & Feeds",
+  "Inventory & Warehouse Schema",
 ];
 
 export default function CreateAgentSection() {
@@ -45,7 +45,7 @@ export default function CreateAgentSection() {
   const CreateAgent = async (nameToUse?: string) => {
     const finalName = nameToUse || agentName;
     if (!finalName.trim()) {
-      toast.error("Please provide an architecture project name");
+      toast.error("Please provide a database schema name");
       return;
     }
 
@@ -66,12 +66,12 @@ export default function CreateAgentSection() {
       });
       setOpenDialog(false);
       setLoading(false);
-      toast.success("Architecture canvas created!");
+      toast.success("Database schema canvas created!");
       router.push(`/agent-builder/${agentId}`);
     } catch (err) {
       console.error(err);
       setLoading(false);
-      toast.error("Failed to create architecture project");
+      toast.error("Failed to create database schema project");
     }
   };
 
@@ -81,15 +81,15 @@ export default function CreateAgentSection() {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-[#ffee72] border-[#ffdf27]/30 bg-[#ffc507]/10 text-xs font-mono">
-              Architecture Studio
+              Database Schema Studio
             </Badge>
-            <span className="text-xs font-mono text-muted-foreground">Canvas v2.0</span>
+            <span className="text-xs font-mono text-muted-foreground">Studio v2.0</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
-            System Design & Flow Visualizer
+            Database Schema & ER Studio
           </h1>
           <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-            Design microservices, distributed queues, databases, and request flow charts with AI guidance.
+            Design relational PostgreSQL & MySQL schemas, column-to-column foreign keys, indexes, and export executable SQL DDL.
           </p>
         </div>
 
@@ -99,27 +99,27 @@ export default function CreateAgentSection() {
             <DialogTrigger asChild>
               <Button size="lg" className="gap-2 font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 hover:shadow-md hover:shadow-[#ffc507]/20 border-none transition-all shadow-sm cursor-pointer">
                 <Plus className="h-4 w-4 text-zinc-950" />
-                <span>New Architecture</span>
+                <span>Create New Database Schema</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-lg">
                   <Workflow className="h-5 w-5 text-[#ffdf27]" />
-                  <span>Create New Architecture</span>
+                  <span>Create New Database Schema</span>
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Give your system design a name, or pick a suggested production topology.
+                  Give your database schema a project name, or pick a suggested production pattern.
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4 py-2">
                 <div className="space-y-2">
                   <label className="text-xs font-medium text-foreground">
-                    Project / Architecture Name
+                    Database Schema Name
                   </label>
                   <Input
-                    placeholder="e.g. Distributed Order Pipeline"
+                    placeholder="e.g. E-Commerce PostgreSQL Schema"
                     value={agentName}
                     onChange={(e) => setAgentName(e.target.value)}
                     onKeyDown={(e) => {
@@ -132,7 +132,7 @@ export default function CreateAgentSection() {
                 {/* Suggestions */}
                 <div className="space-y-1.5">
                   <span className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider">
-                    Quick Suggestions
+                    Quick Schema Suggestions
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {suggestedTemplates.map((template) => (
@@ -162,7 +162,7 @@ export default function CreateAgentSection() {
                   className="bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 border-none font-semibold cursor-pointer shadow-xs"
                 >
                   {loading && <Loader className="mr-2 h-3.5 w-3.5 animate-spin" />}
-                  Open Canvas
+                  Open Schema Canvas
                 </Button>
               </DialogFooter>
             </DialogContent>

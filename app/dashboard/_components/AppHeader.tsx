@@ -16,7 +16,7 @@ export default function AppHeader() {
             workspace //
           </span>
           <span className="text-sm font-semibold text-foreground">
-            System Architecture Studio
+            Database Schema Studio
           </span>
         </div>
       </div>

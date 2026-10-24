@@ -17,6 +17,12 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import { nodeTypes } from "../_customNodes/nodeTypes";
+import ErRelationshipEdge from "../_customEdges/ErRelationshipEdge";
+
+const edgeTypes = {
+  erRelationship: ErRelationshipEdge,
+  default: ErRelationshipEdge,
+};
 
 import AgentToolsPanel from "../_components/AgentToolsPanel";
 import SettingPanel from "../_components/SettingPanel";
@@ -86,10 +92,10 @@ export default function AgentBuilder() {
         edges: updatedEdges ?? nodeEdges,
         nodes: updatedNodes ?? addedNodes,
       });
-      toast.success("Architecture saved!");
+      toast.success("Database schema saved!");
     } catch (e) {
       console.error(e);
-      toast.error("Failed to save architecture");
+      toast.error("Failed to save database schema");
     } finally {
       setIsSaving(false);
     }
@@ -117,12 +123,13 @@ export default function AgentBuilder() {
         addEdge(
           {
             ...params,
+            type: "erRelationship",
+            data: {
+              cardinality: "1:N",
+            },
             animated: true,
             style: { stroke: "#10b981", strokeWidth: 2 },
-            labelStyle: { fill: "#ffffff", fontWeight: 500, fontSize: 11 },
-            labelBgStyle: { fill: "rgba(0, 0, 0, 0.75)", stroke: "#ffffff", strokeWidth: 1 },
-            labelBgPadding: [12, 6],
-            labelBgBorderRadius: 8,
+            label: "1:N",
           },
           edgesSnapshot || []
         )
@@ -215,6 +222,7 @@ export default function AgentBuilder() {
           deleteKeyCode={null}
           edgesReconnectable={false}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           defaultEdgeOptions={{
             animated: true,
             style: { stroke: "#10b981", strokeWidth: 2 },
@@ -285,7 +293,7 @@ export default function AgentBuilder() {
               ) : (
                 <>
                   <Save className="h-4 w-4 text-zinc-950" />
-                  <span>Save Architecture</span>
+                  <span>Save Database Schema</span>
                 </>
               )}
             </Button>

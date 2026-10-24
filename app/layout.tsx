@@ -8,9 +8,9 @@ import Provider from "./provider";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
-  title: "ArchFlow | AI System Design & Architecture Flow Platform",
+  title: "Database Schema Studio | Visual Relational ER Design & SQL DDL Exporter",
   description:
-    "Design scalable cloud architectures, microservices topologies, and interactive system flow diagrams with AI assistance.",
+    "Design PostgreSQL, MySQL, and NoSQL schemas visually, manage column-level relationships with ER cardinality, and export production-ready SQL DDL.",
 };
 
 export default function RootLayout({
