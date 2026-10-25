@@ -22,7 +22,7 @@ import { ImageIcon, Download, Loader2, Sparkles, FileImage } from "lucide-react"
 import { toPng, toSvg } from "html-to-image";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
-import { useReactFlow, getNodesBounds, getViewportForBounds } from "@xyflow/react";
+import { useReactFlow, getViewportForBounds } from "@xyflow/react";
 
 interface ExportImageDialogProps {
   architectureName?: string;
@@ -33,7 +33,7 @@ export default function ExportImageDialog({ architectureName = "database-schema"
   const [format, setFormat] = useState<"png" | "svg">("png");
   const [background, setBackground] = useState<"transparent" | "dark" | "light">("dark");
   const [isExporting, setIsExporting] = useState(false);
-  const { getNodes } = useReactFlow();
+  const { getNodes, getInternalNode } = useReactFlow();
 
   const handleExport = async (overrideFormat?: "png" | "svg", overrideBg?: "transparent" | "dark" | "light") => {
     const targetFormat = overrideFormat || format;
@@ -49,22 +49,88 @@ export default function ExportImageDialog({ architectureName = "database-schema"
         return;
       }
 
-      // 1. Calculate the entire bounding box of all nodes across the canvas
-      const nodesBounds = getNodesBounds(nodes);
+      // Ensure all web fonts are loaded so text rendering and dimensions are accurate
+      if (typeof document !== "undefined" && document.fonts) {
+        await document.fonts.ready;
+      }
 
-      // 2. Set export dimensions with padding so the entire diagram fits perfectly regardless of user zoom
-      const padding = 0.15;
-      const baseWidth = Math.max(1280, Math.ceil(nodesBounds.width * 1.35));
-      const baseHeight = Math.max(800, Math.ceil(nodesBounds.height * 1.35));
+      // 1. Calculate the exact, comprehensive bounding box of all nodes across the canvas
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+
+      nodes.forEach((node) => {
+        // Query internal React Flow node for measured dimensions and absolute position
+        const internalNode = getInternalNode?.(node.id);
+
+        // Query actual rendered DOM element if present
+        const domNode = document.querySelector(`.react-flow__node[data-id="${node.id}"]`) as HTMLElement;
+        const domWidth = domNode ? domNode.offsetWidth : 0;
+        const domHeight = domNode ? domNode.offsetHeight : 0;
+
+        const width =
+          domWidth ||
+          internalNode?.measured?.width ||
+          node.measured?.width ||
+          node.width ||
+          node.initialWidth ||
+          320;
+
+        const height =
+          domHeight ||
+          internalNode?.measured?.height ||
+          node.measured?.height ||
+          node.height ||
+          node.initialHeight ||
+          240;
+
+        const posX =
+          internalNode?.internals?.positionAbsolute?.x ??
+          node.position?.x ??
+          0;
+        const posY =
+          internalNode?.internals?.positionAbsolute?.y ??
+          node.position?.y ??
+          0;
+
+        if (posX < minX) minX = posX;
+        if (posY < minY) minY = posY;
+        if (posX + width > maxX) maxX = posX + width;
+        if (posY + height > maxY) maxY = posY + height;
+      });
+
+      if (minX === Infinity || minY === Infinity) {
+        minX = 0;
+        minY = 0;
+        maxX = 1200;
+        maxY = 800;
+      }
+
+      // Generous safety headroom to ensure top handles, badges, tags, and glow shadows are never clipped
+      const topSafetyMargin = 60;
+      const horizontalSafetyMargin = 60;
+      const bottomSafetyMargin = 60;
+
+      const expandedBounds = {
+        x: minX - horizontalSafetyMargin,
+        y: minY - topSafetyMargin,
+        width: Math.max(100, maxX - minX + horizontalSafetyMargin * 2),
+        height: Math.max(100, maxY - minY + topSafetyMargin + bottomSafetyMargin),
+      };
+
+      // 2. Set export dimensions with padding so the entire diagram fits perfectly regardless of user zoom or pan
+      const baseWidth = Math.max(1400, Math.ceil(expandedBounds.width + 120));
+      const baseHeight = Math.max(900, Math.ceil(expandedBounds.height + 120));
 
       // 3. Compute viewport transform that displays the entire diagram
       const viewport = getViewportForBounds(
-        nodesBounds,
+        expandedBounds,
         baseWidth,
         baseHeight,
         0.1,
-        2.5,
-        padding
+        2.0,
+        0.08
       );
 
       // Find the ReactFlow viewport element
@@ -83,6 +149,8 @@ export default function ExportImageDialog({ architectureName = "database-schema"
           : "#ffffff";
 
       // Options for whole-diagram high-resolution export
+      // Explicitly setting transformOrigin: "0 0" guarantees the viewport scales from top-left,
+      // preventing top/left nodes from being shifted upwards or clipped.
       const imageOptions = {
         backgroundColor: bgColor,
         width: baseWidth,
@@ -91,21 +159,23 @@ export default function ExportImageDialog({ architectureName = "database-schema"
           width: `${baseWidth}px`,
           height: `${baseHeight}px`,
           transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
-          overflow: "hidden",
+          transformOrigin: "0 0",
+          overflow: "visible",
         },
         pixelRatio: targetFormat === "png" ? 2.5 : 1, // Retina crispness
         quality: 1,
         filter: (node: HTMLElement) => {
           // Exclude floating controls, minimap, panels from exported image
-          const className = node.className || "";
-          if (typeof className === "string") {
-            if (
-              className.includes("react-flow__panel") ||
-              className.includes("react-flow__minimap") ||
-              className.includes("react-flow__controls")
-            ) {
-              return false;
-            }
+          const className =
+            typeof node.className === "string"
+              ? node.className
+              : (node as any)?.className?.baseVal || "";
+          if (
+            className.includes("react-flow__panel") ||
+            className.includes("react-flow__minimap") ||
+            className.includes("react-flow__controls")
+          ) {
+            return false;
           }
           return true;
         },
@@ -121,9 +191,14 @@ export default function ExportImageDialog({ architectureName = "database-schema"
             rawSvgDataUrl.replace("data:image/svg+xml;charset=utf-8,", "")
           );
         } else if (rawSvgDataUrl.startsWith("data:image/svg+xml;base64,")) {
-          svgContent = atob(
-            rawSvgDataUrl.replace("data:image/svg+xml;base64,", "")
-          );
+          const base64Str = rawSvgDataUrl.replace("data:image/svg+xml;base64,", "");
+          try {
+            svgContent = new TextDecoder().decode(
+              Uint8Array.from(atob(base64Str), (c) => c.charCodeAt(0))
+            );
+          } catch {
+            svgContent = atob(base64Str);
+          }
         } else {
           svgContent = rawSvgDataUrl;
         }
