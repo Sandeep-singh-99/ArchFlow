@@ -14,6 +14,7 @@ import NosqlValidationNode from "./NosqlValidationNode";
 
 import DbNoteNode from "./DbNoteNode";
 import DbSchemaNode from "./DbSchemaNode";
+import TextNode from "./TextNode";
 
 export const nodeTypes = {
   // SQL Nodes
@@ -35,6 +36,7 @@ export const nodeTypes = {
   // Shared Nodes
   DbNoteNode,
   DbSchemaNode,
+  TextNode,
 
   // Convenient Aliases
   Table: SqlTableNode,
@@ -51,4 +53,5 @@ export const nodeTypes = {
   Note: DbNoteNode,
   Database: DbSchemaNode,
   Schema: DbSchemaNode,
+  Text: TextNode,
 };

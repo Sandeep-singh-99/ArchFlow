@@ -735,6 +735,126 @@ export default function SettingPanel({
           </div>
         )}
 
+        {/* SHARED TEXT NODE INSPECTOR */}
+        {(nodeType === "TextNode" || nodeType === "Text") && (
+          <div className="space-y-3.5">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Text Content</Label>
+              <Textarea
+                value={formData.text || ""}
+                onChange={(e) =>
+                  updateNodeData({
+                    text: e.target.value,
+                    name: e.target.value.slice(0, 30),
+                    label: e.target.value.slice(0, 30),
+                  })
+                }
+                rows={4}
+                placeholder="Enter text..."
+                className="text-xs leading-relaxed"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Font Size</Label>
+              <div className="grid grid-cols-5 gap-1">
+                {[
+                  { id: "sm", label: "XS" },
+                  { id: "base", label: "SM" },
+                  { id: "lg", label: "MD" },
+                  { id: "xl", label: "LG" },
+                  { id: "2xl", label: "XL" },
+                ].map((size) => (
+                  <button
+                    key={size.id}
+                    type="button"
+                    onClick={() => updateNodeData({ fontSize: size.id })}
+                    className={`py-1 text-[11px] font-mono rounded border transition-colors cursor-pointer ${
+                      (formData.fontSize || "base") === size.id
+                        ? "bg-primary text-primary-foreground border-primary font-bold"
+                        : "bg-muted/50 hover:bg-muted text-muted-foreground border-border/60"
+                    }`}
+                  >
+                    {size.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Text Color</Label>
+              <div className="flex items-center gap-1.5">
+                {[
+                  { id: "default", color: "bg-foreground", title: "Default" },
+                  { id: "muted", color: "bg-muted-foreground", title: "Muted" },
+                  { id: "blue", color: "bg-sky-500", title: "Sky Blue" },
+                  { id: "emerald", color: "bg-emerald-500", title: "Emerald" },
+                  { id: "amber", color: "bg-amber-500", title: "Amber" },
+                  { id: "purple", color: "bg-purple-500", title: "Purple" },
+                  { id: "rose", color: "bg-rose-500", title: "Rose" },
+                ].map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    title={c.title}
+                    onClick={() => updateNodeData({ color: c.id })}
+                    className={`h-5 w-5 rounded-full border-2 transition-transform cursor-pointer ${
+                      (formData.color || "default") === c.id
+                        ? "scale-125 border-primary ring-1 ring-primary/40"
+                        : "border-transparent opacity-80 hover:opacity-100"
+                    } ${c.color}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Format</Label>
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => updateNodeData({ isBold: !formData.isBold })}
+                    className={`px-2.5 py-1 text-xs rounded border transition-colors cursor-pointer font-bold ${
+                      formData.isBold
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted/50 hover:bg-muted text-muted-foreground border-border/60"
+                    }`}
+                  >
+                    B
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateNodeData({ isItalic: !formData.isItalic })}
+                    className={`px-2.5 py-1 text-xs rounded border transition-colors cursor-pointer italic font-serif ${
+                      formData.isItalic
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted/50 hover:bg-muted text-muted-foreground border-border/60"
+                    }`}
+                  >
+                    I
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Card Background</Label>
+                <button
+                  type="button"
+                  onClick={() => updateNodeData({ hasBackground: !formData.hasBackground })}
+                  className={`w-full py-1 text-xs rounded border transition-colors cursor-pointer font-medium ${
+                    formData.hasBackground
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted/50 hover:bg-muted text-muted-foreground border-border/60"
+                  }`}
+                >
+                  {formData.hasBackground ? "Enabled" : "Transparent"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* SHARED DATABASE / SCHEMA INSPECTOR */}
         {nodeType === "DbSchemaNode" && (
           <div className="space-y-3">
@@ -789,6 +909,8 @@ export default function SettingPanel({
           "NosqlReferenceNode",
           "DbNoteNode",
           "DbSchemaNode",
+          "TextNode",
+          "Text",
         ].includes(nodeType) && (
           <div className="space-y-2">
             <div className="space-y-1">

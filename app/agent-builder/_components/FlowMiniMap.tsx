@@ -68,6 +68,9 @@ export default function FlowMiniMap({ className = "" }: FlowMiniMapProps) {
       case "Database":
       case "Schema":
         return "#3b82f6"; // Blue
+      case "TextNode":
+      case "Text":
+        return "#a1a1aa"; // Zinc
       default:
         return isDark ? "#71717a" : "#94a3b8"; // Zinc / Slate
     }

@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   StickyNote,
   Database,
+  Type,
   Plus,
   Layers,
   ChevronDown,
@@ -330,6 +331,25 @@ export default function AgentToolsPanel() {
         engine: "PostgreSQL 16",
         charset: "UTF-8",
         collation: "en_US.UTF-8",
+      },
+    };
+    setAddedNodes((prev: any) => [...(prev || []), newNode]);
+    setOpen(false);
+  };
+
+  const addTextNode = () => {
+    const offset = getOffset();
+    const id = `text-${Date.now()}`;
+    const newNode = {
+      id,
+      type: "TextNode",
+      position: { x: 260 + offset, y: 140 + offset },
+      data: {
+        label: "Text Annotation",
+        text: "Database Architecture Notes & Annotations",
+        fontSize: "base",
+        color: "default",
+        hasBackground: false,
       },
     };
     setAddedNodes((prev: any) => [...(prev || []), newNode]);
@@ -651,6 +671,21 @@ export default function AgentToolsPanel() {
                   <div className="font-semibold text-xs text-foreground">Database / Schema</div>
                   <div className="text-[11px] text-muted-foreground truncate">
                     Group objects by database or namespace
+                  </div>
+                </div>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={addTextNode}
+                className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+              >
+                <div className="p-2 rounded-md bg-zinc-500/15 text-zinc-600 dark:text-zinc-400 shrink-0">
+                  <Type className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-xs text-foreground">Text Label</div>
+                  <div className="text-[11px] text-muted-foreground truncate">
+                    Free-floating text, titles, and annotations
                   </div>
                 </div>
               </DropdownMenuItem>
