@@ -408,7 +408,7 @@ export default function AgentToolsPanel() {
               onClick={() => {
                 setAddedNodes(fullDatabaseDemoNodes);
                 setNodeEdges(fullDatabaseDemoEdges);
-                toast.success("Loaded Full Database Architecture Demo (All 14 Nodes)!");
+                toast.success(`Loaded Full Database Architecture Demo (All ${fullDatabaseDemoNodes.length} Nodes)!`);
                 setOpen(false);
               }}
               className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-zinc-900/60 hover:bg-zinc-800 text-zinc-300 border border-white/10 transition-all cursor-pointer text-xs font-semibold"
@@ -418,7 +418,7 @@ export default function AgentToolsPanel() {
                 <span>Polyglot Architecture Demo</span>
               </div>
               <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-white/10 text-zinc-400 bg-white/5">
-                14 Nodes
+                {fullDatabaseDemoNodes.length} Nodes
               </Badge>
             </button>
           </div>

@@ -1,4 +1,19 @@
 export const fullDatabaseDemoNodes = [
+  // --- ARCHITECTURE TITLE (SHARED TEXT NODE) ---
+  {
+    id: "title-polyglot-db",
+    type: "TextNode",
+    position: { x: 40, y: -40 },
+    data: {
+      label: "Polyglot Database Architecture",
+      text: "Polyglot Database Architecture",
+      fontSize: "2xl",
+      isBold: true,
+      color: "default",
+      hasBackground: false,
+    },
+  },
+
   // --- SHARED NODES / DATABASE NAMESPACES ---
   {
     id: "db-postgres",

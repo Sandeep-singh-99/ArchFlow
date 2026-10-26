@@ -46,7 +46,7 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
   const handleLoadFullDemo = () => {
     setAddedNodes(fullDatabaseDemoNodes);
     setNodeEdges(fullDatabaseDemoEdges);
-    toast.success("Loaded Full Database Architecture Demo (All 14 Nodes)!");
+    toast.success(`Loaded Full Database Architecture Demo (All ${fullDatabaseDemoNodes.length} Nodes)!`);
     setTimeout(() => {
       try {
         fitView({ padding: 0.2, duration: 600 });
