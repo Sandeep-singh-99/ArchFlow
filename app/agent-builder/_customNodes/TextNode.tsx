@@ -31,8 +31,10 @@ function TextNode({ id, data, selected }: { id: string; data: TextNodeData; sele
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
-      textareaRef.current.focus();
-      textareaRef.current.select();
+      const el = textareaRef.current;
+      el.focus();
+      const len = el.value.length;
+      el.setSelectionRange(len, len);
     }
   }, [isEditing]);
 
@@ -101,37 +103,48 @@ function TextNode({ id, data, selected }: { id: string; data: TextNodeData; sele
 
   return (
     <div
-      className={`group relative min-w-[100px] max-w-[950px] w-fit transition-all ${
+      className={`group relative min-w-[80px] max-w-[950px] w-fit transition-all ${
         data?.hasBackground
           ? "p-3.5 rounded-xl border bg-card/90 backdrop-blur-md shadow-md border-border/80"
-          : "p-2 rounded-lg"
+          : "p-1.5 rounded-lg"
       } ${
-        selected
+        selected || isEditing
           ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background"
           : "hover:ring-1 hover:ring-border/60"
       }`}
     >
       {isEditing ? (
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onBlur={() => {
-            setIsEditing(false);
-            commitText(text);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
+        <div className="grid">
+          {/* Invisible mirror element to maintain full text dimensions and prevent layout collapse */}
+          <div
+            style={currentSize.style}
+            className={`invisible col-start-1 row-start-1 whitespace-pre-wrap break-words select-none pointer-events-none p-0 m-0 ${currentSize.className} ${alignClass} ${
+              data?.isBold ? "font-bold" : ""
+            } ${data?.isItalic ? "italic" : ""}`}
+            aria-hidden="true"
+          >
+            {text ? `${text}\n` : "Type text..."}
+          </div>
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onBlur={() => {
               setIsEditing(false);
               commitText(text);
-            }
-          }}
-          rows={Math.max(1, text.split("\n").length)}
-          style={currentSize.style}
-          className={`w-full bg-transparent border border-primary/50 rounded p-1 resize-none focus:outline-none nodrag nopan nowheel ${currentSize.className} ${colorClass} ${alignClass} ${
-            data?.isBold ? "font-bold" : ""
-          } ${data?.isItalic ? "italic" : ""}`}
-        />
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setIsEditing(false);
+                commitText(text);
+              }
+            }}
+            style={currentSize.style}
+            className={`col-start-1 row-start-1 w-full h-full bg-transparent border-0 outline-none ring-0 shadow-none focus:outline-none focus:ring-0 focus:border-0 p-0 m-0 resize-none overflow-hidden nodrag nopan nowheel ${currentSize.className} ${colorClass} ${alignClass} ${
+              data?.isBold ? "font-bold" : ""
+            } ${data?.isItalic ? "italic" : ""}`}
+          />
+        </div>
       ) : (
         <div
           onDoubleClick={(e) => {
@@ -139,7 +152,7 @@ function TextNode({ id, data, selected }: { id: string; data: TextNodeData; sele
             setIsEditing(true);
           }}
           style={currentSize.style}
-          className={`whitespace-pre-wrap break-words cursor-text select-none transition-all ${currentSize.className} ${colorClass} ${alignClass} ${
+          className={`whitespace-pre-wrap break-words cursor-text select-none transition-all p-0 m-0 ${currentSize.className} ${colorClass} ${alignClass} ${
             data?.isBold ? "font-bold" : ""
           } ${data?.isItalic ? "italic" : ""}`}
           title="Double-click to edit inline, or use the Settings Panel"
