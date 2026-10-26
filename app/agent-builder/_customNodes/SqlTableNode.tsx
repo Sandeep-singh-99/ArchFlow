@@ -51,18 +51,6 @@ function SqlTableNode({ data, selected }: { data: SqlTableNodeData; selected?: b
         id="bottom"
         className="!w-2.5 !h-2.5 !bg-primary border-2 border-background z-20"
       />
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="left"
-        className="!w-2.5 !h-2.5 !bg-primary border-2 border-background z-20"
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="right"
-        className="!w-2.5 !h-2.5 !bg-primary border-2 border-background z-20"
-      />
 
       {/* Table Header */}
       <div className="px-3.5 py-2.5 border-b border-border/80 bg-muted/40 rounded-t-xl flex items-center justify-between gap-2">
