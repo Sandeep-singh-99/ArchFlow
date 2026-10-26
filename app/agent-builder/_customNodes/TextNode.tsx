@@ -58,13 +58,30 @@ function TextNode({ id, data, selected }: { id: string; data: TextNodeData; sele
     }
   };
 
-  const fontSizeClass = {
-    sm: "text-xs",
-    base: "text-sm",
-    lg: "text-base font-semibold",
-    xl: "text-xl font-bold tracking-tight",
-    "2xl": "text-2xl font-extrabold tracking-tight",
-  }[data?.fontSize || "base"];
+  const sizeMap: Record<string, { className: string; style: React.CSSProperties }> = {
+    sm: {
+      className: "text-[14px] font-normal",
+      style: { fontSize: "14px", lineHeight: "1.4" },
+    },
+    base: {
+      className: "text-[20px] font-medium",
+      style: { fontSize: "20px", lineHeight: "1.3" },
+    },
+    lg: {
+      className: "text-[30px] font-bold tracking-tight",
+      style: { fontSize: "30px", lineHeight: "1.2" },
+    },
+    xl: {
+      className: "text-[42px] font-extrabold tracking-tight",
+      style: { fontSize: "42px", lineHeight: "1.15" },
+    },
+    "2xl": {
+      className: "text-[56px] font-black tracking-tight",
+      style: { fontSize: "56px", lineHeight: "1.1" },
+    },
+  };
+
+  const currentSize = sizeMap[data?.fontSize || "base"] || sizeMap.base;
 
   const colorClass = {
     default: "text-foreground",
@@ -84,9 +101,9 @@ function TextNode({ id, data, selected }: { id: string; data: TextNodeData; sele
 
   return (
     <div
-      className={`group relative min-w-[100px] max-w-[460px] transition-all ${
+      className={`group relative min-w-[100px] max-w-[950px] w-fit transition-all ${
         data?.hasBackground
-          ? "p-3 rounded-xl border bg-card/90 backdrop-blur-md shadow-md border-border/80"
+          ? "p-3.5 rounded-xl border bg-card/90 backdrop-blur-md shadow-md border-border/80"
           : "p-2 rounded-lg"
       } ${
         selected
@@ -110,7 +127,8 @@ function TextNode({ id, data, selected }: { id: string; data: TextNodeData; sele
             }
           }}
           rows={Math.max(1, text.split("\n").length)}
-          className={`w-full bg-transparent border border-primary/50 rounded p-1 resize-none focus:outline-none leading-relaxed nodrag nopan nowheel ${fontSizeClass} ${colorClass} ${alignClass} ${
+          style={currentSize.style}
+          className={`w-full bg-transparent border border-primary/50 rounded p-1 resize-none focus:outline-none nodrag nopan nowheel ${currentSize.className} ${colorClass} ${alignClass} ${
             data?.isBold ? "font-bold" : ""
           } ${data?.isItalic ? "italic" : ""}`}
         />
@@ -120,7 +138,8 @@ function TextNode({ id, data, selected }: { id: string; data: TextNodeData; sele
             e.stopPropagation();
             setIsEditing(true);
           }}
-          className={`whitespace-pre-wrap break-words cursor-text select-none leading-relaxed transition-colors ${fontSizeClass} ${colorClass} ${alignClass} ${
+          style={currentSize.style}
+          className={`whitespace-pre-wrap break-words cursor-text select-none transition-all ${currentSize.className} ${colorClass} ${alignClass} ${
             data?.isBold ? "font-bold" : ""
           } ${data?.isItalic ? "italic" : ""}`}
           title="Double-click to edit inline, or use the Settings Panel"

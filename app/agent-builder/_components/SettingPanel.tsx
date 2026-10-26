@@ -757,25 +757,27 @@ export default function SettingPanel({
 
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Font Size</Label>
-              <div className="grid grid-cols-5 gap-1">
+              <div className="grid grid-cols-5 gap-1.5">
                 {[
-                  { id: "sm", label: "XS" },
-                  { id: "base", label: "SM" },
-                  { id: "lg", label: "MD" },
-                  { id: "xl", label: "LG" },
-                  { id: "2xl", label: "XL" },
+                  { id: "sm", label: "S", desc: "14px" },
+                  { id: "base", label: "M", desc: "20px" },
+                  { id: "lg", label: "L", desc: "30px" },
+                  { id: "xl", label: "XL", desc: "42px" },
+                  { id: "2xl", label: "2XL", desc: "56px" },
                 ].map((size) => (
                   <button
                     key={size.id}
                     type="button"
+                    title={`${size.label} (${size.desc})`}
                     onClick={() => updateNodeData({ fontSize: size.id })}
-                    className={`py-1 text-[11px] font-mono rounded border transition-colors cursor-pointer ${
+                    className={`py-1.5 px-1 rounded-md border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
                       (formData.fontSize || "base") === size.id
-                        ? "bg-primary text-primary-foreground border-primary font-bold"
-                        : "bg-muted/50 hover:bg-muted text-muted-foreground border-border/60"
+                        ? "bg-primary text-primary-foreground border-primary font-bold shadow-xs scale-105"
+                        : "bg-muted/40 hover:bg-muted text-muted-foreground border-border/60 hover:text-foreground"
                     }`}
                   >
-                    {size.label}
+                    <span className="text-xs font-semibold">{size.label}</span>
+                    <span className="text-[9px] font-mono opacity-70">{size.desc}</span>
                   </button>
                 ))}
               </div>

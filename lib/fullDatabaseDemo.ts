@@ -3,11 +3,11 @@ export const fullDatabaseDemoNodes = [
   {
     id: "title-polyglot-db",
     type: "TextNode",
-    position: { x: 40, y: -40 },
+    position: { x: 40, y: -45 },
     data: {
       label: "Polyglot Database Architecture",
       text: "Polyglot Database Architecture",
-      fontSize: "2xl",
+      fontSize: "xl",
       isBold: true,
       color: "default",
       hasBackground: false,
