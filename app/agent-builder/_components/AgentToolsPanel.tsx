@@ -22,6 +22,13 @@ import {
   Layers,
   ChevronDown,
   Menu,
+  Shield,
+  CreditCard,
+  Package,
+  Users,
+  Bell,
+  BarChart3,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +42,13 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DOMAIN_PRESETS,
+  DomainPreset,
+  DOMAIN_THEMES,
+} from "@/lib/domainThemes";
+import { generateAllDomainsDemoSchema } from "@/lib/demoDomainSchema";
+import { toast } from "sonner";
 
 export default function AgentToolsPanel() {
   const { setAddedNodes, setNodeEdges } = useContext(WorkflowContext);
@@ -198,12 +212,18 @@ export default function AgentToolsPanel() {
     const newNode = {
       id,
       type: "NosqlDocumentNode",
-      position: { x: 300 + offset, y: 160 + offset },
+      position: { x: 280 + offset, y: 160 + offset },
       data: {
-        label: "sample_order_doc",
-        name: "sample_order_doc",
-        collectionName: "orders",
-        sampleJson: `{\n  "_id": "65b2f8a1...",\n  "orderNumber": "ORD-2026-904",\n  "status": "shipped",\n  "items": [\n    { "productId": "p1", "qty": 2 }\n  ],\n  "totalAmount": 249.00\n}`,
+        label: "UserProfileDoc",
+        name: "UserProfileDoc",
+        collectionName: "customers",
+        version: "v1.2",
+        attributes: [
+          { key: "preferences.theme", val: "'dark'" },
+          { key: "preferences.currency", val: "'USD'" },
+          { key: "auth.mfa_enabled", val: "true" },
+          { key: "tags", val: "['vip', 'early_adopter']" },
+        ],
       },
     };
     setAddedNodes((prev: any) => [...(prev || []), newNode]);
@@ -216,13 +236,16 @@ export default function AgentToolsPanel() {
     const newNode = {
       id,
       type: "NosqlIndexNode",
-      position: { x: 320 + offset, y: 180 + offset },
+      position: { x: 300 + offset, y: 180 + offset },
       data: {
-        label: "idx_geo_store",
-        name: "idx_geo_store",
-        collectionName: "stores",
-        indexType: "2dsphere Geospatial",
-        keys: ["location: '2dsphere'", "category: 1"],
+        label: "idx_cust_email_unique",
+        name: "idx_cust_email_unique",
+        collectionName: "customers",
+        indexType: "Compound (Asc/Desc)",
+        keys: "{ email: 1, tenant_id: 1 }",
+        isUnique: true,
+        isSparse: false,
+        ttlSeconds: undefined,
       },
     };
     setAddedNodes((prev: any) => [...(prev || []), newNode]);
@@ -235,16 +258,15 @@ export default function AgentToolsPanel() {
     const newNode = {
       id,
       type: "NosqlReferenceNode",
-      position: { x: 340 + offset, y: 200 + offset },
+      position: { x: 270 + offset, y: 150 + offset },
       data: {
-        label: "order_to_customer",
-        name: "order_to_customer",
+        label: "Cust_Order_Rel",
+        name: "Cust_Order_Rel",
         fromCollection: "orders",
-        fromField: "customerId",
         toCollection: "customers",
-        toField: "_id",
-        cardinality: "1:N",
-        refType: "ObjectId Reference",
+        relationshipType: "1:N",
+        refField: "customer_id",
+        targetField: "_id",
       },
     };
     setAddedNodes((prev: any) => [...(prev || []), newNode]);
@@ -294,6 +316,42 @@ export default function AgentToolsPanel() {
     };
     setAddedNodes((prev: any) => [...(prev || []), newNode]);
     setOpen(false);
+  };
+
+  // Domain Containers
+  const addDomainNode = (preset?: DomainPreset) => {
+    const offset = getOffset();
+    const id = `domain-${Date.now()}`;
+    const name = preset?.name || "Custom Domain";
+    const theme = preset?.theme || "indigo";
+    const description = preset?.description || "Domain subgraph boundary container";
+    const icon = preset?.icon || "Layers";
+
+    const newNode = {
+      id,
+      type: "DomainGroupNode",
+      position: { x: 200 + offset, y: 100 + offset },
+      style: { width: 560, height: 380 },
+      data: {
+        label: name,
+        name: name,
+        description,
+        colorTheme: theme,
+        icon,
+        isDomainGroup: true,
+      },
+    };
+    // Group container nodes MUST be placed at start of array in React Flow
+    setAddedNodes((prev: any) => [newNode, ...(prev || [])]);
+    setOpen(false);
+  };
+
+  const loadFullDemoSchema = () => {
+    const demo = generateAllDomainsDemoSchema();
+    setAddedNodes(demo.nodes);
+    setNodeEdges(demo.edges);
+    setOpen(false);
+    toast.success("Loaded Enterprise 8-Domain Architecture Demo!");
   };
 
   // Shared Nodes
@@ -352,6 +410,25 @@ export default function AgentToolsPanel() {
     setOpen(false);
   };
 
+  const getPresetIcon = (iconName: string) => {
+    switch (iconName) {
+      case "Shield":
+        return <Shield className="h-4 w-4" />;
+      case "CreditCard":
+        return <CreditCard className="h-4 w-4" />;
+      case "Package":
+        return <Package className="h-4 w-4" />;
+      case "Users":
+        return <Users className="h-4 w-4" />;
+      case "Bell":
+        return <Bell className="h-4 w-4" />;
+      case "BarChart3":
+        return <BarChart3 className="h-4 w-4" />;
+      default:
+        return <Layers className="h-4 w-4" />;
+    }
+  };
+
   return (
     <div className="bg-card/95 backdrop-blur-md border border-border/80 p-1 rounded-xl shadow-xl flex items-center">
       <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -369,7 +446,7 @@ export default function AgentToolsPanel() {
             </DropdownMenuTrigger>
           </TooltipTrigger>
           <TooltipContent side="right" className="text-xs font-medium">
-            Add Database Objects
+            Add Database Objects & Domains
           </TooltipContent>
         </Tooltip>
 
@@ -377,18 +454,21 @@ export default function AgentToolsPanel() {
           align="start"
           side="bottom"
           sideOffset={8}
-          className="w-[360px] p-2 shadow-2xl border-border bg-card/98 backdrop-blur-xl rounded-xl z-50 animate-in fade-in zoom-in-95 max-h-[85vh] overflow-y-auto"
+          className="w-[370px] p-2 shadow-2xl border-border bg-card/98 backdrop-blur-xl rounded-xl z-50 animate-in fade-in zoom-in-95 max-h-[85vh] overflow-y-auto"
         >
           <Tabs defaultValue="sql" className="w-full">
-            <TabsList className="grid grid-cols-3 mb-2 h-8 p-0.5 bg-muted/60">
+            <TabsList className="grid grid-cols-4 mb-2 h-8 p-0.5 bg-muted/60">
               <TabsTrigger value="sql" className="text-xs font-semibold py-1">
-                SQL Nodes
+                SQL
               </TabsTrigger>
               <TabsTrigger value="nosql" className="text-xs font-semibold py-1">
-                NoSQL Nodes
+                NoSQL
+              </TabsTrigger>
+              <TabsTrigger value="domains" className="text-xs font-semibold py-1 text-emerald-600 dark:text-emerald-400">
+                Domains
               </TabsTrigger>
               <TabsTrigger value="shared" className="text-xs font-semibold py-1">
-                Shared Nodes
+                Shared
               </TabsTrigger>
             </TabsList>
 
@@ -443,7 +523,7 @@ export default function AgentToolsPanel() {
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-xs text-foreground">Index</div>
                   <div className="text-[11px] text-muted-foreground truncate">
-                    Index columns and index types (B-Tree, Hash, GIN)
+                    B-Tree, Hash, GIN, unique index specs
                   </div>
                 </div>
               </DropdownMenuItem>
@@ -452,13 +532,13 @@ export default function AgentToolsPanel() {
                 onClick={addFunctionNode}
                 className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted transition-colors"
               >
-                <div className="p-2 rounded-md bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 shrink-0">
+                <div className="p-2 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
                   <Code2 className="h-4 w-4" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-xs text-foreground">Stored Function</div>
                   <div className="text-[11px] text-muted-foreground truncate">
-                    Reusable database logic and parameters
+                    PL/pgSQL or SQL procedures and routines
                   </div>
                 </div>
               </DropdownMenuItem>
@@ -473,7 +553,7 @@ export default function AgentToolsPanel() {
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-xs text-foreground">Trigger</div>
                   <div className="text-[11px] text-muted-foreground truncate">
-                    Actions on INSERT, UPDATE, or DELETE
+                    Event-driven database triggers (INSERT, UPDATE)
                   </div>
                 </div>
               </DropdownMenuItem>
@@ -482,19 +562,19 @@ export default function AgentToolsPanel() {
                 onClick={addEnumNode}
                 className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted transition-colors"
               >
-                <div className="p-2 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
+                <div className="p-2 rounded-md bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-400 shrink-0">
                   <ListFilter className="h-4 w-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-xs text-foreground">Enum / Custom Type</div>
+                  <div className="font-semibold text-xs text-foreground">Enum Type</div>
                   <div className="text-[11px] text-muted-foreground truncate">
-                    Reusable data types and allowed values
+                    User-defined custom enumerated types
                   </div>
                 </div>
               </DropdownMenuItem>
             </TabsContent>
 
-            {/* NoSQL NODES */}
+            {/* NOSQL NODES */}
             <TabsContent value="nosql" className="space-y-1 focus-visible:outline-none">
               <DropdownMenuLabel className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-2 py-0.5">
                 Document & NoSQL Objects
@@ -511,11 +591,11 @@ export default function AgentToolsPanel() {
                   <div className="flex items-center gap-1.5">
                     <span className="font-semibold text-xs text-foreground">Collection</span>
                     <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
-                      Essential
+                      Core
                     </Badge>
                   </div>
                   <div className="text-[11px] text-muted-foreground truncate">
-                    MongoDB collection containing documents
+                    MongoDB / Document Store schema definition
                   </div>
                 </div>
               </DropdownMenuItem>
@@ -524,13 +604,13 @@ export default function AgentToolsPanel() {
                 onClick={addDocumentNode}
                 className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted transition-colors"
               >
-                <div className="p-2 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
+                <div className="p-2 rounded-md bg-blue-500/15 text-blue-600 dark:text-blue-400 shrink-0">
                   <FileJson className="h-4 w-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-xs text-foreground">Document</div>
+                  <div className="font-semibold text-xs text-foreground">Document Schema</div>
                   <div className="text-[11px] text-muted-foreground truncate">
-                    JSON-like fields, nested objects and arrays
+                    Document structure and key-value templates
                   </div>
                 </div>
               </DropdownMenuItem>
@@ -539,13 +619,13 @@ export default function AgentToolsPanel() {
                 onClick={addNosqlIndexNode}
                 className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted transition-colors"
               >
-                <div className="p-2 rounded-md bg-teal-500/15 text-teal-600 dark:text-teal-400 shrink-0">
+                <div className="p-2 rounded-md bg-violet-500/15 text-violet-600 dark:text-violet-400 shrink-0">
                   <Compass className="h-4 w-4" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-xs text-foreground">NoSQL Index</div>
                   <div className="text-[11px] text-muted-foreground truncate">
-                    Single-field, compound, text, or geospatial indexes
+                    Compound, TTL, Geospatial, and Text indexes
                   </div>
                 </div>
               </DropdownMenuItem>
@@ -591,6 +671,89 @@ export default function AgentToolsPanel() {
                   <div className="font-semibold text-xs text-foreground">Validation Schema</div>
                   <div className="text-[11px] text-muted-foreground truncate">
                     Document field types and validation rules
+                  </div>
+                </div>
+              </DropdownMenuItem>
+            </TabsContent>
+
+            {/* DOMAIN SUBGRAPH CONTAINERS */}
+            <TabsContent value="domains" className="space-y-1 focus-visible:outline-none">
+              {/* One-Click All Domains Architecture Demo */}
+              <div className="p-2.5 mb-2 rounded-xl bg-gradient-to-br from-emerald-500/10 via-indigo-500/10 to-amber-500/10 border border-emerald-500/30 space-y-1.5">
+                <div className="flex items-center gap-1.5 font-bold text-xs text-foreground">
+                  <Sparkles className="h-4 w-4 text-emerald-500" />
+                  <span>Enterprise 8-Domain Demo</span>
+                </div>
+                <p className="text-[10.5px] text-muted-foreground leading-snug">
+                  Instant showcase of all 8 colored domain containers (Auth, Billing, Catalog, Users, Comms, Analytics, Audit, Core) with 14 connected relational tables.
+                </p>
+                <Button
+                  size="sm"
+                  onClick={loadFullDemoSchema}
+                  className="w-full h-7 text-xs font-semibold bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 text-white hover:brightness-110 shadow-xs cursor-pointer border-none"
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  Load All 8 Domains Demo
+                </Button>
+              </div>
+
+              <DropdownMenuLabel className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-2 py-0.5">
+                Domain Subgraph Containers
+              </DropdownMenuLabel>
+
+              {DOMAIN_PRESETS.map((preset) => {
+                const themeCfg = DOMAIN_THEMES[preset.theme];
+                return (
+                  <DropdownMenuItem
+                    key={preset.name}
+                    onClick={() => addDomainNode(preset)}
+                    className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                  >
+                    <div
+                      className="p-2 rounded-md shrink-0 border"
+                      style={{
+                        backgroundColor: `${themeCfg.accent}15`,
+                        borderColor: `${themeCfg.accent}35`,
+                        color: themeCfg.accent,
+                      }}
+                    >
+                      {getPresetIcon(preset.icon)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-xs text-foreground">
+                          {preset.name}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={`text-[8.5px] px-1 py-0 h-3.5 font-mono ${themeCfg.badge}`}
+                        >
+                          {themeCfg.label.split(" / ")[0]}
+                        </Badge>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground truncate">
+                        {preset.description}
+                      </div>
+                    </div>
+                  </DropdownMenuItem>
+                );
+              })}
+
+              <DropdownMenuSeparator className="my-1" />
+
+              <DropdownMenuItem
+                onClick={() => addDomainNode()}
+                className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+              >
+                <div className="p-2 rounded-md bg-primary/10 text-primary shrink-0 border border-primary/20">
+                  <Plus className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-xs text-foreground">
+                    Custom Domain Boundary
+                  </div>
+                  <div className="text-[11px] text-muted-foreground truncate">
+                    Blank colored subgraph container for grouping tables
                   </div>
                 </div>
               </DropdownMenuItem>

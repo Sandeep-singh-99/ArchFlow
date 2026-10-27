@@ -4,6 +4,7 @@ import React, { memo } from "react";
 import { Handle, Position } from "@xyflow/react";
 import { FolderTree, FileCode, Layers, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { getDomainTheme } from "@/lib/domainThemes";
 
 export interface NosqlField {
   name: string;
@@ -15,6 +16,9 @@ export interface NosqlCollectionNodeData {
   label?: string;
   name?: string;
   database?: string;
+  domainName?: string;
+  domainTheme?: string;
+  domainId?: string;
   shardKey?: string;
   isCapped?: boolean;
   fields?: NosqlField[];
@@ -25,6 +29,7 @@ function NosqlCollectionNode({ data, selected }: { data: NosqlCollectionNodeData
   const collectionName = data.name || data.label || "users_collection";
   const database = data.database || "app_db";
   const shardKey = data.shardKey;
+  const domainThemeConfig = data.domainName ? getDomainTheme(data.domainTheme) : null;
   const fields: NosqlField[] = data.fields || [
     { name: "_id", type: "ObjectId", required: true },
     { name: "username", type: "String", required: true },
@@ -50,8 +55,18 @@ function NosqlCollectionNode({ data, selected }: { data: NosqlCollectionNodeData
             <FolderTree className="h-4 w-4" />
           </div>
           <div className="min-w-0">
-            <div className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground truncate">
-              {database}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground truncate">
+                {database}
+              </span>
+              {data.domainName && domainThemeConfig && (
+                <span
+                  title={`Domain: ${data.domainName}`}
+                  className={`text-[8.5px] px-1 py-0.2 rounded font-mono font-medium truncate max-w-[110px] border ${domainThemeConfig.badge}`}
+                >
+                  {data.domainName}
+                </span>
+              )}
             </div>
             <div className="text-xs font-bold text-foreground truncate font-mono">
               {collectionName}

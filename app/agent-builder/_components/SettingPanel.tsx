@@ -10,8 +10,26 @@ import {
   Trash2,
   X,
   Plus,
+  Maximize2,
+  Unlink,
+  Layers,
+  Shield,
+  CreditCard,
+  Package,
+  Users,
+  Bell,
+  BarChart3,
+  Check,
+  FolderTree,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  DOMAIN_THEMES,
+  DomainColorTheme,
+  getDomainTheme,
+} from "@/lib/domainThemes";
+import { isDomainGroupNode } from "@/lib/autoLayout";
+import { toast } from "sonner";
 
 export default function SettingPanel({
   onSave,
@@ -185,6 +203,198 @@ export default function SettingPanel({
     updateNodeData({ values });
   };
 
+  // List of all domain nodes currently on canvas
+  const domainNodes = (addedNodes || []).filter(isDomainGroupNode);
+
+  // For a domain node, get its member tables
+  const domainMembers = isDomainGroupNode(selectedNode)
+    ? (addedNodes || []).filter(
+        (n: any) => n.parentId === selectedNode.id || n.data?.domainId === selectedNode.id
+      )
+    : [];
+
+  // Function to assign or remove current table from a domain container
+  const handleAssignDomain = (targetDomainId: string) => {
+    if (!selectedNode) return;
+
+    if (!targetDomainId || targetDomainId === "none") {
+      // Remove from domain container
+      const currentParent = (addedNodes || []).find((n: any) => n.id === selectedNode.parentId);
+      const parentX = currentParent?.position?.x || 0;
+      const parentY = currentParent?.position?.y || 0;
+
+      const updated = (addedNodes || []).map((n: any) => {
+        if (n.id === selectedNode.id) {
+          const { parentId, ...rest } = n;
+          return {
+            ...rest,
+            position: {
+              x: parentX + (n.position?.x || 0),
+              y: parentY + (n.position?.y || 0),
+            },
+            data: {
+              ...(n.data || {}),
+              domainId: undefined,
+              domainName: undefined,
+              domainTheme: undefined,
+            },
+          };
+        }
+        return n;
+      });
+
+      setAddedNodes(updated);
+      setSelectedNode({
+        ...selectedNode,
+        parentId: undefined,
+        data: {
+          ...selectedNode.data,
+          domainId: undefined,
+          domainName: undefined,
+          domainTheme: undefined,
+        },
+      });
+      onSave(updated);
+      toast.info(`Removed "${formData.name || selectedNode.id}" from domain container`);
+      return;
+    }
+
+    // Assigning to a target domain container
+    const targetDomain = (addedNodes || []).find((n: any) => n.id === targetDomainId);
+    if (!targetDomain) return;
+
+    // Calculate relative coordinates
+    const currentParent = selectedNode.parentId
+      ? (addedNodes || []).find((n: any) => n.id === selectedNode.parentId)
+      : null;
+    const absX = (currentParent?.position?.x || 0) + (selectedNode.position?.x || 0);
+    const absY = (currentParent?.position?.y || 0) + (selectedNode.position?.y || 0);
+
+    const relX = absX - targetDomain.position.x;
+    const relY = absY - targetDomain.position.y;
+
+    const domainName = targetDomain.data?.name || targetDomain.data?.label || "Domain";
+    const domainTheme = targetDomain.data?.colorTheme || "indigo";
+
+    // Reorder so targetDomain is before the table node
+    const otherNodes = (addedNodes || []).filter(
+      (n: any) => n.id !== selectedNode.id && n.id !== targetDomain.id
+    );
+
+    const updatedNode = {
+      ...selectedNode,
+      parentId: targetDomain.id,
+      position: { x: relX, y: relY },
+      data: {
+        ...selectedNode.data,
+        domainId: targetDomain.id,
+        domainName: domainName,
+        domainTheme: domainTheme,
+      },
+    };
+
+    const newNodesList = [
+      targetDomain,
+      ...otherNodes.filter((n: any) => isDomainGroupNode(n)),
+      ...otherNodes.filter((n: any) => !isDomainGroupNode(n)),
+      updatedNode,
+    ];
+
+    setAddedNodes(newNodesList);
+    setSelectedNode(updatedNode);
+    onSave(newNodesList);
+    toast.success(`Assigned to "${domainName}" domain boundary`);
+  };
+
+  // Auto-fit domain container boundary around all its member tables
+  const handleFitDomainToChildren = () => {
+    if (!selectedNode || !isDomainGroupNode(selectedNode)) return;
+    if (domainMembers.length === 0) {
+      toast.info("No tables currently inside this domain boundary");
+      return;
+    }
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    domainMembers.forEach((node: any) => {
+      const posX = node.position.x;
+      const posY = node.position.y;
+      const w = node.measured?.width || node.width || 300;
+      const h = node.measured?.height || node.height || 200;
+
+      minX = Math.min(minX, posX);
+      minY = Math.min(minY, posY);
+      maxX = Math.max(maxX, posX + w);
+      maxY = Math.max(maxY, posY + h);
+    });
+
+    const padding = 45;
+    const newWidth = Math.max(360, maxX + padding);
+    const newHeight = Math.max(240, maxY + padding);
+
+    const updated = (addedNodes || []).map((n: any) =>
+      n.id === selectedNode.id
+        ? {
+            ...n,
+            style: {
+              ...(n.style || {}),
+              width: newWidth,
+              height: newHeight,
+            },
+          }
+        : n
+    );
+
+    setAddedNodes(updated);
+    setSelectedNode({
+      ...selectedNode,
+      style: {
+        ...(selectedNode.style || {}),
+        width: newWidth,
+        height: newHeight,
+      },
+    });
+    onSave(updated);
+    toast.success(`Domain boundary resized to wrap ${domainMembers.length} tables`);
+  };
+
+  // Ungroup: detach all child tables back to absolute canvas coordinates and remove container
+  const handleUngroupDomain = () => {
+    if (!selectedNode || !isDomainGroupNode(selectedNode)) return;
+    const groupX = selectedNode.position?.x || 0;
+    const groupY = selectedNode.position?.y || 0;
+
+    const updated = (addedNodes || [])
+      .map((n: any) => {
+        if (n.parentId === selectedNode.id || n.data?.domainId === selectedNode.id) {
+          const { parentId, ...rest } = n;
+          return {
+            ...rest,
+            position: {
+              x: groupX + (n.position?.x || 0),
+              y: groupY + (n.position?.y || 0),
+            },
+            data: {
+              ...(n.data || {}),
+              domainId: undefined,
+              domainName: undefined,
+              domainTheme: undefined,
+            },
+          };
+        }
+        return n;
+      })
+      .filter((n: any) => n.id !== selectedNode.id);
+
+    setAddedNodes(updated);
+    setSelectedNode(null);
+    onSave(updated);
+    toast.info(`Ungrouped domain "${formData.name || selectedNode.id}"`);
+  };
+
   return (
     <div className="p-4 sm:p-5 bg-card/95 backdrop-blur-md border border-border rounded-xl w-[350px] shadow-2xl max-h-[85vh] overflow-y-auto">
       {/* Header */}
@@ -212,6 +422,159 @@ export default function SettingPanel({
       </div>
 
       <div className="py-4 space-y-4">
+        {/* DOMAIN SUBGRAPH CONTAINER INSPECTOR */}
+        {isDomainGroupNode(selectedNode) && (
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Domain Name</Label>
+              <Input
+                value={formData.name || ""}
+                onChange={(e) => updateNodeData({ name: e.target.value })}
+                placeholder="e.g. Auth & Security, Billing & Invoicing"
+                className="h-8 text-xs font-semibold"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Description / Notes</Label>
+              <Textarea
+                value={formData.description || ""}
+                onChange={(e) => updateNodeData({ description: e.target.value })}
+                placeholder="Domain responsibilities and bounded context..."
+                className="text-xs resize-none h-16"
+              />
+            </div>
+
+            {/* Color Theme Selector */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
+                <span>Color Theme</span>
+                <span className="capitalize font-mono text-[10px] text-muted-foreground">
+                  {formData.colorTheme || "indigo"}
+                </span>
+              </Label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(Object.keys(DOMAIN_THEMES) as DomainColorTheme[]).map((themeKey) => {
+                  const cfg = DOMAIN_THEMES[themeKey];
+                  const isCurrent = (formData.colorTheme || "indigo") === themeKey;
+                  return (
+                    <button
+                      key={themeKey}
+                      type="button"
+                      onClick={() => updateNodeData({ colorTheme: themeKey })}
+                      className={`h-7 px-2 rounded-lg border text-[11px] font-medium flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                        isCurrent
+                          ? "ring-2 ring-foreground font-semibold shadow-xs"
+                          : "opacity-80 hover:opacity-100"
+                      }`}
+                      style={{
+                        backgroundColor: `${cfg.accent}18`,
+                        borderColor: cfg.accent,
+                        color: cfg.accent,
+                      }}
+                    >
+                      {isCurrent && <Check className="h-3 w-3" />}
+                      <span className="capitalize">{themeKey}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Icon Picker */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-foreground">Domain Icon</Label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[
+                  { name: "Shield", label: "Security", icon: Shield },
+                  { name: "CreditCard", label: "Billing", icon: CreditCard },
+                  { name: "Package", label: "Catalog", icon: Package },
+                  { name: "Users", label: "Users", icon: Users },
+                  { name: "Bell", label: "Comms", icon: Bell },
+                  { name: "BarChart3", label: "Metrics", icon: BarChart3 },
+                  { name: "Layers", label: "Layers", icon: Layers },
+                  { name: "FolderTree", label: "Cluster", icon: FolderTree },
+                ].map(({ name, label, icon: Icon }) => {
+                  const isCurrent = (formData.icon || "Layers") === name;
+                  return (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => updateNodeData({ icon: name })}
+                      className={`h-8 rounded-lg border flex flex-col items-center justify-center text-[9px] gap-0.5 cursor-pointer transition-all ${
+                        isCurrent
+                          ? "bg-primary/15 border-primary text-primary font-semibold ring-1 ring-primary/40"
+                          : "bg-muted/40 border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Member Tables in Domain */}
+            <div className="space-y-2 pt-2 border-t border-border/50">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Layers className="h-3.5 w-3.5 text-primary" />
+                  <span>Enclosed Tables ({domainMembers.length})</span>
+                </Label>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleFitDomainToChildren}
+                  className="h-6 px-2 text-[10px] gap-1 text-primary cursor-pointer hover:bg-primary/10"
+                >
+                  <Maximize2 className="h-3 w-3" /> Fit Bounds
+                </Button>
+              </div>
+
+              {domainMembers.length === 0 ? (
+                <div className="p-3 rounded-lg border border-dashed border-border/60 text-center text-xs text-muted-foreground">
+                  No tables inside this domain yet. Drag tables inside or assign them via Table Inspector.
+                </div>
+              ) : (
+                <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                  {domainMembers.map((member: any) => (
+                    <div
+                      key={member.id}
+                      className="px-2.5 py-1.5 rounded-lg bg-muted/40 border border-border/40 flex items-center justify-between text-xs"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setSelectedNode(member)}
+                        className="font-mono text-foreground hover:text-primary font-medium truncate max-w-[190px] text-left cursor-pointer"
+                        title="Click to inspect this table"
+                      >
+                        {member.data?.name || member.data?.label || member.id}
+                      </button>
+                      <span className="text-[10px] font-mono text-muted-foreground">
+                        {member.type?.replace("Node", "") || "Table"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Ungroup Container Action */}
+            <div className="pt-2 border-t border-border/50">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUngroupDomain}
+                className="w-full text-xs gap-1.5 cursor-pointer text-muted-foreground hover:text-foreground"
+              >
+                <Unlink className="h-3.5 w-3.5" />
+                Ungroup Domain (Keep Tables)
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* SQL TABLE INSPECTOR */}
         {nodeType === "SqlTableNode" && (
           <div className="space-y-3.5">
@@ -334,6 +697,33 @@ export default function SettingPanel({
                 placeholder="Optional table comment..."
                 className="h-8 text-xs"
               />
+            </div>
+
+            {/* Domain Subgraph Boundary Assignment */}
+            <div className="space-y-1.5 pt-2 border-t border-border/40">
+              <Label className="text-xs text-muted-foreground flex items-center justify-between">
+                <span className="flex items-center gap-1.5 font-medium text-foreground">
+                  <Layers className="h-3.5 w-3.5 text-primary" />
+                  Domain Container
+                </span>
+                {selectedNode.parentId && (
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-primary/30 text-primary">
+                    Enclosed
+                  </Badge>
+                )}
+              </Label>
+              <select
+                value={selectedNode.parentId || formData.domainId || "none"}
+                onChange={(e) => handleAssignDomain(e.target.value)}
+                className="w-full h-8 px-2 rounded-lg bg-background border border-border text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+              >
+                <option value="none">None (Standalone / Ungrouped)</option>
+                {domainNodes.map((dom: any) => (
+                  <option key={dom.id} value={dom.id}>
+                    🏷️ {dom.data?.name || dom.data?.label || dom.id}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         )}
@@ -602,6 +992,33 @@ export default function SettingPanel({
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Domain Subgraph Boundary Assignment */}
+            <div className="space-y-1.5 pt-2 border-t border-border/40">
+              <Label className="text-xs text-muted-foreground flex items-center justify-between">
+                <span className="flex items-center gap-1.5 font-medium text-foreground">
+                  <Layers className="h-3.5 w-3.5 text-primary" />
+                  Domain Container
+                </span>
+                {selectedNode.parentId && (
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-primary/30 text-primary">
+                    Enclosed
+                  </Badge>
+                )}
+              </Label>
+              <select
+                value={selectedNode.parentId || formData.domainId || "none"}
+                onChange={(e) => handleAssignDomain(e.target.value)}
+                className="w-full h-8 px-2 rounded-lg bg-background border border-border text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+              >
+                <option value="none">None (Standalone / Ungrouped)</option>
+                {domainNodes.map((dom: any) => (
+                  <option key={dom.id} value={dom.id}>
+                    🏷️ {dom.data?.name || dom.data?.label || dom.id}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         )}
@@ -913,6 +1330,10 @@ export default function SettingPanel({
           "DbSchemaNode",
           "TextNode",
           "Text",
+          "DomainGroupNode",
+          "DomainGroup",
+          "domainGroup",
+          "group",
         ].includes(nodeType) && (
           <div className="space-y-2">
             <div className="space-y-1">

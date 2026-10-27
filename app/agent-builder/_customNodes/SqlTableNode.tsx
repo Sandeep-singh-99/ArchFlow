@@ -4,6 +4,7 @@ import React, { memo } from "react";
 import { Handle, Position } from "@xyflow/react";
 import { Table, Key, Link2, Hash } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { getDomainTheme } from "@/lib/domainThemes";
 
 export interface ColumnDefinition {
   id: string;
@@ -19,6 +20,9 @@ export interface SqlTableNodeData {
   label?: string;
   name?: string;
   schema?: string;
+  domainName?: string;
+  domainTheme?: string;
+  domainId?: string;
   columns?: ColumnDefinition[];
   comment?: string;
   settings?: any;
@@ -27,6 +31,7 @@ export interface SqlTableNodeData {
 function SqlTableNode({ data, selected }: { data: SqlTableNodeData; selected?: boolean }) {
   const tableName = data.name || data.label || "untitled_table";
   const schemaName = data.schema || "public";
+  const domainThemeConfig = data.domainName ? getDomainTheme(data.domainTheme) : null;
   const columns: ColumnDefinition[] = data.columns || [
     { id: "1", name: "id", type: "UUID", isPk: true, isNullable: false },
     { id: "2", name: "created_at", type: "TIMESTAMP", isNullable: false },
@@ -59,8 +64,18 @@ function SqlTableNode({ data, selected }: { data: SqlTableNodeData; selected?: b
             <Table className="h-4 w-4" />
           </div>
           <div className="min-w-0">
-            <div className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground truncate">
-              {schemaName}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground truncate">
+                {schemaName}
+              </span>
+              {data.domainName && domainThemeConfig && (
+                <span
+                  title={`Domain: ${data.domainName}`}
+                  className={`text-[8.5px] px-1 py-0.2 rounded font-mono font-medium truncate max-w-[110px] border ${domainThemeConfig.badge}`}
+                >
+                  {data.domainName}
+                </span>
+              )}
             </div>
             <div className="text-xs font-bold text-foreground truncate font-mono">
               {tableName}

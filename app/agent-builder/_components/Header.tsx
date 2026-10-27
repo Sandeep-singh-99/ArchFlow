@@ -8,6 +8,7 @@ import {
   Workflow,
   Copy,
   Check,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -17,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
@@ -25,6 +26,8 @@ import { Badge } from "@/components/ui/badge";
 import MermaidImportDialog from "./MermaidImportDialog";
 import SqlExportDialog from "./SqlExportDialog";
 import ExportImageDialog from "./ExportImageDialog";
+import { WorkflowContext } from "@/context/WorkflowContext";
+import { generateAllDomainsDemoSchema } from "@/lib/demoDomainSchema";
 
 type Props = {
   agentDetail: Agent | undefined;
@@ -35,6 +38,14 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const publishAgent = useMutation(api.agent.PublishAgent);
+  const { setAddedNodes, setNodeEdges } = useContext(WorkflowContext);
+
+  const handleLoadAllDomainsDemo = () => {
+    const demo = generateAllDomainsDemoSchema();
+    setAddedNodes(demo.nodes);
+    setNodeEdges(demo.edges);
+    toast.success("Loaded Enterprise 8-Domain Architecture Demo!");
+  };
 
   const handlePublish = async () => {
     if (!agentDetail?._id) return;
@@ -102,6 +113,18 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-2.5">
+        {/* Load All Domains Demo */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleLoadAllDomainsDemo}
+          className="h-8 gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 cursor-pointer hidden lg:inline-flex"
+          title="Load all 8 domains (Auth, Billing, Catalog, Users, Comms, Analytics, Audit, Core) demo schema"
+        >
+          <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
+          <span>All Domains Demo</span>
+        </Button>
+
         {/* 1. Real SQL DDL Exporter */}
         <SqlExportDialog agentDetail={agentDetail} />
 

@@ -17,8 +17,22 @@ import {
   Keyboard,
   RotateCcw,
   Sparkles,
+  Wand2,
+  LayoutGrid,
+  ArrowRight,
+  ArrowDown,
+  Layers,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -39,6 +53,8 @@ interface FlowControlsProps {
   ) => void;
   showMiniMap?: boolean;
   setShowMiniMap?: (show: boolean | ((prev: boolean) => boolean)) => void;
+  onAutoArrange?: (direction?: "LR" | "TB") => void;
+  isArranging?: boolean;
   className?: string;
 }
 
@@ -49,6 +65,8 @@ export default function FlowControls({
   setBgVariant,
   showMiniMap = true,
   setShowMiniMap,
+  onAutoArrange,
+  isArranging = false,
   className = "",
 }: FlowControlsProps) {
   const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow();
@@ -151,6 +169,66 @@ export default function FlowControls({
               Fit View <span className="text-muted-foreground ml-1 font-mono">(Auto center)</span>
             </TooltipContent>
           </Tooltip>
+
+          {/* Auto-Layout Engine (Dagre) */}
+          {onAutoArrange && (
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={isArranging}
+                      className="h-8 w-8 rounded-lg text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 active:scale-95 transition-all cursor-pointer border border-emerald-500/25"
+                      aria-label="Auto-arrange schema"
+                    >
+                      {isArranging ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
+                      ) : (
+                        <LayoutGrid className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs font-medium">
+                  Auto-Arrange Schema <span className="text-muted-foreground ml-1 font-mono">(Dagre Layout)</span>
+                </TooltipContent>
+              </Tooltip>
+
+              <DropdownMenuContent align="start" side="top" className="w-56 mb-2">
+                <DropdownMenuLabel className="text-xs font-semibold flex items-center gap-1.5">
+                  <Wand2 className="h-3.5 w-3.5 text-emerald-500" />
+                  <span>Auto-Layout Engine (Dagre)</span>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => onAutoArrange("LR")}
+                  className="text-xs flex items-center justify-between cursor-pointer py-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <ArrowRight className="h-3.5 w-3.5 text-emerald-500" />
+                    <span>Left to Right (Hierarchical)</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                    Best for ER
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onAutoArrange("TB")}
+                  className="text-xs flex items-center justify-between cursor-pointer py-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <ArrowDown className="h-3.5 w-3.5 text-blue-500" />
+                    <span>Top to Bottom (Tree)</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                    Classic
+                  </span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           {/* Lock / Interactive Canvas Mode */}
           {setIsLocked && (
@@ -311,6 +389,15 @@ export default function FlowControls({
                     <span>Delete item</span>
                     <kbd className="px-1.5 py-0.5 bg-muted rounded font-mono text-[10px] text-foreground border border-border">
                       Backspace / Del
+                    </kbd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-foreground font-medium flex items-center gap-1">
+                      Auto-Arrange
+                      <span className="text-[9px] text-emerald-500 bg-emerald-500/10 px-1 py-0.2 rounded font-normal">Dagre</span>
+                    </span>
+                    <kbd className="px-1.5 py-0.5 bg-muted rounded font-mono text-[10px] text-foreground border border-border">
+                      Layout Button
                     </kbd>
                   </div>
                 </div>

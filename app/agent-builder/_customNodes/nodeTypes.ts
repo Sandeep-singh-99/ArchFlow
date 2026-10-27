@@ -15,8 +15,15 @@ import NosqlValidationNode from "./NosqlValidationNode";
 import DbNoteNode from "./DbNoteNode";
 import DbSchemaNode from "./DbSchemaNode";
 import TextNode from "./TextNode";
+import DomainGroupNode from "./DomainGroupNode";
 
 export const nodeTypes = {
+  // Domain / Subgraph Containers
+  DomainGroupNode,
+  DomainGroup: DomainGroupNode,
+  domainGroup: DomainGroupNode,
+  group: DomainGroupNode,
+
   // SQL Nodes
   SqlTableNode,
   SqlViewNode,
