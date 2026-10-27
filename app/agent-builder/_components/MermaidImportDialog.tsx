@@ -25,7 +25,6 @@ import {
   FileCode2,
 } from "lucide-react";
 import { Agent } from "@/types/AgentTypes";
-import { fullDatabaseDemoNodes, fullDatabaseDemoEdges } from "@/lib/fullDatabaseDemo";
 
 interface MermaidImportDialogProps {
   agentDetail?: Agent;
@@ -185,89 +184,7 @@ export default function MermaidImportDialog({
             </div>
           </div>
 
-          {/* Quick Presets */}
-          <div className="flex items-center gap-2 flex-wrap pt-2.5">
-            <span className="text-[11px] font-medium text-muted-foreground">Quick Demos:</span>
-            <button
-              type="button"
-              onClick={() =>
-                setMermaidText(`erDiagram
-    USERS ||--o{ ORDERS : places
-    ORDERS ||--|{ ORDER_ITEMS : contains
-    PRODUCTS ||--o{ ORDER_ITEMS : ordered_in
-    ORDERS ||--|| PAYMENTS : settles
-    CATEGORIES ||--o{ PRODUCTS : categorizes
-    USERS ||--o{ ADDRESSES : owns
-
-    USERS {
-        uuid id PK
-        string email UK
-        string password_hash
-        string full_name
-        string role
-        timestamp created_at
-    }
-
-    ADDRESSES {
-        uuid id PK
-        uuid user_id FK
-        string street
-        string city
-        string postal_code
-        string country
-    }
-
-    CATEGORIES {
-        int id PK
-        string name UK
-        string slug
-    }
-
-    PRODUCTS {
-        uuid id PK
-        int category_id FK
-        string sku UK
-        string title
-        numeric price
-        int stock_qty
-        boolean is_active
-    }
-
-    ORDERS {
-        uuid id PK
-        uuid user_id FK
-        string status
-        numeric total_amount
-        numeric tax_amount
-        timestamp created_at
-    }
-
-    ORDER_ITEMS {
-        uuid id PK
-        uuid order_id FK
-        uuid product_id FK
-        int quantity
-        numeric unit_price
-        numeric subtotal
-    }
-
-    PAYMENTS {
-        uuid id PK
-        uuid order_id FK
-        string gateway_ref
-        string payment_method
-        string status
-        numeric amount
-        timestamp paid_at
-    }`)
-              }
-              className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors cursor-pointer"
-            >
-              Postgres E-Commerce ER Schema
-            </button>
-
-          </div>
-        </DialogHeader>
+          </DialogHeader>
 
         {/* Raw Mermaid Editor Area */}
         <div className="flex-1 flex flex-col min-h-[260px] max-h-[360px] relative my-3">
