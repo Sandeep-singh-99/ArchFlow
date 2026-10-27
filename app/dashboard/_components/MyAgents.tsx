@@ -81,20 +81,21 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="h-64 rounded-xl border border-border bg-card/60 p-5 animate-pulse space-y-4"
+            className="rounded-xl border border-border bg-card/60 p-4 animate-pulse flex flex-col justify-between space-y-4"
           >
-            <div className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-lg bg-muted" />
-              <div className="space-y-1.5 flex-1">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="h-8 w-8 rounded-lg bg-muted" />
+                <div className="h-5 w-16 bg-muted rounded" />
+              </div>
+              <div className="space-y-1.5">
                 <div className="h-4 w-3/4 bg-muted rounded" />
                 <div className="h-3 w-1/3 bg-muted rounded" />
               </div>
             </div>
-            <div className="h-32 bg-muted/60 rounded-lg" />
-            <div className="flex gap-2">
-              <div className="h-5 w-16 bg-muted rounded" />
-              <div className="h-5 w-20 bg-muted rounded" />
-              <div className="h-5 w-16 bg-muted rounded" />
+            <div className="pt-3 border-t border-border/40 flex items-center justify-between">
+              <div className="h-3 w-20 bg-muted rounded" />
+              <div className="h-7 w-24 bg-muted rounded" />
             </div>
           </div>
         ))}
@@ -134,8 +135,8 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
         </div>
       </div>
 
-      {/* Grid of Enhanced Schema Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-start">
+      {/* Grid of Uniform Schema Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {agentList.map((agent) => (
           <SchemaCard
             key={agent._id}

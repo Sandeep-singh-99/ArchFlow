@@ -5,7 +5,6 @@ import Link from "next/link";
 import moment from "moment";
 import { Agent } from "@/types/AgentTypes";
 import { Id } from "@/convex/_generated/dataModel";
-import { computeSchemaEntityStats } from "@/lib/schemaStats";
 import SchemaMiniMapPreview from "./SchemaMiniMapPreview";
 import RenameProjectModal from "./RenameProjectModal";
 import { exportSqlDdl } from "@/lib/sqlDdlExporter";
@@ -20,9 +19,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Database,
-  Table as TableIcon,
-  Link2,
-  Layers,
   MoreVertical,
   Pencil,
   Copy,
@@ -31,7 +27,6 @@ import {
   ArrowRight,
   Clock,
   Code2,
-  Eye,
   FileCode,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -54,8 +49,6 @@ export default function SchemaCard({
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [cardName, setCardName] = useState(agent.name);
   const duplicateAgentMutation = useMutation(api.agent.DuplicateAgent);
-
-  const stats = computeSchemaEntityStats(agent.nodes, agent.edges);
 
   const handleQuickExportSql = (dialect: "postgresql" | "mysql") => {
     try {
@@ -104,31 +97,16 @@ export default function SchemaCard({
   };
 
   return (
-    <div className="rounded-xl border border-border/80 bg-card hover:border-zinc-300 dark:hover:border-white/60 transition-all duration-200 shadow-2xs hover:shadow-md relative group flex flex-col justify-between overflow-hidden">
+    <div className="h-full rounded-xl border border-border/80 bg-card hover:border-zinc-300 dark:hover:border-white/60 transition-all duration-200 shadow-2xs hover:shadow-md relative group flex flex-col justify-between overflow-hidden">
       {/* Top Section */}
-      <div className="p-4 space-y-2.5">
+      <div className="p-4 space-y-3">
         {/* Header Bar */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="h-8 w-8 rounded-lg bg-[#ffc507]/10 text-[#ffee72] flex items-center justify-center border border-[#ffdf27]/20 shrink-0">
-              <Database className="h-4 w-4 text-[#ffdf27]" />
-            </div>
-            <div className="min-w-0">
-              <Link
-                href={`/agent-builder/${agent.agentId}`}
-                className="font-semibold text-sm text-foreground hover:text-[#ffee72] transition-colors truncate block"
-                title={cardName}
-              >
-                {cardName}
-              </Link>
-              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono">
-                <Clock className="h-3 w-3 shrink-0" />
-                <span>{moment(agent._creationTime).fromNow()}</span>
-              </div>
-            </div>
+          <div className="h-8 w-8 rounded-lg bg-[#ffc507]/10 text-[#ffee72] flex items-center justify-center border border-[#ffdf27]/20 shrink-0">
+            <Database className="h-4 w-4 text-[#ffdf27]" />
           </div>
 
-          {/* Quick Actions Dropdown */}
+          {/* Quick Actions & Status */}
           <div className="flex items-center gap-1 shrink-0">
             <Badge
               variant="outline"
@@ -206,53 +184,22 @@ export default function SchemaCard({
           </div>
         </div>
 
-        {/* Entity Badges: Minimal & Clean */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-          <Badge
-            variant="secondary"
-            className="text-[10px] font-mono px-2 py-0.5 gap-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+        {/* Schema Title & Metadata */}
+        <div>
+          <Link
+            href={`/agent-builder/${agent.agentId}`}
+            className="font-semibold text-sm text-foreground hover:text-[#ffee72] transition-colors truncate block"
+            title={cardName}
           >
-            <TableIcon className="h-3 w-3" />
-            <span>
-              {stats.tables} {stats.tables === 1 ? "Table" : "Tables"}
-            </span>
-          </Badge>
-
-          <Badge
-            variant="secondary"
-            className="text-[10px] font-mono px-2 py-0.5 gap-1.5 bg-[#ffc507]/10 text-amber-600 dark:text-[#ffdf27] border border-[#ffdf27]/25"
-          >
-            <Link2 className="h-3 w-3" />
-            <span>
-              {stats.foreignKeys}{" "}
-              {stats.foreignKeys === 1 ? "Foreign Key" : "Foreign Keys"}
-            </span>
-          </Badge>
-
-          <Badge
-            variant="secondary"
-            className="text-[10px] font-mono px-2 py-0.5 gap-1.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20"
-          >
-            <Layers className="h-3 w-3" />
-            <span>
-              {stats.domains} {stats.domains === 1 ? "Domain" : "Domains"}
-            </span>
-          </Badge>
-
-          {stats.views > 0 && (
-            <Badge
-              variant="outline"
-              className="text-[10px] font-mono px-1.5 py-0.5 gap-1 text-purple-500 border-purple-500/30"
-            >
-              <Eye className="h-2.5 w-2.5" />
-              <span>
-                {stats.views} {stats.views === 1 ? "View" : "Views"}
-              </span>
-            </Badge>
-          )}
+            {cardName}
+          </Link>
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono mt-1">
+            <Clock className="h-3 w-3 shrink-0" />
+            <span>{moment(agent._creationTime).fromNow()}</span>
+          </div>
         </div>
 
-        {/* Visual Snapshot Preview: Hidden by default, smoothly revealed on hover */}
+        {/* Visual Snapshot Preview: Revealed on hover */}
         <div className="overflow-hidden max-h-0 opacity-0 group-hover:max-h-36 group-hover:opacity-100 transition-all duration-300 ease-in-out">
           <div className="pt-2">
             <Link
