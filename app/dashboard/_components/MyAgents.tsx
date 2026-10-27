@@ -32,11 +32,10 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 interface MyAgentsProps {
-  onSelectTemplateTab?: () => void;
   onOpenCreateDialog?: () => void;
 }
 
-export default function MyAgents({ onSelectTemplateTab }: MyAgentsProps) {
+export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
   const { userDetails } = useContext(UserDetailContext);
   const [agentList, setAgentList] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,20 +106,9 @@ export default function MyAgents({ onSelectTemplateTab }: MyAgentsProps) {
             No Database Schemas Yet
           </h3>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Create your first relational or NoSQL database schema from scratch, or start with one of our production-ready templates.
+            Create your first relational or NoSQL database schema from scratch using the + button above.
           </p>
         </div>
-        {onSelectTemplateTab && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onSelectTemplateTab}
-            className="gap-2 text-xs font-semibold cursor-pointer hover:border-[#ffdf27]/40 hover:text-[#ffee72]"
-          >
-            <Layers className="h-3.5 w-3.5 text-[#ffdf27]" />
-            <span>Browse Schema Templates</span>
-          </Button>
-        )}
       </div>
     );
   }

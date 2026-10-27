@@ -7,9 +7,9 @@ export default function HowItWorks() {
   const steps = [
     {
       step: "01",
-      title: "Prompt AI or Pick a Template",
+      title: "Prompt AI or Start Canvas",
       description:
-        "Describe your system in natural language (e.g., 'URL Shortener with 100M daily writes') or choose from production microservice templates.",
+        "Describe your system in natural language or create custom schemas and visual domain containers directly on the canvas.",
       icon: Terminal,
       colorClass: "text-emerald-600 dark:text-emerald-400",
       bgClass: "bg-emerald-500/10 border-emerald-500/20",

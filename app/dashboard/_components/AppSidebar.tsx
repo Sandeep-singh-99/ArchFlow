@@ -37,11 +37,6 @@ const MenuOptions = [
     icon: Network,
   },
   {
-    title: "Templates",
-    url: "/dashboard?tab=template",
-    icon: Layers,
-  },
-  {
     title: "Pricing & Plans",
     url: "/dashboard/pricing",
     icon: CreditCard,

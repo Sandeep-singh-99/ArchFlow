@@ -1,7 +1,6 @@
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import InteractiveLab from "@/components/landing/InteractiveLab";
-import ArchitectureTemplates from "@/components/landing/ArchitectureTemplates";
 import Features from "@/components/landing/Features";
 import HowItWorks from "@/components/landing/HowItWorks";
 import Pricing from "@/components/landing/Pricing";
@@ -15,7 +14,6 @@ export default function Home() {
       <main className="flex-1">
         <Hero />
         <InteractiveLab />
-        <ArchitectureTemplates />
         <Features />
         <HowItWorks />
         <Pricing />

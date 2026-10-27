@@ -37,9 +37,9 @@ export default function CallToAction() {
               <ArrowRight className="ml-2 h-4 w-4 text-zinc-950" />
             </Button>
           </Link>
-          <Link href="#templates">
+          <Link href="#features">
             <Button variant="outline" size="lg" className="h-12 px-7 text-base rounded-lg border-border hover:bg-muted font-medium">
-              Browse Templates
+              Explore Features
             </Button>
           </Link>
         </div>

@@ -64,7 +64,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span>Standard Community Templates</span>
+                  <span>Unlimited Architecture Canvases</span>
                 </li>
               </ul>
             </CardContent>
@@ -157,7 +157,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span>Custom Internal Component Library</span>
+                  <span>Custom Domain Container Themes</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />

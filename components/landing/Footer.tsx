@@ -51,30 +51,30 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Column: Templates */}
+          {/* Column: Capabilities */}
           <div className="space-y-3">
             <h4 className="text-xs font-mono font-semibold uppercase tracking-wider text-foreground">
-              Architecture Templates
+              Capabilities
             </h4>
             <ul className="space-y-2 text-xs text-muted-foreground">
               <li>
-                <Link href="#templates" className="hover:text-foreground transition-colors">
-                  Ride Hailing (Uber)
+                <Link href="#features" className="hover:text-foreground transition-colors">
+                  Visual Modeling Canvas
                 </Link>
               </li>
               <li>
-                <Link href="#templates" className="hover:text-foreground transition-colors">
-                  Flash Sale (Amazon)
+                <Link href="#features" className="hover:text-foreground transition-colors">
+                  Custom Domain Containers
                 </Link>
               </li>
               <li>
-                <Link href="#templates" className="hover:text-foreground transition-colors">
-                  Video Streaming (Netflix)
+                <Link href="#features" className="hover:text-foreground transition-colors">
+                  SQL & NoSQL Objects
                 </Link>
               </li>
               <li>
-                <Link href="#templates" className="hover:text-foreground transition-colors">
-                  Distributed Rate Limiter
+                <Link href="#features" className="hover:text-foreground transition-colors">
+                  Auto-Layout & Grouping
                 </Link>
               </li>
             </ul>
