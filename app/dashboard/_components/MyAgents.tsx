@@ -4,18 +4,8 @@ import { UserDetailContext } from "@/context/UserDetailContext";
 import { api } from "@/convex/_generated/api";
 import { Agent } from "@/types/AgentTypes";
 import { useConvex, useMutation } from "convex/react";
-import {
-  Network,
-  Trash2,
-  Workflow,
-  ArrowRight,
-  Clock,
-  Layers,
-  Database,
-} from "lucide-react";
-import Link from "next/link";
+import { Database, Plus } from "lucide-react";
 import React, { useContext, useEffect, useState } from "react";
-import moment from "moment";
 import { Id } from "@/convex/_generated/dataModel";
 import {
   AlertDialog,
@@ -28,8 +18,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import SchemaCard from "./SchemaCard";
 
 interface MyAgentsProps {
   onOpenCreateDialog?: () => void;
@@ -42,6 +32,7 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
   const convex = useConvex();
   const deleteAgentMutation = useMutation(api.agent.DeleteAgent);
   const [deleteId, setDeleteId] = useState<Id<"AgentTable"> | null>(null);
+  const [deleteName, setDeleteName] = useState<string>("");
   const [openAlert, setOpenAlert] = useState(false);
 
   useEffect(() => {
@@ -65,6 +56,12 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
     }
   };
 
+  const handleDeleteRequest = (id: Id<"AgentTable">, name: string) => {
+    setDeleteId(id);
+    setDeleteName(name);
+    setOpenAlert(true);
+  };
+
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
@@ -84,11 +81,21 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="h-44 rounded-xl border border-border bg-card/60 p-5 animate-pulse space-y-4"
+            className="h-64 rounded-xl border border-border bg-card/60 p-5 animate-pulse space-y-4"
           >
-            <div className="h-8 w-8 rounded-lg bg-muted" />
-            <div className="h-4 w-3/4 bg-muted rounded" />
-            <div className="h-3 w-1/2 bg-muted rounded" />
+            <div className="flex items-center gap-2">
+              <div className="h-9 w-9 rounded-lg bg-muted" />
+              <div className="space-y-1.5 flex-1">
+                <div className="h-4 w-3/4 bg-muted rounded" />
+                <div className="h-3 w-1/3 bg-muted rounded" />
+              </div>
+            </div>
+            <div className="h-32 bg-muted/60 rounded-lg" />
+            <div className="flex gap-2">
+              <div className="h-5 w-16 bg-muted rounded" />
+              <div className="h-5 w-20 bg-muted rounded" />
+              <div className="h-5 w-16 bg-muted rounded" />
+            </div>
           </div>
         ))}
       </div>
@@ -106,7 +113,7 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
             No Database Schemas Yet
           </h3>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Create your first relational or NoSQL database schema from scratch using the + button above.
+            Create your first relational or NoSQL database schema from scratch using the New Project button above.
           </p>
         </div>
       </div>
@@ -114,68 +121,45 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
   }
 
   return (
-    <div className="w-full mt-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {agentList.map((agent, index) => (
-          <div
-            key={index}
-            className="rounded-xl border border-border bg-card p-5 hover:border-[#ffdf27]/50 transition-all duration-150 shadow-2xs hover:shadow-sm relative group flex flex-col justify-between"
-          >
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="h-9 w-9 rounded-lg bg-[#ffc507]/10 text-[#ffee72] flex items-center justify-center border border-[#ffdf27]/20">
-                  <Database className="h-4 w-4 text-[#ffdf27]" />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border">
-                    {agent.published ? "Published" : "Draft"}
-                  </Badge>
-                  <button
-                    className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                    title="Delete Database Schema"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setDeleteId(agent._id as Id<"AgentTable">);
-                      setOpenAlert(true);
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
+    <div className="w-full mt-6 space-y-4">
+      {/* Header bar showing count */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-semibold text-foreground">
+            Your Schemas
+          </h2>
+          <span className="px-2 py-0.5 rounded-full text-xs font-mono font-medium bg-muted text-muted-foreground">
+            {agentList.length}
+          </span>
+        </div>
+      </div>
 
-              <div>
-                <h3 className="font-bold text-base text-foreground group-hover:text-[#ffee72] transition-colors line-clamp-1">
-                  {agent.name}
-                </h3>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono mt-1">
-                  <Clock className="h-3 w-3" />
-                  <span>{moment(agent._creationTime).fromNow()}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-5 mt-4 border-t border-border/60 flex items-center justify-between">
-              <span className="text-[11px] font-mono text-muted-foreground">
-                Database Schema Studio
-              </span>
-              <Link href={`/agent-builder/${agent.agentId}`}>
-                <Button size="sm" variant="ghost" className="h-8 gap-1.5 text-xs font-semibold text-[#ffee72] hover:text-[#ffdf27] hover:bg-[#ffc507]/10 cursor-pointer">
-                  <span>Open Schema Canvas</span>
-                  <ArrowRight className="h-3 w-3" />
-                </Button>
-              </Link>
-            </div>
-          </div>
+      {/* Grid of Enhanced Schema Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-start">
+        {agentList.map((agent) => (
+          <SchemaCard
+            key={agent._id}
+            agent={agent}
+            userId={userDetails?._id as Id<"UserTable">}
+            onDeleteRequest={handleDeleteRequest}
+            onRefresh={GetUserAgents}
+          />
         ))}
       </div>
 
+      {/* Delete Confirmation Alert Dialog */}
       <AlertDialog open={openAlert} onOpenChange={setOpenAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this database schema?</AlertDialogTitle>
+            <AlertDialogTitle>Delete database schema?</AlertDialogTitle>
             <AlertDialogDescription className="text-xs text-muted-foreground">
-              This action cannot be undone. All tables, columns, foreign keys, and indexes will be permanently deleted.
+              Are you sure you want to delete{" "}
+              {deleteName ? (
+                <span className="font-semibold text-foreground">"{deleteName}"</span>
+              ) : (
+                "this schema"
+              )}
+              ? This action cannot be undone. All tables, columns, foreign keys, and indexes will be permanently deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

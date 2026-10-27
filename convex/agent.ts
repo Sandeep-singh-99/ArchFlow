@@ -92,6 +92,45 @@ export const PublishAgent = mutation({
   },
 });
 
+export const RenameAgent = mutation({
+  args: {
+    agentId: v.id("AgentTable"),
+    name: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const trimmed = args.name.trim();
+    if (!trimmed) {
+      throw new Error("Project name cannot be empty");
+    }
+    await ctx.db.patch(args.agentId, {
+      name: trimmed,
+    });
+  },
+});
+
+export const DuplicateAgent = mutation({
+  args: {
+    agentId: v.id("AgentTable"),
+    userId: v.id("UserTable"),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db.get(args.agentId);
+    if (!existing) {
+      throw new Error("Database schema not found");
+    }
+    const newAgentId = crypto.randomUUID();
+    return await ctx.db.insert("AgentTable", {
+      name: `${existing.name} (Copy)`,
+      agentId: newAgentId,
+      published: false,
+      userId: args.userId,
+      nodes: existing.nodes ?? [],
+      edges: existing.edges ?? [],
+      agentToolConfig: existing.agentToolConfig,
+    });
+  },
+});
+
 export const DeleteAgent = mutation({
   args: {
     agentId: v.id("AgentTable"),
