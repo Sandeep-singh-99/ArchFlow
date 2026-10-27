@@ -2,6 +2,7 @@
 
 import React, { useMemo } from "react";
 import { Database } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface SchemaMiniMapPreviewProps {
   nodes?: any[];
@@ -163,7 +164,10 @@ export default function SchemaMiniMapPreview({
   if (!hasNodes) {
     return (
       <div
-        className={`w-full h-28 rounded-lg border border-dashed border-border/70 bg-muted/20 relative flex flex-col items-center justify-center text-center p-3 overflow-hidden select-none ${className}`}
+        className={cn(
+          "w-full h-28 rounded-lg border border-dashed border-border/70 bg-muted/20 relative flex flex-col items-center justify-center text-center p-3 overflow-hidden select-none",
+          className
+        )}
       >
         <div
           className="absolute inset-0 opacity-[0.03] dark:opacity-[0.06] pointer-events-none"
@@ -182,7 +186,10 @@ export default function SchemaMiniMapPreview({
 
   return (
     <div
-      className={`w-full h-28 rounded-lg border border-border/70 bg-background/95 dark:bg-zinc-950 relative overflow-hidden transition-all duration-150 ${className}`}
+      className={cn(
+        "w-full h-28 rounded-lg border border-border/70 bg-background/95 dark:bg-zinc-950 relative overflow-hidden transition-all duration-150",
+        className
+      )}
     >
       <svg
         viewBox={viewBox}
