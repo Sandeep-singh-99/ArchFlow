@@ -678,85 +678,55 @@ export default function AgentToolsPanel() {
 
             {/* DOMAIN SUBGRAPH CONTAINERS */}
             <TabsContent value="domains" className="space-y-1 focus-visible:outline-none">
-              {/* One-Click All Domains Architecture Demo */}
-              <div className="p-2.5 mb-2 rounded-xl bg-gradient-to-br from-emerald-500/10 via-indigo-500/10 to-amber-500/10 border border-emerald-500/30 space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-xs text-foreground">
-                  <Sparkles className="h-4 w-4 text-emerald-500" />
-                  <span>Enterprise 8-Domain Demo</span>
-                </div>
-                <p className="text-[10.5px] text-muted-foreground leading-snug">
-                  Instant showcase of all 8 colored domain containers (Auth, Billing, Catalog, Users, Comms, Analytics, Audit, Core) with 14 connected relational tables.
-                </p>
-                <Button
-                  size="sm"
-                  onClick={loadFullDemoSchema}
-                  className="w-full h-7 text-xs font-semibold bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 text-white hover:brightness-110 shadow-xs cursor-pointer border-none"
-                >
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  Load All 8 Domains Demo
-                </Button>
-              </div>
-
               <DropdownMenuLabel className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-2 py-0.5">
-                Domain Subgraph Containers
+                Domain Subgraph Container
               </DropdownMenuLabel>
-
-              {DOMAIN_PRESETS.map((preset) => {
-                const themeCfg = DOMAIN_THEMES[preset.theme];
-                return (
-                  <DropdownMenuItem
-                    key={preset.name}
-                    onClick={() => addDomainNode(preset)}
-                    className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted transition-colors"
-                  >
-                    <div
-                      className="p-2 rounded-md shrink-0 border"
-                      style={{
-                        backgroundColor: `${themeCfg.accent}15`,
-                        borderColor: `${themeCfg.accent}35`,
-                        color: themeCfg.accent,
-                      }}
-                    >
-                      {getPresetIcon(preset.icon)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-xs text-foreground">
-                          {preset.name}
-                        </span>
-                        <Badge
-                          variant="outline"
-                          className={`text-[8.5px] px-1 py-0 h-3.5 font-mono ${themeCfg.badge}`}
-                        >
-                          {themeCfg.label.split(" / ")[0]}
-                        </Badge>
-                      </div>
-                      <div className="text-[11px] text-muted-foreground truncate">
-                        {preset.description}
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                );
-              })}
-
-              <DropdownMenuSeparator className="my-1" />
 
               <DropdownMenuItem
                 onClick={() => addDomainNode()}
                 className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted transition-colors"
               >
-                <div className="p-2 rounded-md bg-primary/10 text-primary shrink-0 border border-primary/20">
-                  <Plus className="h-4 w-4" />
+                <div className="p-2 rounded-md bg-indigo-500/15 text-indigo-500 shrink-0 border border-indigo-500/30">
+                  <Layers className="h-4 w-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-xs text-foreground">
-                    Custom Domain Boundary
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-xs text-foreground">
+                      Custom Domain Container
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="text-[8.5px] px-1 py-0 h-3.5 font-mono border-indigo-500/30 text-indigo-400 bg-indigo-500/10"
+                    >
+                      Container
+                    </Badge>
                   </div>
                   <div className="text-[11px] text-muted-foreground truncate">
-                    Blank colored subgraph container for grouping tables
+                    Colored boundary container for grouping related tables
                   </div>
                 </div>
               </DropdownMenuItem>
+
+              <DropdownMenuSeparator className="my-1.5" />
+
+              {/* Demo Loader */}
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500/10 via-emerald-500/10 to-blue-500/10 border border-indigo-500/30 space-y-1.5">
+                <div className="flex items-center gap-1.5 font-bold text-xs text-foreground">
+                  <Sparkles className="h-4 w-4 text-indigo-500" />
+                  <span>Domain Architecture Demo</span>
+                </div>
+                <p className="text-[10.5px] text-muted-foreground leading-snug">
+                  Load a sample architecture with core relational tables grouped inside a Custom Domain container.
+                </p>
+                <Button
+                  size="sm"
+                  onClick={loadFullDemoSchema}
+                  className="w-full h-7 text-xs font-semibold bg-gradient-to-r from-indigo-600 via-emerald-600 to-teal-600 text-white hover:brightness-110 shadow-xs cursor-pointer border-none"
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  Load Domain Demo
+                </Button>
+              </div>
             </TabsContent>
 
             {/* SHARED NODES */}

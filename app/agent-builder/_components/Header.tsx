@@ -44,7 +44,7 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
     const demo = generateAllDomainsDemoSchema();
     setAddedNodes(demo.nodes);
     setNodeEdges(demo.edges);
-    toast.success("Loaded Enterprise 8-Domain Architecture Demo!");
+    toast.success("Loaded Custom Domain Architecture Demo!");
   };
 
   const handlePublish = async () => {
@@ -113,16 +113,16 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-2.5">
-        {/* Load All Domains Demo */}
+        {/* Load Custom Domain Demo */}
         <Button
           variant="outline"
           size="sm"
           onClick={handleLoadAllDomainsDemo}
-          className="h-8 gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 cursor-pointer hidden lg:inline-flex"
-          title="Load all 8 domains (Auth, Billing, Catalog, Users, Comms, Analytics, Audit, Core) demo schema"
+          className="h-8 gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/10 cursor-pointer hidden lg:inline-flex"
+          title="Load sample schema grouped in a Custom Domain container"
         >
-          <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
-          <span>All Domains Demo</span>
+          <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
+          <span>Domain Demo</span>
         </Button>
 
         {/* 1. Real SQL DDL Exporter */}

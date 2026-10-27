@@ -138,40 +138,10 @@ export interface DomainPreset {
 
 export const DOMAIN_PRESETS: DomainPreset[] = [
   {
-    name: "Auth & Security",
+    name: "Custom Domain",
     theme: "indigo",
-    description: "User authentication, sessions, permissions, credentials, and OAuth tokens",
-    icon: "Shield",
-  },
-  {
-    name: "Billing & Invoicing",
-    theme: "emerald",
-    description: "Subscriptions, payment methods, transaction ledger, and invoices",
-    icon: "CreditCard",
-  },
-  {
-    name: "Product Catalog",
-    theme: "amber",
-    description: "Products, categories, inventory, SKUs, and pricing rules",
-    icon: "Package",
-  },
-  {
-    name: "User Management",
-    theme: "blue",
-    description: "Profiles, teams, organizations, members, and audit trails",
-    icon: "Users",
-  },
-  {
-    name: "Notifications & Comms",
-    theme: "cyan",
-    description: "In-app notifications, webhooks, email queues, and templates",
-    icon: "Bell",
-  },
-  {
-    name: "Analytics & Metrics",
-    theme: "purple",
-    description: "Event logs, metrics rollups, aggregation tables, and user sessions",
-    icon: "BarChart3",
+    description: "Bounded domain container for grouping related tables",
+    icon: "Layers",
   },
 ];
 

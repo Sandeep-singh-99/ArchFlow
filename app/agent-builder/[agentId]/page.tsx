@@ -358,7 +358,7 @@ export default function AgentBuilder() {
       setSelectedNode(newDomainNode);
       SaveNodeAndEdges(finalNodes);
       toast.success(
-        `Grouped ${selectedNodesList.length} tables into "${domainName}" domain`
+        `Grouped ${selectedNodesList.length} tables into Custom Domain`
       );
     },
     [selectedNodesList, addedNodes, setAddedNodes, setSelectedNode, SaveNodeAndEdges]
@@ -368,7 +368,7 @@ export default function AgentBuilder() {
     const demo = generateAllDomainsDemoSchema();
     setAddedNodes(demo.nodes);
     setNodeEdges(demo.edges);
-    toast.success("Loaded Enterprise 8-Domain Architecture Demo!");
+    toast.success("Loaded Custom Domain Architecture Demo!");
     setTimeout(() => {
       fitView({ duration: 500, padding: 0.25 });
     }, 50);
@@ -460,52 +460,20 @@ export default function AgentBuilder() {
             <Panel position="top-center" className="mt-3">
               <div className="flex items-center gap-2.5 px-3.5 py-1.5 bg-card/95 dark:bg-zinc-900/95 backdrop-blur-md border border-border shadow-2xl rounded-xl animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                  <Layers className="h-4 w-4 text-emerald-500" />
+                  <Layers className="h-4 w-4 text-indigo-500" />
                   <span>{selectedNodesList.length} items selected</span>
                 </div>
 
                 <div className="h-4 w-px bg-border mx-1" />
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      size="sm"
-                      className="h-7 text-xs gap-1.5 font-medium bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-xs"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Group into Domain
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" className="w-56">
-                    <DropdownMenuLabel className="text-xs font-semibold">
-                      Select Domain Boundary
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {DOMAIN_PRESETS.map((preset) => {
-                      const theme = DOMAIN_THEMES[preset.theme];
-                      return (
-                        <DropdownMenuItem
-                          key={preset.name}
-                          onClick={() => handleGroupSelection(preset)}
-                          className="text-xs cursor-pointer py-1.5 flex items-center justify-between"
-                        >
-                          <span>{preset.name}</span>
-                          <span
-                            className="w-2.5 h-2.5 rounded-full"
-                            style={{ backgroundColor: theme.accent }}
-                          />
-                        </DropdownMenuItem>
-                      );
-                    })}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => handleGroupSelection()}
-                      className="text-xs cursor-pointer py-1.5 font-medium text-emerald-600 dark:text-emerald-400"
-                    >
-                      + Custom Domain Boundary
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  size="sm"
+                  onClick={() => handleGroupSelection()}
+                  className="h-7 text-xs gap-1.5 font-medium bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-xs"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Group into Custom Domain
+                </Button>
               </div>
             </Panel>
           )}
@@ -529,7 +497,7 @@ export default function AgentBuilder() {
           {(!addedNodes || addedNodes.length === 0) && (
             <Panel position="top-center" className="mt-20 pointer-events-auto">
               <div className="max-w-md p-6 rounded-2xl bg-card/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-border shadow-2xl text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 via-indigo-500/20 to-amber-500/20 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-500">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 via-emerald-500/20 to-teal-500/20 border border-indigo-500/30 flex items-center justify-center mx-auto text-indigo-500">
                   <Sparkles className="h-6 w-6" />
                 </div>
                 <div className="space-y-1">
@@ -537,15 +505,15 @@ export default function AgentBuilder() {
                     Database Schema Canvas
                   </h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Start designing your database schema using the tools palette on the left, or load the complete 8-domain enterprise architecture demo with one click.
+                    Start designing your database schema using the tools palette on the left, or load the Custom Domain architecture demo with one click.
                   </p>
                 </div>
                 <Button
                   onClick={handleLoadAllDomainsDemo}
-                  className="w-full gap-2 font-semibold bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 text-white hover:brightness-110 shadow-md cursor-pointer border-none"
+                  className="w-full gap-2 font-semibold bg-gradient-to-r from-indigo-600 via-emerald-600 to-teal-600 text-white hover:brightness-110 shadow-md cursor-pointer border-none"
                 >
                   <Sparkles className="h-4 w-4" />
-                  <span>Load All 8 Domains Architecture Demo</span>
+                  <span>Load Custom Domain Demo</span>
                 </Button>
               </div>
             </Panel>
