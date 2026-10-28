@@ -506,17 +506,17 @@ export default function AgentBuilder() {
             <Button
               onClick={() => SaveNodeAndEdges()}
               disabled={isSaving}
-              className="gap-2 font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 border-none shadow-md cursor-pointer"
+              className="gap-2 font-semibold bg-zinc-900 hover:bg-zinc-800 text-white border border-border shadow-md cursor-pointer"
             >
               {isSaving ? (
                 <>
-                  <Loader className="h-4 w-4 animate-spin text-zinc-950" />
-                  <span>Saving...</span>
+                  <Loader className="h-4 w-4 animate-spin text-white" />
+                  <span className="text-white">Saving...</span>
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4 text-zinc-950" />
-                  <span>Save Database Schema</span>
+                  <Save className="h-4 w-4 text-white" />
+                  <span className="text-white">Save</span>
                 </>
               )}
             </Button>

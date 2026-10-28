@@ -4,7 +4,6 @@ import { Agent } from "@/types/AgentTypes";
 import {
   ChevronLeft,
   FileCode,
-  Share2,
   Workflow,
   Copy,
   Check,
@@ -18,8 +17,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useState } from "react";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import MermaidImportDialog from "./MermaidImportDialog";
@@ -34,22 +31,6 @@ type Props = {
 export default function Header({ agentDetail, previewHeader = false }: Props) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const publishAgent = useMutation(api.agent.PublishAgent);
-
-  const handlePublish = async () => {
-    if (!agentDetail?._id) return;
-    try {
-      await publishAgent({
-        id: agentDetail._id,
-        published: true,
-      });
-      toast.success("Architecture published successfully!");
-      setOpen(true);
-    } catch (error) {
-      toast.error("Failed to publish architecture");
-      console.error(error);
-    }
-  };
 
   // Generate dynamic Mermaid.js syntax from nodes if present
   const nodes = agentDetail?.nodes || [];
@@ -118,15 +99,6 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
         >
           <FileCode className="h-3.5 w-3.5 text-muted-foreground" />
           <span>Export Mermaid</span>
-        </Button>
-
-        <Button
-          size="sm"
-          onClick={handlePublish}
-          className="h-8 gap-1.5 text-xs font-semibold shadow-xs"
-        >
-          <Share2 className="h-3.5 w-3.5" />
-          <span>Share & Publish</span>
         </Button>
 
         {/* Export Modal */}
