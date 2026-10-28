@@ -46,7 +46,6 @@ import { Save, Loader, Layers, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { getAutoLayout, isDomainGroupNode } from "@/lib/autoLayout";
 import { DOMAIN_PRESETS, DomainPreset, DOMAIN_THEMES } from "@/lib/domainThemes";
-import { generateAllDomainsDemoSchema } from "@/lib/demoDomainSchema";
 
 export default function AgentBuilder() {
   const {
@@ -364,16 +363,6 @@ export default function AgentBuilder() {
     [selectedNodesList, addedNodes, setAddedNodes, setSelectedNode, SaveNodeAndEdges]
   );
 
-  const handleLoadAllDomainsDemo = useCallback(() => {
-    const demo = generateAllDomainsDemoSchema();
-    setAddedNodes(demo.nodes);
-    setNodeEdges(demo.edges);
-    toast.success("Loaded Custom Domain Architecture Demo!");
-    setTimeout(() => {
-      fitView({ duration: 500, padding: 0.25 });
-    }, 50);
-  }, [setAddedNodes, setNodeEdges, fitView]);
-
   const handleCanvasWrapperClick = useCallback(
     (e: React.MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -505,16 +494,9 @@ export default function AgentBuilder() {
                     Database Schema Canvas
                   </h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Start designing your database schema using the tools palette on the left, or load the Custom Domain architecture demo with one click.
+                    Start designing your database schema using the tools palette on the left.
                   </p>
                 </div>
-                <Button
-                  onClick={handleLoadAllDomainsDemo}
-                  className="w-full gap-2 font-semibold bg-gradient-to-r from-indigo-600 via-emerald-600 to-teal-600 text-white hover:brightness-110 shadow-md cursor-pointer border-none"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  <span>Load Custom Domain Demo</span>
-                </Button>
               </div>
             </Panel>
           )}

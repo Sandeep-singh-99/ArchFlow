@@ -28,7 +28,6 @@ import {
   Users,
   Bell,
   BarChart3,
-  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,11 +46,9 @@ import {
   DomainPreset,
   DOMAIN_THEMES,
 } from "@/lib/domainThemes";
-import { generateAllDomainsDemoSchema } from "@/lib/demoDomainSchema";
-import { toast } from "sonner";
 
 export default function AgentToolsPanel() {
-  const { setAddedNodes, setNodeEdges } = useContext(WorkflowContext);
+  const { setAddedNodes } = useContext(WorkflowContext);
   const [open, setOpen] = useState(false);
 
   const getOffset = () => Math.floor(Math.random() * 60) - 30;
@@ -344,14 +341,6 @@ export default function AgentToolsPanel() {
     // Group container nodes MUST be placed at start of array in React Flow
     setAddedNodes((prev: any) => [newNode, ...(prev || [])]);
     setOpen(false);
-  };
-
-  const loadFullDemoSchema = () => {
-    const demo = generateAllDomainsDemoSchema();
-    setAddedNodes(demo.nodes);
-    setNodeEdges(demo.edges);
-    setOpen(false);
-    toast.success("Loaded Enterprise 8-Domain Architecture Demo!");
   };
 
   // Shared Nodes
@@ -706,27 +695,6 @@ export default function AgentToolsPanel() {
                   </div>
                 </div>
               </DropdownMenuItem>
-
-              <DropdownMenuSeparator className="my-1.5" />
-
-              {/* Demo Loader */}
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500/10 via-emerald-500/10 to-blue-500/10 border border-indigo-500/30 space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-xs text-foreground">
-                  <Sparkles className="h-4 w-4 text-indigo-500" />
-                  <span>Domain Architecture Demo</span>
-                </div>
-                <p className="text-[10.5px] text-muted-foreground leading-snug">
-                  Load a sample architecture with core relational tables grouped inside a Custom Domain container.
-                </p>
-                <Button
-                  size="sm"
-                  onClick={loadFullDemoSchema}
-                  className="w-full h-7 text-xs font-semibold bg-gradient-to-r from-indigo-600 via-emerald-600 to-teal-600 text-white hover:brightness-110 shadow-xs cursor-pointer border-none"
-                >
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  Load Domain Demo
-                </Button>
-              </div>
             </TabsContent>
 
             {/* SHARED NODES */}
