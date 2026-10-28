@@ -12,208 +12,258 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
-  Monitor,
-  Database,
+  Table,
+  Key,
+  Link2,
+  Hash,
   Minus,
   Plus,
   Trash2,
   RefreshCw,
   Sliders,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { getDomainTheme } from "@/lib/domainThemes";
 
 /* ========================================================
-   PRECISE SVG ICONS (MATCHING SCREENSHOT)
+   TYPES
    ======================================================== */
-
-// Fork/Scissors Load Balancer icon
-function LoadBalancerIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="3.5" cy="4.5" r="1.8" />
-      <circle cx="3.5" cy="11.5" r="1.8" />
-      <path d="M5.5 4.5 L12 8" />
-      <path d="M5.5 11.5 L12 8" />
-      <circle cx="12.5" cy="8" r="1.3" fill="currentColor" />
-    </svg>
-  );
+export interface ColumnDefinition {
+  id: string;
+  name: string;
+  type: string;
+  isPk?: boolean;
+  isFk?: boolean;
+  isNullable?: boolean;
+  isUnique?: boolean;
 }
 
-// Stacked rack server icon
-function ServerRackIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-      <rect x="2" y="3" width="12" height="4" rx="1" />
-      <rect x="2" y="9" width="12" height="4" rx="1" />
-      <circle cx="4.5" cy="5" r="0.6" fill="currentColor" />
-      <circle cx="4.5" cy="11" r="0.6" fill="currentColor" />
-    </svg>
-  );
+export interface InteractiveTableNodeData {
+  label?: string;
+  name?: string;
+  schema?: string;
+  domainName?: string;
+  domainTheme?: string;
+  columns?: ColumnDefinition[];
+  comment?: string;
+  isDeletable?: boolean;
+  isDropped?: boolean;
+  onToggleDelete?: () => void;
 }
 
 /* ========================================================
-   CUSTOM REACT FLOW NODE COMPONENTS (EXACT SCREENSHOT UI)
+   CUSTOM INTERACTIVE DATABASE TABLE NODE
    ======================================================== */
+function InteractiveDbTableNode({
+  data,
+  selected,
+}: {
+  data: InteractiveTableNodeData;
+  selected?: boolean;
+}) {
+  const tableName = data.name || data.label || "untitled_table";
+  const schemaName = data.schema || "public";
+  const domainThemeConfig = data.domainName ? getDomainTheme(data.domainTheme) : null;
+  const isDropped = data.isDropped;
+  const isDeletable = data.isDeletable;
 
-// 1. Client Node (Top-Left)
-function ClientLabNode({ data }: any) {
-  return (
-    <div className="relative rounded-2xl bg-[#0c0d10] border border-[#23252b] px-3.5 py-2.5 shadow-[0_8px_30px_rgba(0,0,0,0.85)] min-w-[135px] cursor-grab active:cursor-grabbing hover:border-white/20 transition-colors select-none">
-      {/* Title Row */}
-      <div className="flex items-center gap-1.5 mb-1">
-        <Monitor className="h-3 w-3 text-zinc-300 stroke-[1.8]" />
-        <span className="text-[12px] font-semibold text-white tracking-tight">Client</span>
-      </div>
-
-      {/* Metric Row */}
-      <div className="text-[11px] text-zinc-300 font-sans leading-tight">
-        <span className="font-semibold text-white">20k</span> req/s
-      </div>
-      <div className="text-[9.5px] text-zinc-500 font-sans mt-0.5 leading-tight">
-        2 endpoints · 20k/s
-      </div>
-
-      {/* Right Output Handle (White capsule pill) */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="!w-2 !h-3.5 !rounded-full !bg-white !border-0 !-right-[4px] !top-1/2 !-translate-y-1/2 shadow-xs cursor-crosshair"
-      />
-    </div>
-  );
-}
-
-// 2. Load Balancer Node (Center-Left)
-function LbLabNode({ data }: any) {
-  return (
-    <div className="relative rounded-2xl bg-[#0c0d10] border border-[#23252b] px-3.5 py-2.5 shadow-[0_8px_30px_rgba(0,0,0,0.85)] min-w-[148px] cursor-grab active:cursor-grabbing hover:border-white/20 transition-colors select-none">
-      {/* Left Input Handle (Concentric ring with center dot) */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="!w-3 !h-3 !rounded-full !bg-[#0c0d10] !border-[1.5px] !border-zinc-400 !-left-[6px] !top-1/2 !-translate-y-1/2 flex items-center justify-center cursor-crosshair"
-      >
-        <div className="w-1 h-1 rounded-full bg-zinc-200 pointer-events-none" />
-      </Handle>
-
-      {/* Title Row */}
-      <div className="flex items-center gap-1.5 mb-1">
-        <LoadBalancerIcon className="h-3 w-3 text-zinc-300" />
-        <span className="text-[12px] font-semibold text-white tracking-tight">Load balancer</span>
-      </div>
-
-      {/* Metric Row */}
-      <div className="text-[10.5px] text-zinc-300 font-sans leading-tight">
-        20k / 200k req/s
-      </div>
-
-      {/* Slider Progress Bar */}
-      <div className="flex items-center gap-2 mt-2">
-        <div className="relative flex-1 h-[2.5px] rounded-full bg-zinc-800">
-          <div className="h-full bg-zinc-300 rounded-full w-[10%]" />
-          {/* Slider thumb dot */}
-          <div className="absolute top-1/2 left-[10%] -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white shadow-xs" />
-        </div>
-        <span className="text-[9.5px] font-sans text-zinc-400">10%</span>
-      </div>
-
-      {/* Right Output Handle (White capsule pill) */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="!w-2 !h-3.5 !rounded-full !bg-white !border-0 !-right-[4px] !top-1/2 !-translate-y-1/2 shadow-xs cursor-crosshair"
-      />
-    </div>
-  );
-}
-
-// 3. API Server Node (Servers 1, 2, 3)
-function ServerLabNode({ data }: any) {
-  const isOffline = data?.isOffline;
-  const isDeletable = data?.isDeletable;
-  const label = data?.label || "API server";
-  const traffic = data?.traffic || "6.7k";
-  const utilization = data?.utilization || 67;
+  const columns: ColumnDefinition[] = data.columns || [
+    { id: "id", name: "id", type: "UUID", isPk: true, isNullable: false },
+    { id: "created_at", name: "created_at", type: "TIMESTAMP", isNullable: false },
+  ];
 
   return (
     <div
-      className={`relative rounded-2xl border px-3.5 py-2.5 shadow-[0_8px_30px_rgba(0,0,0,0.85)] min-w-[145px] cursor-grab active:cursor-grabbing transition-all duration-300 select-none ${
-        isOffline
-          ? "bg-red-950/20 border-red-500/40 opacity-60"
-          : "bg-[#0c0d10] border-[#23252b] hover:border-white/20"
+      className={`min-w-[240px] max-w-[290px] rounded-xl border backdrop-blur-md shadow-2xl transition-all duration-300 relative select-none ${
+        isDropped
+          ? "bg-red-950/20 border-red-500/40 opacity-60 shadow-red-950/20"
+          : selected
+          ? "bg-[#0c0d10]/95 border-white ring-2 ring-white/20 shadow-white/5"
+          : "bg-[#0c0d10]/95 border-[#23252b] hover:border-zinc-700 shadow-black/80"
       }`}
     >
-      {/* Left Input Handle (Concentric ring with center dot) */}
+      {/* Node-level fallback handles */}
       <Handle
         type="target"
-        position={Position.Left}
-        className={`!w-3 !h-3 !rounded-full !bg-[#0c0d10] !border-[1.5px] !-left-[6px] !top-1/2 !-translate-y-1/2 flex items-center justify-center cursor-crosshair ${
-          isOffline ? "!border-red-500" : "!border-zinc-400"
+        position={Position.Top}
+        id="top"
+        className={`!w-2.5 !h-2.5 !border-2 !border-[#0c0d10] !rounded-full z-20 ${
+          isDropped ? "!bg-red-500" : selected ? "!bg-white" : "!bg-zinc-400"
         }`}
-      >
-        <div className={`w-1 h-1 rounded-full pointer-events-none ${isOffline ? "bg-red-500" : "bg-zinc-200"}`} />
-      </Handle>
-
-      {/* Title Row */}
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1.5">
-          <ServerRackIcon className={`h-3 w-3 ${isOffline ? "text-red-400" : "text-zinc-300"}`} />
-          <span className="text-[12px] font-semibold text-white tracking-tight">{label}</span>
-        </div>
-        {isDeletable && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              data?.onToggleDelete?.();
-            }}
-            className="p-0.5 rounded hover:bg-white/10 text-zinc-500 hover:text-white transition-colors cursor-pointer"
-            title={isOffline ? "Restore Server" : "Click to simulate failure"}
-          >
-            {isOffline ? (
-              <RefreshCw className="h-3 w-3 text-emerald-400" />
-            ) : (
-              <Trash2 className="h-3 w-3 hover:text-red-400" />
-            )}
-          </button>
-        )}
-      </div>
-
-      {/* Metric Row */}
-      <div className="text-[10.5px] text-zinc-300 font-sans leading-tight">
-        {isOffline ? <span className="text-red-400 font-mono font-semibold">OFFLINE</span> : `${traffic} / 10k req/s`}
-      </div>
-
-      {/* Progress Bar */}
-      <div className="flex items-center gap-2 mt-2">
-        <div className="flex-1 h-[2.5px] rounded-full bg-zinc-800 overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${
-              isOffline
-                ? "w-0"
-                : utilization > 80
-                ? "bg-amber-400 w-[100%]"
-                : "bg-zinc-300 w-[67%]"
-            }`}
-          />
-        </div>
-        <span className="text-[9.5px] font-sans text-zinc-400">
-          {isOffline ? "0%" : `${utilization}%`}
-        </span>
-      </div>
-
-      {/* Right Output Handle (White capsule pill) */}
+      />
       <Handle
         type="source"
-        position={Position.Right}
-        className={`!w-2 !h-3.5 !rounded-full !border-0 !-right-[4px] !top-1/2 !-translate-y-1/2 shadow-xs cursor-crosshair ${
-          isOffline ? "!bg-red-500" : "!bg-white"
+        position={Position.Bottom}
+        id="bottom"
+        className={`!w-2.5 !h-2.5 !border-2 !border-[#0c0d10] !rounded-full z-20 ${
+          isDropped ? "!bg-red-500" : selected ? "!bg-white" : "!bg-zinc-400"
         }`}
       />
 
-      {/* Handwritten "Try deleting me" doodle arrow pointing right at Server 3 corner */}
-      {isDeletable && !isOffline && (
-        <div className="absolute left-[88%] top-[68%] pointer-events-none select-none z-30">
+      {/* Table Header */}
+      <div
+        className={`px-3 py-2 border-b rounded-t-xl flex items-center justify-between gap-2 transition-colors ${
+          isDropped
+            ? "border-red-500/30 bg-red-950/40"
+            : "border-[#23252b] bg-white/[0.02]"
+        }`}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <div
+            className={`p-1 rounded-md shrink-0 ${
+              isDropped
+                ? "bg-red-500/20 text-red-400"
+                : "bg-amber-500/15 text-[#ffdf27]"
+            }`}
+          >
+            <Table className="h-3.5 w-3.5" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9.5px] uppercase font-mono tracking-wider text-zinc-500 truncate">
+                {schemaName}
+              </span>
+              {data.domainName && domainThemeConfig && (
+                <span
+                  title={`Domain: ${data.domainName}`}
+                  className={`text-[8.5px] px-1 py-0.2 rounded font-mono font-medium truncate max-w-[100px] border ${domainThemeConfig.badge}`}
+                >
+                  {data.domainName}
+                </span>
+              )}
+            </div>
+            <div className="text-xs font-bold text-white truncate font-mono">
+              {tableName}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Badge
+            variant="outline"
+            className={`text-[9px] px-1.5 py-0 h-4 font-mono font-semibold ${
+              isDropped
+                ? "border-red-500/40 text-red-400 bg-red-500/10"
+                : "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+            }`}
+          >
+            {isDropped ? "DROPPED" : "TABLE"}
+          </Badge>
+
+          {isDeletable && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                data?.onToggleDelete?.();
+              }}
+              className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              title={isDropped ? "Restore Table" : "Simulate CASCADE DROP"}
+            >
+              {isDropped ? (
+                <RefreshCw className="h-3 w-3 text-emerald-400" />
+              ) : (
+                <Trash2 className="h-3 w-3 hover:text-red-400" />
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Columns List with Row-Level ER Handles */}
+      <div className="divide-y divide-white/5 py-1">
+        {columns.map((col, idx) => {
+          const colHandleKey = col.id || col.name || `col-${idx}`;
+          return (
+            <div
+              key={col.id || `col-${idx}-${col.name || "unnamed"}`}
+              className={`group/row relative px-3 py-1.2 flex items-center justify-between text-xs transition-colors gap-2 ${
+                isDropped ? "opacity-40" : "hover:bg-white/[0.04]"
+              }`}
+            >
+              {/* Row Left Handle (Target/Source for Relationship) */}
+              <Handle
+                type="target"
+                position={Position.Left}
+                id={`col-${colHandleKey}-left`}
+                className={`!w-2 !h-2 !-left-[5px] !border-2 !border-[#0c0d10] !rounded-full shadow-xs transition-transform group-hover/row:scale-125 z-10 cursor-crosshair ${
+                  isDropped ? "!bg-red-500" : "!bg-sky-400 hover:!bg-sky-300"
+                }`}
+                title={`Relationship connection to ${tableName}.${col.name}`}
+              />
+
+              <div className="flex items-center gap-1.5 min-w-0">
+                {col.isPk && (
+                  <span
+                    title="Primary Key (PK)"
+                    className="flex items-center gap-0.5 px-1 py-0.2 text-[8px] font-mono font-bold rounded bg-amber-500/15 text-[#ffdf27] border border-amber-500/30 shrink-0"
+                  >
+                    <Key className="h-2.5 w-2.5" />
+                    <span>PK</span>
+                  </span>
+                )}
+                {col.isFk && (
+                  <span
+                    title="Foreign Key (FK)"
+                    className="flex items-center gap-0.5 px-1 py-0.2 text-[8px] font-mono font-bold rounded bg-sky-500/15 text-sky-400 border border-sky-500/30 shrink-0"
+                  >
+                    <Link2 className="h-2.5 w-2.5" />
+                    <span>FK</span>
+                  </span>
+                )}
+                {!col.isPk && !col.isFk && (
+                  <Hash className="h-2.5 w-2.5 text-zinc-600 shrink-0" />
+                )}
+                <span
+                  className={`font-mono text-[11px] truncate ${
+                    col.isPk
+                      ? "font-semibold text-white"
+                      : col.isFk
+                      ? "font-medium text-sky-300"
+                      : "text-zinc-300"
+                  }`}
+                >
+                  {col.name}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1 shrink-0 font-mono text-[9.5px]">
+                <span className="text-zinc-500">{col.type}</span>
+                {col.isNullable && (
+                  <span className="text-zinc-600 text-[8.5px]">NULL</span>
+                )}
+                {col.isUnique && !col.isPk && (
+                  <span className="text-violet-400 font-semibold text-[8px] px-1 rounded bg-violet-500/15 border border-violet-500/30">
+                    UQ
+                  </span>
+                )}
+              </div>
+
+              {/* Row Right Handle (Source/Target for Relationship) */}
+              <Handle
+                type="source"
+                position={Position.Right}
+                id={`col-${colHandleKey}-right`}
+                className={`!w-2 !h-2 !-right-[5px] !border-2 !border-[#0c0d10] !rounded-full shadow-xs transition-transform group-hover/row:scale-125 z-10 cursor-crosshair ${
+                  isDropped ? "!bg-red-500" : "!bg-emerald-400 hover:!bg-emerald-300"
+                }`}
+                title={`Relationship connection from ${tableName}.${col.name}`}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer comment / metadata */}
+      {data.comment && (
+        <div className="px-3 py-1.5 border-t border-[#23252b]/60 text-[9.5px] text-zinc-500 truncate italic">
+          {data.comment}
+        </div>
+      )}
+
+      {/* Handwritten "Try deleting me" doodle arrow pointing right at order_items */}
+      {isDeletable && !isDropped && (
+        <div className="absolute left-[88%] top-[20%] pointer-events-none select-none z-30">
           <svg width="70" height="42" viewBox="0 0 70 42" fill="none" className="overflow-visible">
-            {/* Smooth curving arc */}
             <path
               d="M 58 38 C 32 38, 14 28, 2 5"
               stroke="#e4e4e7"
@@ -221,7 +271,6 @@ function ServerLabNode({ data }: any) {
               strokeLinecap="round"
               fill="none"
             />
-            {/* Arrow head */}
             <path
               d="M 7 9 L 2 5 L 1 11"
               stroke="#e4e4e7"
@@ -239,41 +288,6 @@ function ServerLabNode({ data }: any) {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// 4. Postgres Node (Far-Right)
-function DbLabNode({ data }: any) {
-  return (
-    <div className="relative rounded-2xl bg-[#0c0d10] border border-[#23252b] px-3.5 py-2.5 shadow-[0_8px_30px_rgba(0,0,0,0.85)] min-w-[145px] cursor-grab active:cursor-grabbing hover:border-white/20 transition-colors select-none">
-      {/* Left Input Handle (Concentric ring with center dot) */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="!w-3 !h-3 !rounded-full !bg-[#0c0d10] !border-[1.5px] !border-zinc-400 !-left-[6px] !top-1/2 !-translate-y-1/2 flex items-center justify-center cursor-crosshair"
-      >
-        <div className="w-1 h-1 rounded-full bg-zinc-200 pointer-events-none" />
-      </Handle>
-
-      {/* Title Row */}
-      <div className="flex items-center gap-1.5 mb-1">
-        <Database className="h-3 w-3 text-zinc-300 stroke-[1.8]" />
-        <span className="text-[12px] font-semibold text-white tracking-tight">Postgres</span>
-      </div>
-
-      {/* Metric Row with amber write rate */}
-      <div className="text-[10.5px] text-zinc-300 font-sans leading-tight">
-        20k r · <span className="text-[#f59e0b] font-medium">202 w/s</span>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="flex items-center gap-2 mt-2">
-        <div className="flex-1 h-[2.5px] rounded-full bg-zinc-800 overflow-hidden">
-          <div className="h-full bg-zinc-300 rounded-full w-[52%]" />
-        </div>
-        <span className="text-[9.5px] font-sans text-zinc-400">52%</span>
-      </div>
     </div>
   );
 }
@@ -299,12 +313,12 @@ function FloatingCanvasToolbar({ onReset }: { onReset: () => void }) {
   }, [getZoom]);
 
   return (
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0c0d10]/95 border border-[#23252b] shadow-2xl backdrop-blur-md text-xs font-medium text-zinc-300">
+    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0c0d10]/95 border border-[#23252b] shadow-2xl backdrop-blur-md text-xs font-medium text-zinc-300">
         {/* Zoom Out */}
         <button
           onClick={() => zoomOut({ duration: 200 })}
-          className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+          className="p-1 rounded-full hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
           title="Zoom out"
         >
           <Minus className="h-3 w-3" />
@@ -318,7 +332,7 @@ function FloatingCanvasToolbar({ onReset }: { onReset: () => void }) {
         {/* Zoom In */}
         <button
           onClick={() => zoomIn({ duration: 200 })}
-          className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+          className="p-1 rounded-full hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
           title="Zoom in"
         >
           <Plus className="h-3 w-3" />
@@ -328,8 +342,8 @@ function FloatingCanvasToolbar({ onReset }: { onReset: () => void }) {
 
         {/* Fit View */}
         <button
-          onClick={() => fitView({ padding: 0.12, duration: 300 })}
-          className="px-2 py-0.5 rounded hover:bg-white/10 text-[11px] text-zinc-300 hover:text-white transition-colors cursor-pointer font-sans"
+          onClick={() => fitView({ padding: 0.15, duration: 300 })}
+          className="px-2 py-0.5 rounded-full hover:bg-white/10 text-[11px] text-zinc-300 hover:text-white transition-colors cursor-pointer font-sans"
         >
           Fit
         </button>
@@ -341,7 +355,7 @@ function FloatingCanvasToolbar({ onReset }: { onReset: () => void }) {
           onClick={() => {
             onReset();
           }}
-          className="flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-white/10 text-[11px] text-zinc-300 hover:text-white transition-colors cursor-pointer font-sans"
+          className="flex items-center gap-1.5 px-2 py-0.5 rounded-full hover:bg-white/10 text-[11px] text-zinc-300 hover:text-white transition-colors cursor-pointer font-sans"
         >
           <Sliders className="h-3 w-3" />
           <span>Auto layout</span>
@@ -355,218 +369,203 @@ function FloatingCanvasToolbar({ onReset }: { onReset: () => void }) {
    MAIN COMPONENT
    ======================================================== */
 export default function InteractiveLab() {
-  const [server3Active, setServer3Active] = useState(true);
+  const [orderItemsActive, setOrderItemsActive] = useState(true);
 
-  // Toggle server 3 state
-  const handleToggleServer3 = useCallback(() => {
-    setServer3Active((prev) => !prev);
+  // Toggle order_items table state
+  const handleToggleOrderItems = useCallback(() => {
+    setOrderItemsActive((prev) => !prev);
   }, []);
 
   // Register React Flow custom node types
   const nodeTypes = useMemo(
     () => ({
-      clientLab: ClientLabNode,
-      lbLab: LbLabNode,
-      serverLab: ServerLabNode,
-      dbLab: DbLabNode,
+      dbTable: InteractiveDbTableNode,
     }),
     []
   );
 
-  // Dynamic traffic calculations
-  const trafficText = server3Active ? "6.7k" : "10k";
-  const trafficRate = server3Active ? "6.7k/s" : "10k/s";
-  const utilizationVal = server3Active ? 67 : 100;
-
-  // React Flow Nodes (Positions matching exact screenshot layout)
+  // Initial Database Nodes (Realistic Relational E-Commerce Schema)
   const initialNodes: Node[] = useMemo(
     () => [
+      // 1. users Table (Auth Domain)
       {
-        id: "client-1",
-        type: "clientLab",
-        position: { x: 70, y: 90 },
-        data: {},
-      },
-      {
-        id: "lb-1",
-        type: "lbLab",
-        position: { x: 270, y: 155 },
-        data: {},
-      },
-      {
-        id: "server-1",
-        type: "serverLab",
-        position: { x: 480, y: 35 },
+        id: "users-table",
+        type: "dbTable",
+        position: { x: 50, y: 55 },
         data: {
-          label: "API server 1",
-          traffic: trafficText,
-          utilization: utilizationVal,
-          isDeletable: false,
-          isOffline: false,
+          name: "users",
+          schema: "public",
+          domainName: "auth",
+          domainTheme: "indigo",
+          comment: "Core identity & access store",
+          columns: [
+            { id: "id", name: "id", type: "UUID", isPk: true, isNullable: false },
+            { id: "email", name: "email", type: "VARCHAR(255)", isUnique: true, isNullable: false },
+            { id: "full_name", name: "full_name", type: "VARCHAR(100)", isNullable: true },
+            { id: "created_at", name: "created_at", type: "TIMESTAMP", isNullable: false },
+          ],
         },
       },
+      // 2. orders Table (Commerce Domain)
       {
-        id: "server-2",
-        type: "serverLab",
-        position: { x: 480, y: 155 },
+        id: "orders-table",
+        type: "dbTable",
+        position: { x: 380, y: 35 },
         data: {
-          label: "API server 2",
-          traffic: trafficText,
-          utilization: utilizationVal,
-          isDeletable: false,
-          isOffline: false,
+          name: "orders",
+          schema: "public",
+          domainName: "commerce",
+          domainTheme: "emerald",
+          comment: "Customer purchases & lifecycle",
+          columns: [
+            { id: "id", name: "id", type: "UUID", isPk: true, isNullable: false },
+            { id: "user_id", name: "user_id", type: "UUID", isFk: true, isNullable: false },
+            { id: "status", name: "status", type: "VARCHAR(30)", isNullable: false },
+            { id: "total_amount", name: "total_amount", type: "NUMERIC(10,2)", isNullable: false },
+            { id: "created_at", name: "created_at", type: "TIMESTAMP", isNullable: false },
+          ],
         },
       },
+      // 3. order_items Table (Line items - Interactive deletable node)
       {
-        id: "server-3",
-        type: "serverLab",
-        position: { x: 480, y: 275 },
+        id: "order_items-table",
+        type: "dbTable",
+        position: { x: 720, y: 95 },
         data: {
-          label: "API server 3",
-          traffic: trafficText,
-          utilization: utilizationVal,
+          name: "order_items",
+          schema: "public",
+          domainName: "commerce",
+          domainTheme: "emerald",
+          comment: "Line item quantities & snapshot pricing",
           isDeletable: true,
-          isOffline: !server3Active,
-          onToggleDelete: handleToggleServer3,
+          isDropped: !orderItemsActive,
+          onToggleDelete: handleToggleOrderItems,
+          columns: [
+            { id: "id", name: "id", type: "UUID", isPk: true, isNullable: false },
+            { id: "order_id", name: "order_id", type: "UUID", isFk: true, isNullable: false },
+            { id: "product_id", name: "product_id", type: "UUID", isFk: true, isNullable: false },
+            { id: "quantity", name: "quantity", type: "INT", isNullable: false },
+            { id: "unit_price", name: "unit_price", type: "NUMERIC(10,2)", isNullable: false },
+          ],
         },
       },
+      // 4. products Table (Catalog Domain)
       {
-        id: "db-1",
-        type: "dbLab",
-        position: { x: 720, y: 155 },
-        data: {},
+        id: "products-table",
+        type: "dbTable",
+        position: { x: 380, y: 285 },
+        data: {
+          name: "products",
+          schema: "public",
+          domainName: "catalog",
+          domainTheme: "amber",
+          comment: "SKU inventory & merchandising",
+          columns: [
+            { id: "id", name: "id", type: "UUID", isPk: true, isNullable: false },
+            { id: "name", name: "name", type: "VARCHAR(200)", isNullable: false },
+            { id: "sku", name: "sku", type: "VARCHAR(50)", isUnique: true, isNullable: false },
+            { id: "price", name: "price", type: "NUMERIC(10,2)", isNullable: false },
+            { id: "stock_count", name: "stock_count", type: "INT", isNullable: false },
+          ],
+        },
       },
     ],
-    [server3Active, trafficText, utilizationVal, handleToggleServer3]
+    [orderItemsActive, handleToggleOrderItems]
   );
 
-  // React Flow Edges (Dashed curves matching screenshot)
+  // React Flow Foreign Key Relationship Edges
   const initialEdges: Edge[] = useMemo(() => {
-    const edgeStyle = { stroke: "rgba(255, 255, 255, 0.4)", strokeWidth: 1.5, strokeDasharray: "4 4" };
-    const labelStyle = { fill: "#f4f4f5", fontSize: 10, fontFamily: "sans-serif" };
-    const labelBgStyle = { fill: "#0c0d10", stroke: "rgba(255,255,255,0.2)", borderRadius: 10 };
-    const labelBgPadding = [6, 2.5] as [number, number];
+    const edgeStyle = {
+      stroke: "rgba(255, 255, 255, 0.45)",
+      strokeWidth: 1.5,
+      strokeDasharray: "4 4",
+    };
+    const labelStyle = { fill: "#f4f4f5", fontSize: 9.5, fontFamily: "monospace" };
+    const labelBgStyle = { fill: "#0c0d10", stroke: "rgba(255,255,255,0.2)", borderRadius: 8 };
+    const labelBgPadding = [6, 2] as [number, number];
 
     const edgesList: Edge[] = [
-      // Client -> Load Balancer (Curves down)
+      // users.id -> orders.user_id
       {
-        id: "e-client-lb",
-        source: "client-1",
-        target: "lb-1",
+        id: "e-users-orders",
+        source: "users-table",
+        target: "orders-table",
+        sourceHandle: "col-id-right",
+        targetHandle: "col-user_id-left",
         animated: true,
         style: edgeStyle,
-        label: "20k/s",
-        labelStyle,
-        labelBgStyle,
-        labelBgPadding,
-      },
-      // LB -> Server 1 (Curves up)
-      {
-        id: "e-lb-s1",
-        source: "lb-1",
-        target: "server-1",
-        animated: true,
-        style: edgeStyle,
-        label: trafficRate,
-        labelStyle,
-        labelBgStyle,
-        labelBgPadding,
-      },
-      // LB -> Server 2 (Straight)
-      {
-        id: "e-lb-s2",
-        source: "lb-1",
-        target: "server-2",
-        animated: true,
-        style: edgeStyle,
-        label: trafficRate,
-        labelStyle,
-        labelBgStyle,
-        labelBgPadding,
-      },
-      // Server 1 -> DB (Curves down)
-      {
-        id: "e-s1-db",
-        source: "server-1",
-        target: "db-1",
-        animated: true,
-        style: edgeStyle,
-        label: trafficRate,
-        labelStyle,
-        labelBgStyle,
-        labelBgPadding,
-      },
-      // Server 2 -> DB (Straight)
-      {
-        id: "e-s2-db",
-        source: "server-2",
-        target: "db-1",
-        animated: true,
-        style: edgeStyle,
-        label: trafficRate,
+        label: "1 : N (FK)",
         labelStyle,
         labelBgStyle,
         labelBgPadding,
       },
     ];
 
-    if (server3Active) {
+    if (orderItemsActive) {
       edgesList.push(
-        // LB -> Server 3 (Curves down)
+        // orders.id -> order_items.order_id
         {
-          id: "e-lb-s3",
-          source: "lb-1",
-          target: "server-3",
+          id: "e-orders-items",
+          source: "orders-table",
+          target: "order_items-table",
+          sourceHandle: "col-id-right",
+          targetHandle: "col-order_id-left",
           animated: true,
           style: edgeStyle,
-          label: trafficRate,
+          label: "1 : N (FK)",
           labelStyle,
           labelBgStyle,
           labelBgPadding,
         },
-        // Server 3 -> DB (Curves up)
+        // products.id -> order_items.product_id
         {
-          id: "e-s3-db",
-          source: "server-3",
-          target: "db-1",
+          id: "e-products-items",
+          source: "products-table",
+          target: "order_items-table",
+          sourceHandle: "col-id-right",
+          targetHandle: "col-product_id-left",
           animated: true,
           style: edgeStyle,
-          label: trafficRate,
+          label: "1 : N (FK)",
           labelStyle,
           labelBgStyle,
           labelBgPadding,
         }
       );
     } else {
-      // Red dashed disconnected lines when offline
+      // Red dashed disconnected lines when table is dropped
       edgesList.push(
         {
-          id: "e-lb-s3",
-          source: "lb-1",
-          target: "server-3",
+          id: "e-orders-items",
+          source: "orders-table",
+          target: "order_items-table",
+          sourceHandle: "col-id-right",
+          targetHandle: "col-order_id-left",
           animated: false,
           style: { stroke: "rgba(239, 68, 68, 0.4)", strokeWidth: 1.5, strokeDasharray: "4 4" },
-          label: "0/s",
-          labelStyle: { fill: "#f87171", fontSize: 10, fontFamily: "sans-serif" },
-          labelBgStyle: { fill: "#271214", stroke: "rgba(239,68,68,0.3)", borderRadius: 10 },
+          label: "CASCADE DROPPED",
+          labelStyle: { fill: "#f87171", fontSize: 9, fontFamily: "monospace" },
+          labelBgStyle: { fill: "#271214", stroke: "rgba(239,68,68,0.3)", borderRadius: 8 },
           labelBgPadding,
         },
         {
-          id: "e-s3-db",
-          source: "server-3",
-          target: "db-1",
+          id: "e-products-items",
+          source: "products-table",
+          target: "order_items-table",
+          sourceHandle: "col-id-right",
+          targetHandle: "col-product_id-left",
           animated: false,
           style: { stroke: "rgba(239, 68, 68, 0.4)", strokeWidth: 1.5, strokeDasharray: "4 4" },
-          label: "0/s",
-          labelStyle: { fill: "#f87171", fontSize: 10, fontFamily: "sans-serif" },
-          labelBgStyle: { fill: "#271214", stroke: "rgba(239,68,68,0.3)", borderRadius: 10 },
+          label: "CASCADE DROPPED",
+          labelStyle: { fill: "#f87171", fontSize: 9, fontFamily: "monospace" },
+          labelBgStyle: { fill: "#271214", stroke: "rgba(239,68,68,0.3)", borderRadius: 8 },
           labelBgPadding,
         }
       );
     }
 
     return edgesList;
-  }, [server3Active, trafficRate]);
+  }, [orderItemsActive]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -577,27 +576,30 @@ export default function InteractiveLab() {
     setEdges(initialEdges);
   }, [initialNodes, initialEdges, setNodes, setEdges]);
 
-  // Reset to initial layout & restore server 3
+  // Reset to initial layout & restore order_items table
   const handleReset = useCallback(() => {
-    setServer3Active(true);
+    setOrderItemsActive(true);
     setNodes(initialNodes);
   }, [initialNodes, setNodes]);
 
   return (
-    <section className="relative py-14 px-4 md:px-8 bg-black overflow-hidden border-t border-white/10">
+    <section className="relative py-14 px-4 md:px-8 bg-black overflow-hidden">
       <div className="container mx-auto max-w-6xl">
-        {/* Section Headline matching screenshot */}
+        {/* Section Headline */}
         <div className="text-center space-y-2.5 mb-10">
           <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">
             Practice systems <br className="hidden sm:inline" />
             using interactive labs
           </h2>
+          <p className="text-sm md:text-base text-zinc-400 max-w-xl mx-auto">
+            Design relational database schemas, inspect foreign key constraints, and test live architectural flows in an interactive canvas.
+          </p>
         </div>
 
         {/* Nodes Area with central square grid spotlight floating on pure black */}
-        <div className="relative w-full h-[500px] md:h-[550px] bg-black">
-          {/* Compact architectural square grid (24px x 24px) with subtle major lines (48px) and smooth radial spotlight */}
-          <div 
+        <div className="relative w-full h-[540px] md:h-[600px] bg-black">
+          {/* Architectural square grid with smooth radial spotlight */}
+          <div
             className="absolute inset-0 pointer-events-none z-0"
             style={{
               backgroundImage: `
@@ -618,7 +620,7 @@ export default function InteractiveLab() {
             nodeTypes={nodeTypes}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
-            defaultViewport={{ x: 40, y: 35, zoom: 1 }}
+            defaultViewport={{ x: 25, y: 25, zoom: 0.95 }}
             minZoom={0.4}
             maxZoom={1.6}
             nodesDraggable={true}
