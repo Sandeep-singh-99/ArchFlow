@@ -260,32 +260,40 @@ function InteractiveDbTableNode({
         </div>
       )}
 
-      {/* Handwritten "Try deleting me" doodle arrow pointing right at order_items */}
+      {/* Handwritten "Try deleting me" doodle arrow pointing down at the delete button */}
       {isDeletable && !isDropped && (
-        <div className="absolute left-[88%] top-[20%] pointer-events-none select-none z-30">
-          <svg width="70" height="42" viewBox="0 0 70 42" fill="none" className="overflow-visible">
+        <div className="absolute -top-11 right-1 pointer-events-none select-none z-30 flex items-end gap-1.5">
+          <span
+            className="text-[13px] text-zinc-300 font-medium whitespace-nowrap tracking-wide leading-none pb-1"
+            style={{ fontFamily: "'Caveat', cursive, 'Brush Script MT', cursive, sans-serif" }}
+          >
+            Try deleting me
+          </span>
+          <svg
+            width="28"
+            height="32"
+            viewBox="0 0 28 32"
+            fill="none"
+            className="overflow-visible text-zinc-300"
+          >
+            {/* Smooth curving arc down towards the trash button */}
             <path
-              d="M 58 38 C 32 38, 14 28, 2 5"
-              stroke="#e4e4e7"
-              strokeWidth="1.4"
+              d="M 2 4 C 16 4, 22 12, 19 25"
+              stroke="currentColor"
+              strokeWidth="1.5"
               strokeLinecap="round"
               fill="none"
             />
+            {/* Arrowhead */}
             <path
-              d="M 7 9 L 2 5 L 1 11"
-              stroke="#e4e4e7"
-              strokeWidth="1.4"
+              d="M 13 21 L 19 27 L 24 20"
+              stroke="currentColor"
+              strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
               fill="none"
             />
           </svg>
-          <div
-            className="text-[12.5px] text-zinc-200 whitespace-nowrap ml-7 -mt-2 font-medium tracking-wide"
-            style={{ fontFamily: "'Caveat', cursive, 'Brush Script MT', cursive, sans-serif" }}
-          >
-            Try deleting me
-          </div>
         </div>
       )}
     </div>
@@ -354,6 +362,9 @@ function FloatingCanvasToolbar({ onReset }: { onReset: () => void }) {
         <button
           onClick={() => {
             onReset();
+            setTimeout(() => {
+              fitView({ padding: 0.16, duration: 300 });
+            }, 50);
           }}
           className="flex items-center gap-1.5 px-2 py-0.5 rounded-full hover:bg-white/10 text-[11px] text-zinc-300 hover:text-white transition-colors cursor-pointer font-sans"
         >
@@ -384,14 +395,14 @@ export default function InteractiveLab() {
     []
   );
 
-  // Initial Database Nodes (Realistic Relational E-Commerce Schema)
+  // Initial Database Nodes (Realistic Relational E-Commerce Schema with generous spacing)
   const initialNodes: Node[] = useMemo(
     () => [
       // 1. users Table (Auth Domain)
       {
         id: "users-table",
         type: "dbTable",
-        position: { x: 50, y: 55 },
+        position: { x: 40, y: 70 },
         data: {
           name: "users",
           schema: "public",
@@ -410,7 +421,7 @@ export default function InteractiveLab() {
       {
         id: "orders-table",
         type: "dbTable",
-        position: { x: 380, y: 35 },
+        position: { x: 440, y: 40 },
         data: {
           name: "orders",
           schema: "public",
@@ -430,7 +441,7 @@ export default function InteractiveLab() {
       {
         id: "order_items-table",
         type: "dbTable",
-        position: { x: 720, y: 95 },
+        position: { x: 840, y: 155 },
         data: {
           name: "order_items",
           schema: "public",
@@ -453,7 +464,7 @@ export default function InteractiveLab() {
       {
         id: "products-table",
         type: "dbTable",
-        position: { x: 380, y: 285 },
+        position: { x: 440, y: 390 },
         data: {
           name: "products",
           schema: "public",
@@ -597,7 +608,7 @@ export default function InteractiveLab() {
         </div>
 
         {/* Nodes Area with central square grid spotlight floating on pure black */}
-        <div className="relative w-full h-[540px] md:h-[600px] bg-black">
+        <div className="relative w-full h-[600px] md:h-[680px] bg-black">
           {/* Architectural square grid with smooth radial spotlight */}
           <div
             className="absolute inset-0 pointer-events-none z-0"
@@ -620,7 +631,8 @@ export default function InteractiveLab() {
             nodeTypes={nodeTypes}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
-            defaultViewport={{ x: 25, y: 25, zoom: 0.95 }}
+            fitView
+            fitViewOptions={{ padding: 0.16, maxZoom: 1 }}
             minZoom={0.4}
             maxZoom={1.6}
             nodesDraggable={true}
