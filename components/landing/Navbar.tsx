@@ -1,16 +1,33 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { Network, Workflow } from "lucide-react";
+import { ArrowRight, Network, Workflow } from "lucide-react";
 
 export default function Navbar() {
   const { isSignedIn } = useUser();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/90 backdrop-blur-md">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-8">
+    <header className="fixed top-3 sm:top-5 inset-x-0 z-50 flex justify-center px-4 sm:px-6 pointer-events-none transition-all duration-300">
+      <nav
+        className={`pointer-events-auto flex items-center justify-between w-full max-w-5xl h-14 sm:h-16 px-4 sm:px-6 rounded-full border transition-all duration-300 ${
+          scrolled
+            ? "bg-black/60 border-white/15 shadow-2xl shadow-black/60 backdrop-blur-xl"
+            : "bg-black/35 border-white/10 shadow-lg shadow-black/20 backdrop-blur-md hover:bg-black/45"
+        }`}
+      >
         {/* Brand Logo with Signature Gold Accent */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2.5 font-bold text-lg group">
@@ -18,7 +35,7 @@ export default function Navbar() {
               <Network className="h-4 w-4 text-zinc-950 font-bold" />
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-bold tracking-tight text-foreground">
+              <span className="font-bold tracking-tight text-foreground text-sm sm:text-base">
                 ArchFlow
               </span>
               <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#ffc507]/10 text-[#ffee72] border border-[#ffdf27]/20 font-semibold">
@@ -28,12 +45,16 @@ export default function Navbar() {
           </Link>
         </div>
 
+
         {/* Action Controls */}
         <div className="flex items-center gap-2.5 sm:gap-3">
           {isSignedIn ? (
             <div className="flex items-center gap-3">
               <Link href="/dashboard">
-                <Button variant="default" size="sm" className="gap-2 font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 hover:shadow-md hover:shadow-[#ffc507]/20 border-none transition-all shadow-xs">
+                <Button
+                  size="sm"
+                  className="gap-2 font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 hover:shadow-md hover:shadow-[#ffc507]/20 border-none transition-all shadow-xs rounded-full px-3.5 sm:px-4"
+                >
                   <Workflow className="h-4 w-4 text-zinc-950" />
                   <span className="hidden sm:inline">Go to Canvas</span>
                   <span className="sm:hidden">Canvas</span>
@@ -42,18 +63,29 @@ export default function Navbar() {
               <UserButton />
             </div>
           ) : (
-            <Link href="/sign-in">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Sign In
-              </Button>
-            </Link>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Link href="/sign-in">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-zinc-300 hover:text-white hover:bg-white/10 rounded-full px-3 sm:px-4 text-xs sm:text-sm"
+                >
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/dashboard">
+                <Button
+                  size="sm"
+                  className="group font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 hover:shadow-md hover:shadow-[#ffc507]/20 border-none transition-all shadow-xs rounded-full px-3.5 sm:px-4 text-xs sm:text-sm"
+                >
+                  <span>Start Designing</span>
+                  <ArrowRight className="ml-1 h-3 w-3 sm:h-3.5 sm:w-3.5 transition-transform group-hover:translate-x-0.5 text-zinc-950" />
+                </Button>
+              </Link>
+            </div>
           )}
         </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 }

@@ -6,7 +6,7 @@ import { ArrowRight, Workflow, CheckCircle2, Sparkles } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="isolate relative flex flex-col items-center justify-center pt-20 pb-20 md:pt-28 md:pb-28 overflow-hidden">
+    <section className="isolate relative flex flex-col items-center justify-center pt-28 pb-20 md:pt-36 md:pb-28 overflow-hidden">
       {/* Targeted Hero Grid Background using the uploaded pattern */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
         {/* Base dark canvas */}
