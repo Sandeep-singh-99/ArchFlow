@@ -3,7 +3,7 @@ import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { ArrowRight, Network, Workflow } from "lucide-react";
+import { Network, Workflow } from "lucide-react";
 
 export default function Navbar() {
   const { isSignedIn } = useUser();
@@ -42,19 +42,15 @@ export default function Navbar() {
               <UserButton />
             </div>
           ) : (
-            <div className="flex items-center gap-2 sm:gap-2.5">
-              <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/dashboard">
-                <Button size="sm" className="group font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 hover:shadow-md hover:shadow-[#ffc507]/20 border-none transition-all shadow-xs">
-                  <span>Start Designing</span>
-                  <ArrowRight className="ml-1.5 h-3.5 w-3.5 transition-transform group-hover:translate-x-1 text-zinc-950" />
-                </Button>
-              </Link>
-            </div>
+            <Link href="/sign-in">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Sign In
+              </Button>
+            </Link>
           )}
         </div>
       </div>
