@@ -17,8 +17,8 @@ export default function Footer() {
               <span className="font-bold tracking-tight text-foreground">ArchFlow</span>
             </Link>
             <p className="text-xs text-muted-foreground max-w-sm leading-relaxed">
-              The next-generation AI System Design & Architecture Flowchart Studio.
-              Turn complex distributed systems into interactive, verifiable diagrams.
+              The next-generation Visual Database Flow & Schema Studio powered by React Flow.
+              Turn complex relational data models and foreign key flows into interactive, verifiable schemas.
             </p>
             <div className="flex items-center gap-3 text-muted-foreground pt-1">
               <a
@@ -59,22 +59,27 @@ export default function Footer() {
             <ul className="space-y-2 text-xs text-muted-foreground">
               <li>
                 <Link href="#features" className="hover:text-foreground transition-colors">
-                  Visual Modeling Canvas
+                  React Flow Database Canvas
                 </Link>
               </li>
               <li>
                 <Link href="#features" className="hover:text-foreground transition-colors">
-                  Custom Domain Containers
+                  PK & FK Relationship Wiring
                 </Link>
               </li>
               <li>
                 <Link href="#features" className="hover:text-foreground transition-colors">
-                  SQL & NoSQL Objects
+                  Domain Schema Containers
                 </Link>
               </li>
               <li>
                 <Link href="#features" className="hover:text-foreground transition-colors">
-                  Auto-Layout & Grouping
+                  SQL & NoSQL Table Nodes
+                </Link>
+              </li>
+              <li>
+                <Link href="#features" className="hover:text-foreground transition-colors">
+                  CASCADE Drop Simulation
                 </Link>
               </li>
             </ul>
@@ -83,27 +88,32 @@ export default function Footer() {
           {/* Column: Patterns */}
           <div className="space-y-3">
             <h4 className="text-xs font-mono font-semibold uppercase tracking-wider text-foreground">
-              System Patterns
+              Database Patterns
             </h4>
             <ul className="space-y-2 text-xs text-muted-foreground">
               <li>
                 <Link href="#features" className="hover:text-foreground transition-colors">
-                  CQRS & Event Sourcing
+                  Relational 1:N & M:N Flows
                 </Link>
               </li>
               <li>
                 <Link href="#features" className="hover:text-foreground transition-colors">
-                  Saga Distributed Transactions
+                  Polymorphic Associations
                 </Link>
               </li>
               <li>
                 <Link href="#features" className="hover:text-foreground transition-colors">
-                  Circuit Breaker & Fallback
+                  Self-Referencing Trees
                 </Link>
               </li>
               <li>
                 <Link href="#features" className="hover:text-foreground transition-colors">
-                  Cache-Aside & Read-Through
+                  Composite Keys & Indexes
+                </Link>
+              </li>
+              <li>
+                <Link href="#features" className="hover:text-foreground transition-colors">
+                  Temporal & Event Tables
                 </Link>
               </li>
             </ul>
@@ -117,12 +127,17 @@ export default function Footer() {
             <ul className="space-y-2 text-xs text-muted-foreground">
               <li>
                 <Link href="/dashboard" className="hover:text-foreground transition-colors">
-                  Architecture Canvas
+                  Database Flow Canvas
                 </Link>
               </li>
               <li>
                 <Link href="#how-it-works" className="hover:text-foreground transition-colors">
-                  Traffic Simulator
+                  Schema Flow Simulator
+                </Link>
+              </li>
+              <li>
+                <Link href="#features" className="hover:text-foreground transition-colors">
+                  SQL DDL Exporter
                 </Link>
               </li>
               <li>
@@ -142,7 +157,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
           <div className="font-mono">
-            © {new Date().getFullYear()} ArchFlow Studio. All rights reserved.
+            © {new Date().getFullYear()} ArchFlow - Visual Database Flow Studio. All rights reserved.
           </div>
           <div className="flex items-center gap-6">
             <Link href="#" className="hover:text-foreground transition-colors">

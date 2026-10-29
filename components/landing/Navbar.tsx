@@ -39,7 +39,7 @@ export default function Navbar() {
                 ArchFlow
               </span>
               <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#ffc507]/10 text-[#ffee72] border border-[#ffdf27]/20 font-semibold">
-                Studio
+                DB Flow
               </span>
             </div>
           </Link>
@@ -56,8 +56,8 @@ export default function Navbar() {
                   className="gap-2 font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 hover:shadow-md hover:shadow-[#ffc507]/20 border-none transition-all shadow-xs rounded-full px-3.5 sm:px-4"
                 >
                   <Workflow className="h-4 w-4 text-zinc-950" />
-                  <span className="hidden sm:inline">Go to Canvas</span>
-                  <span className="sm:hidden">Canvas</span>
+                  <span className="hidden sm:inline">Go to DB Canvas</span>
+                  <span className="sm:hidden">DB Canvas</span>
                 </Button>
               </Link>
               <UserButton />
@@ -78,7 +78,7 @@ export default function Navbar() {
                   size="sm"
                   className="group font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 hover:shadow-md hover:shadow-[#ffc507]/20 border-none transition-all shadow-xs rounded-full px-3.5 sm:px-4 text-xs sm:text-sm"
                 >
-                  <span>Start Designing</span>
+                  <span>Design DB Flow</span>
                   <ArrowRight className="ml-1 h-3 w-3 sm:h-3.5 sm:w-3.5 transition-transform group-hover:translate-x-0.5 text-zinc-950" />
                 </Button>
               </Link>

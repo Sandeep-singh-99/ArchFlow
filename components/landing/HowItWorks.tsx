@@ -7,33 +7,33 @@ export default function HowItWorks() {
   const steps = [
     {
       step: "01",
-      title: "Prompt AI or Start Canvas",
+      title: "Prompt AI or Drop Tables",
       description:
-        "Describe your system in natural language or create custom schemas and visual domain containers directly on the canvas.",
+        "Describe your data domain in natural language or visually drop database tables with typed columns, primary keys, and nullability constraints.",
       icon: Terminal,
       colorClass: "text-emerald-600 dark:text-emerald-400",
       bgClass: "bg-emerald-500/10 border-emerald-500/20",
-      tag: "AI Generation",
+      tag: "Schema Modeling",
     },
     {
       step: "02",
-      title: "Wire Components & Flow Paths",
+      title: "Wire Relations with React Flow",
       description:
-        "Connect API gateways, service meshes, Kafka event streams, and database shards. Configure gRPC, REST, or WebSocket protocols with SLA metrics.",
+        "Drag connection handles between primary keys and foreign keys using React Flow. Configure cardinalities (1:1, 1:N, N:M), foreign key rules, and visual routing.",
       icon: Workflow,
       colorClass: "text-violet-600 dark:text-violet-400",
       bgClass: "bg-violet-500/10 border-violet-500/20",
-      tag: "Visual Builder",
+      tag: "React Flow Wiring",
     },
     {
       step: "03",
-      title: "Simulate, Audit & Export",
+      title: "Simulate Cascades & Export SQL",
       description:
-        "Stress-test against simulated peak QPS, run automated SPOF audits, and export high-res diagrams, Mermaid.js code, or Terraform IaC configs.",
+        "Simulate CASCADE actions and relational integrity, audit missing indexes, and export production-ready SQL DDL, Prisma schemas, or Mermaid ERDs.",
       icon: FileCheck,
       colorClass: "text-amber-600 dark:text-amber-400",
       bgClass: "bg-amber-500/10 border-amber-500/20",
-      tag: "Production Ready",
+      tag: "Production DDL",
     },
   ];
 
@@ -41,13 +41,13 @@ export default function HowItWorks() {
     <section id="how-it-works" className="container mx-auto py-24 px-4 md:px-8 border-t border-border">
       <div className="text-center space-y-4 mb-16 max-w-3xl mx-auto">
         <Badge variant="outline" className="text-[#ffee72] border-[#ffdf27]/30 bg-[#ffc507]/10 px-3 py-1 text-xs font-mono">
-          Engineering Workflow
+          Database Flow Workflow
         </Badge>
         <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-foreground">
-          How ArchFlow Works
+          How Database Flow Works
         </h2>
         <p className="text-muted-foreground text-base md:text-lg">
-          Go from an ambiguous system requirement to an exhaustive, production-grade architecture in 3 simple steps.
+          Go from a rough product idea to a battle-tested, normalized database schema in 3 simple steps.
         </p>
       </div>
 

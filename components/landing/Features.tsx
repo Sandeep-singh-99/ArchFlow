@@ -19,58 +19,58 @@ import { Badge } from "@/components/ui/badge";
 
 const features = [
   {
-    title: "AI Architecture Copilot",
+    title: "AI Database Schema Copilot",
     description:
-      "Type 'Design a multi-region payment gateway with 99.999% SLA' and watch AI generate nodes, connections, and failover topologies instantly.",
+      "Prompt in natural language: 'Create an e-commerce schema with users, orders, products, and inventory'. Watch AI generate normalized tables, constraints, and relationships instantly.",
     icon: Terminal,
     colorClass: "text-emerald-600 dark:text-emerald-400",
     bgClass: "bg-emerald-500/10 border-emerald-500/20",
     badge: "AI Powered",
   },
   {
-    title: "50+ Distributed System Components",
+    title: "React Flow Schema Canvas",
     description:
-      "Drag & drop load balancers, API gateways, microservices, caches, Kafka topics, SQL/NoSQL databases, and cloud services directly onto the canvas.",
+      "Model relational tables and NoSQL collections on a fluid node canvas powered by React Flow. Enjoy column-level connection handles, auto-layout, and sub-pixel dragging.",
     icon: Layers,
     colorClass: "text-violet-600 dark:text-violet-400",
     bgClass: "bg-violet-500/10 border-violet-500/20",
-    badge: "Canvas UI",
+    badge: "React Flow Engine",
   },
   {
-    title: "Live Request Flow Simulator",
+    title: "Interactive Foreign Key Flows",
     description:
-      "Simulate packet flows, verify data paths, and calculate end-to-end P99 latency budgets before writing a single line of code.",
+      "Visually trace relationships between primary and foreign keys with animated React Flow edges. Validate 1:1, 1:N, and N:M cardinality paths in real-time.",
     icon: Activity,
     colorClass: "text-amber-600 dark:text-amber-400",
     bgClass: "bg-amber-500/10 border-amber-500/20",
-    badge: "Interactive",
+    badge: "Interactive Flow",
   },
   {
-    title: "Automated SPOF & Bottleneck Audit",
+    title: "CASCADE Drop & Integrity Audits",
     description:
-      "Identify Single Points of Failure (SPOF), missing read replicas, unbounded queues, and un-cached hot spots with a single click.",
+      "Identify orphaned foreign keys, missing indexes on join columns, circular references, and simulate ON DELETE CASCADE consequences before running production migrations.",
     icon: ShieldCheck,
     colorClass: "text-rose-600 dark:text-rose-400",
     bgClass: "bg-rose-500/10 border-rose-500/20",
-    badge: "Reliability",
+    badge: "Schema Integrity",
   },
   {
-    title: "Mermaid, SVG & Terraform Export",
+    title: "Production SQL DDL & Migration Export",
     description:
-      "Export diagrams cleanly to Mermaid.js code for GitHub READMEs, high-res SVG for technical RFCs, or Terraform IaC starter configurations.",
+      "Export clean, production-ready DDL scripts for PostgreSQL, MySQL, SQLite, and Prisma schema definitions, or export Mermaid ER diagrams for repository documentation.",
     icon: FileCode,
     colorClass: "text-teal-600 dark:text-teal-400",
     bgClass: "bg-teal-500/10 border-teal-500/20",
     badge: "Developer Ready",
   },
   {
-    title: "System Design Interview Prep",
+    title: "Domain Boundaries & Schema Grouping",
     description:
-      "Equipped with back-of-the-envelope calculators, bandwidth formulas, and trade-off checklists tailored for Senior/Staff Engineering interviews.",
+      "Organize enterprise multi-table schemas into visual domain containers (Auth, Billing, Logistics, Analytics) with custom color themes and bounded context isolation.",
     icon: Users2,
     colorClass: "text-purple-600 dark:text-purple-400",
     bgClass: "bg-purple-500/10 border-purple-500/20",
-    badge: "Interview Kit",
+    badge: "Domain Driven",
   },
 ];
 
@@ -79,14 +79,14 @@ export default function Features() {
     <section id="features" className="container mx-auto py-24 px-4 md:px-8">
       <div className="text-center space-y-4 mb-16 max-w-3xl mx-auto">
         <Badge variant="outline" className="text-[#ffee72] border-[#ffdf27]/30 bg-[#ffc507]/10 px-3 py-1 text-xs font-mono">
-          Architecture Capabilities
+          Database Flow Capabilities
         </Badge>
         <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-foreground">
-          Everything You Need to Architect at Scale
+          Everything You Need to Model Database Flows at Scale
         </h2>
         <p className="text-muted-foreground text-base md:text-lg">
-          Stop struggling with static drawing tools. ArchFlow combines visual architecture modeling,
-          real-time flow animation, and AI reasoning in one intuitive studio.
+          Stop wrestling with static ER diagrams and disjointed migration scripts. ArchFlow combines visual database modeling,
+          interactive React Flow relationships, and AI schema generation in one intuitive studio.
         </p>
       </div>
 

@@ -22,10 +22,10 @@ export default function Pricing() {
             Pricing Plans
           </Badge>
           <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-foreground">
-            Predictable Plans for Every Engineer
+            Predictable Plans for Every Developer & DBA
           </h2>
           <p className="text-muted-foreground text-base md:text-lg">
-            Start designing for free. Upgrade when you need deep AI audits, traffic simulations, and team collaboration.
+            Start designing database flows for free. Upgrade when you need deep AI schema generation, cascade simulations, and team collaboration.
           </p>
         </div>
 
@@ -35,7 +35,7 @@ export default function Pricing() {
             <CardHeader className="space-y-1">
               <CardTitle className="text-xl font-bold">Developer</CardTitle>
               <CardDescription className="text-xs">
-                Perfect for students and interview practice.
+                Perfect for individual developers & schema prototyping.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 space-y-6">
@@ -48,30 +48,34 @@ export default function Pricing() {
               <ul className="space-y-2.5 text-xs text-muted-foreground">
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span>3 Active System Design Projects</span>
+                  <span>3 Active Database Flow Projects</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span>50+ Cloud & Microservice Components</span>
+                  <span>Interactive React Flow Schema Canvas</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span>Interactive Flow Canvas</span>
+                  <span>SQL & NoSQL Table Entity Nodes</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span>Export to Mermaid.js Code</span>
+                  <span>PK & FK Column Relationship Wiring</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span>Unlimited Architecture Canvases</span>
+                  <span>Export to PostgreSQL & MySQL DDL</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
+                  <span>Mermaid ER Diagram Export</span>
                 </li>
               </ul>
             </CardContent>
             <CardFooter>
               <Link href="/dashboard" className="w-full">
                 <Button variant="outline" className="w-full text-xs font-semibold">
-                  Start Designing Free
+                  Start Modeling Free
                 </Button>
               </Link>
             </CardFooter>
@@ -83,9 +87,9 @@ export default function Pricing() {
               Most Popular
             </div>
             <CardHeader className="space-y-1">
-              <CardTitle className="text-xl font-bold text-[#ffdf27]">Architect Pro</CardTitle>
+              <CardTitle className="text-xl font-bold text-[#ffdf27]">Database Architect Pro</CardTitle>
               <CardDescription className="text-xs">
-                For senior engineers, tech leads & founders.
+                For senior engineers, DBAs & startup founders.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 space-y-6">
@@ -98,27 +102,31 @@ export default function Pricing() {
               <ul className="space-y-2.5 text-xs text-foreground">
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span className="font-semibold">Unlimited System Architecture Projects</span>
+                  <span className="font-semibold">Unlimited Database Flow Projects</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span className="font-semibold">AI Architecture Copilot (Unlimited Prompts)</span>
+                  <span className="font-semibold">AI Schema Copilot (Unlimited Prompts)</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span className="font-semibold">Real-Time Traffic & Latency Simulator</span>
+                  <span className="font-semibold">React Flow CASCADE Drop Simulator</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span>SPOF & Reliability Audit Tool</span>
+                  <span>Automated Index & Normalization Audits</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span>Export to Terraform IaC & 4K SVG/PNG</span>
+                  <span>Export to PostgreSQL, MySQL, SQLite & Prisma</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span>Senior System Design Interview Kit</span>
+                  <span>Domain Grouping & Multi-Schema Containers</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
+                  <span>SQL DDL Reverse Engineering & Import</span>
                 </li>
               </ul>
             </CardContent>
@@ -134,9 +142,9 @@ export default function Pricing() {
           {/* Team Tier */}
           <Card className="flex flex-col border border-border bg-card shadow-2xs hover:border-foreground/30 transition-colors">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-xl font-bold">Engineering Team</CardTitle>
+              <CardTitle className="text-xl font-bold">Data Engineering Team</CardTitle>
               <CardDescription className="text-xs">
-                For engineering organizations & squads.
+                For engineering squads & database platform teams.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 space-y-6">
@@ -153,19 +161,23 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span>Multiplayer Real-time Collaboration</span>
+                  <span>Real-Time Multiplayer Schema Editing</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span>Custom Domain Container Themes</span>
+                  <span>Custom Domain Themes & Data Dictionaries</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span>Architecture RFC Review Workflows</span>
+                  <span>Migration Diffing & Schema Change Reviews</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
-                  <span>Dedicated Architectural Support</span>
+                  <span>Team Role Access & Workspace Permissions</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-[#ffee72] shrink-0" />
+                  <span>Priority Support for Database Architects</span>
                 </li>
               </ul>
             </CardContent>

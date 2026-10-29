@@ -599,11 +599,10 @@ export default function InteractiveLab() {
         {/* Section Headline */}
         <div className="text-center space-y-2.5 mb-10">
           <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">
-            Practice systems <br className="hidden sm:inline" />
-            using interactive labs
+            Interactive Database Flows
           </h2>
-          <p className="text-sm md:text-base text-zinc-400 max-w-xl mx-auto">
-            Design relational database schemas, inspect foreign key constraints, and test live architectural flows in an interactive canvas.
+          <p className="text-sm md:text-base text-zinc-400 max-w-lg mx-auto">
+            Drag tables, connect foreign keys, and test CASCADE drops in real time.
           </p>
         </div>
 
