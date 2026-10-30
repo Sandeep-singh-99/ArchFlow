@@ -48,7 +48,17 @@ export function AppSidebar() {
   const { userDetails, setUserDetails } = useContext(UserDetailContext);
   const path = usePathname();
   const { has } = useAuth();
-  const isPaidUser = has && has({ plan: "unlimited_plan" });
+  const isPaidUser = Boolean(
+    (has &&
+      (has({ plan: "ai_architect_pro" }) ||
+        has({ plan: "pro_architect" }) ||
+        has({ plan: "ai_unlimited_plan" }) ||
+        has({ plan: "pro_plan" }) ||
+        has({ plan: "unlimited_plan" }))) ||
+      userDetails?.subscription === "active" ||
+      userDetails?.subscription === "pro" ||
+      userDetails?.subscription === "ai"
+  );
   const convex = useConvex();
 
   const [totalRemianingCredits, setTotalRemianingCredits] = useState(3);

@@ -1,8 +1,25 @@
 import { LLMModel } from "@/config/GeminiAI";
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 
 export async function POST(req: NextRequest) {
   try {
+    const { userId, has } = await auth();
+
+    // Verify AI Architect tier access for authenticated users
+    if (userId && has) {
+      const hasAiPlan =
+        has({ plan: "ai_architect_pro" }) ||
+        has({ plan: "ai_unlimited_plan" }) ||
+        has({ plan: "unlimited_plan" });
+      if (!hasAiPlan) {
+        return NextResponse.json(
+          { error: "AI Agent Chat requires the AI Architect plan ($49/mo). Please upgrade." },
+          { status: 403 }
+        );
+      }
+    }
+
     const { messages, agentToolConfig } = await req.json();
 
     if (!agentToolConfig) {
