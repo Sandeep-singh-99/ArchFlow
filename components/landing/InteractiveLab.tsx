@@ -21,9 +21,14 @@ import {
   Trash2,
   RefreshCw,
   Sliders,
+  Sparkles,
+  Shield,
+  Layers,
+  Boxes,
+  Database,
+  ArrowRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { getDomainTheme } from "@/lib/domainThemes";
 
 /* ========================================================
    TYPES
@@ -43,13 +48,64 @@ export interface InteractiveTableNodeData {
   name?: string;
   schema?: string;
   domainName?: string;
-  domainTheme?: string;
+  domainTheme?: "indigo" | "emerald" | "amber" | "cyan" | "purple" | string;
   columns?: ColumnDefinition[];
   comment?: string;
   isDeletable?: boolean;
   isDropped?: boolean;
   onToggleDelete?: () => void;
 }
+
+/* ========================================================
+   DOMAIN PALETTES FOR NODES
+   ======================================================== */
+interface DomainStyle {
+  color: string;
+  glow: string;
+  gradient: string;
+  iconBg: string;
+  iconColor: string;
+  badge: string;
+  dotColor: string;
+  headerAccent: string;
+  IconComponent: React.ElementType;
+}
+
+const DOMAIN_STYLES: Record<string, DomainStyle> = {
+  indigo: {
+    color: "#6366f1",
+    glow: "rgba(99, 102, 241, 0.25)",
+    gradient: "from-indigo-500/15 via-indigo-500/5 to-transparent",
+    iconBg: "bg-indigo-500/15 border border-indigo-500/30",
+    iconColor: "text-indigo-400",
+    badge: "border-indigo-500/30 text-indigo-300 bg-indigo-500/10",
+    dotColor: "bg-indigo-400",
+    headerAccent: "from-indigo-500 via-blue-400 to-indigo-500/30",
+    IconComponent: Shield,
+  },
+  emerald: {
+    color: "#10b981",
+    glow: "rgba(16, 185, 129, 0.25)",
+    gradient: "from-emerald-500/15 via-emerald-500/5 to-transparent",
+    iconBg: "bg-emerald-500/15 border border-emerald-500/30",
+    iconColor: "text-emerald-400",
+    badge: "border-emerald-500/30 text-emerald-300 bg-emerald-500/10",
+    dotColor: "bg-emerald-400",
+    headerAccent: "from-emerald-500 via-teal-400 to-emerald-500/30",
+    IconComponent: Layers,
+  },
+  amber: {
+    color: "#f59e0b",
+    glow: "rgba(245, 158, 11, 0.25)",
+    gradient: "from-amber-500/15 via-amber-500/5 to-transparent",
+    iconBg: "bg-amber-500/15 border border-amber-500/30",
+    iconColor: "text-[#ffdf27]",
+    badge: "border-amber-500/30 text-[#ffee72] bg-amber-500/10",
+    dotColor: "bg-[#ffdf27]",
+    headerAccent: "from-[#ffc507] via-[#ffee72] to-[#ffdf27]/30",
+    IconComponent: Boxes,
+  },
+};
 
 /* ========================================================
    CUSTOM INTERACTIVE DATABASE TABLE NODE
@@ -63,7 +119,9 @@ function InteractiveDbTableNode({
 }) {
   const tableName = data.name || data.label || "untitled_table";
   const schemaName = data.schema || "public";
-  const domainThemeConfig = data.domainName ? getDomainTheme(data.domainTheme) : null;
+  const domainKey = data.domainTheme || "indigo";
+  const domainStyle = DOMAIN_STYLES[domainKey] || DOMAIN_STYLES.indigo;
+  const DomainIcon = domainStyle.IconComponent || Table;
   const isDropped = data.isDropped;
   const isDeletable = data.isDeletable;
 
@@ -74,66 +132,95 @@ function InteractiveDbTableNode({
 
   return (
     <div
-      className={`min-w-[240px] max-w-[290px] rounded-xl border backdrop-blur-md shadow-2xl transition-all duration-300 relative select-none ${
+      className={`min-w-[270px] max-w-[320px] rounded-2xl border backdrop-blur-2xl transition-all duration-300 relative select-none group/node shadow-2xl ${
         isDropped
-          ? "bg-red-950/20 border-red-500/40 opacity-60 shadow-red-950/20"
+          ? "bg-red-950/20 border-red-500/50 shadow-[0_0_35px_rgba(239,68,68,0.22)]"
           : selected
-          ? "bg-[#0c0d10]/95 border-white ring-2 ring-white/20 shadow-white/5"
-          : "bg-[#0c0d10]/95 border-[#23252b] hover:border-zinc-700 shadow-black/80"
+          ? "bg-[#0b0c10]/95 border-[#ffdf27]/70 ring-2 ring-[#ffdf27]/25 shadow-[0_0_30px_rgba(255,223,39,0.18),0_20px_45px_-10px_rgba(0,0,0,0.9)]"
+          : "bg-[#0b0c10]/92 border-[#23252b] hover:border-zinc-700 hover:shadow-[0_24px_50px_-10px_rgba(0,0,0,0.95)] hover:-translate-y-0.5"
       }`}
+      style={{
+        boxShadow:
+          !isDropped && !selected
+            ? `0 18px 40px -12px rgba(0,0,0,0.85), inset 0 1px 0 0 rgba(255,255,255,0.12)`
+            : undefined,
+      }}
     >
+      {/* Top radiant domain accent line */}
+      <div
+        className={`absolute -top-px left-4 right-4 h-[2px] rounded-full transition-opacity ${
+          isDropped
+            ? "bg-gradient-to-r from-transparent via-red-500 to-transparent"
+            : `bg-gradient-to-r ${domainStyle.headerAccent}`
+        }`}
+      />
+
+      {/* Subtle top ambient aura */}
+      {!isDropped && (
+        <div
+          className={`absolute inset-x-0 top-0 h-28 bg-gradient-to-b ${domainStyle.gradient} pointer-events-none rounded-t-2xl opacity-70`}
+        />
+      )}
+
       {/* Node-level fallback handles */}
       <Handle
         type="target"
         position={Position.Top}
         id="top"
-        className={`!w-2.5 !h-2.5 !border-2 !border-[#0c0d10] !rounded-full z-20 ${
-          isDropped ? "!bg-red-500" : selected ? "!bg-white" : "!bg-zinc-400"
+        className={`!w-2.5 !h-2.5 !border-2 !border-[#0b0c10] !rounded-full z-20 transition-all hover:scale-125 ${
+          isDropped ? "!bg-red-500" : selected ? "!bg-[#ffdf27]" : "!bg-zinc-400 hover:!bg-white"
         }`}
       />
       <Handle
         type="source"
         position={Position.Bottom}
         id="bottom"
-        className={`!w-2.5 !h-2.5 !border-2 !border-[#0c0d10] !rounded-full z-20 ${
-          isDropped ? "!bg-red-500" : selected ? "!bg-white" : "!bg-zinc-400"
+        className={`!w-2.5 !h-2.5 !border-2 !border-[#0b0c10] !rounded-full z-20 transition-all hover:scale-125 ${
+          isDropped ? "!bg-red-500" : selected ? "!bg-[#ffdf27]" : "!bg-zinc-400 hover:!bg-white"
         }`}
       />
 
       {/* Table Header */}
       <div
-        className={`px-3 py-2 border-b rounded-t-xl flex items-center justify-between gap-2 transition-colors ${
+        className={`px-3.5 py-2.5 border-b rounded-t-2xl flex items-center justify-between gap-2 relative z-10 transition-colors ${
           isDropped
             ? "border-red-500/30 bg-red-950/40"
             : "border-[#23252b] bg-white/[0.02]"
         }`}
       >
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
           <div
-            className={`p-1 rounded-md shrink-0 ${
+            className={`p-1.5 rounded-lg shrink-0 transition-transform group-hover/node:scale-105 ${
               isDropped
-                ? "bg-red-500/20 text-red-400"
-                : "bg-amber-500/15 text-[#ffdf27]"
+                ? "bg-red-500/20 text-red-400 border border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.2)]"
+                : `${domainStyle.iconBg} ${domainStyle.iconColor} shadow-xs`
             }`}
           >
-            <Table className="h-3.5 w-3.5" />
+            <DomainIcon className="h-4 w-4" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-[9.5px] uppercase font-mono tracking-wider text-zinc-500 truncate">
+              <span className="text-[9.5px] uppercase font-mono tracking-wider text-zinc-400 font-semibold truncate">
                 {schemaName}
               </span>
-              {data.domainName && domainThemeConfig && (
+              <span className="text-zinc-600 text-[10px] leading-none">•</span>
+              {data.domainName && (
                 <span
                   title={`Domain: ${data.domainName}`}
-                  className={`text-[8.5px] px-1 py-0.2 rounded font-mono font-medium truncate max-w-[100px] border ${domainThemeConfig.badge}`}
+                  className={`text-[8.5px] px-1.5 py-0.2 rounded-full font-mono font-medium truncate max-w-[100px] border ${domainStyle.badge}`}
                 >
                   {data.domainName}
                 </span>
               )}
             </div>
-            <div className="text-xs font-bold text-white truncate font-mono">
-              {tableName}
+            <div className="text-[13px] font-bold text-white truncate font-mono tracking-tight flex items-center gap-1.5 mt-0.5">
+              <span>{tableName}</span>
+              {!isDropped && (
+                <span
+                  className={`inline-block h-1.5 w-1.5 rounded-full ${domainStyle.dotColor} shadow-[0_0_6px_currentColor]`}
+                  title="Active Table"
+                />
+              )}
             </div>
           </div>
         </div>
@@ -141,13 +228,13 @@ function InteractiveDbTableNode({
         <div className="flex items-center gap-1.5 shrink-0">
           <Badge
             variant="outline"
-            className={`text-[9px] px-1.5 py-0 h-4 font-mono font-semibold ${
+            className={`text-[9.5px] px-2 py-0.5 h-4.5 font-mono font-bold tracking-tight ${
               isDropped
-                ? "border-red-500/40 text-red-400 bg-red-500/10"
-                : "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+                ? "border-red-500/40 text-red-400 bg-red-500/10 shadow-[0_0_8px_rgba(239,68,68,0.2)]"
+                : "border-[#23252b] text-zinc-300 bg-zinc-900/50"
             }`}
           >
-            {isDropped ? "DROPPED" : "TABLE"}
+            {isDropped ? "DROPPED" : `${columns.length} COLS`}
           </Badge>
 
           {isDeletable && (
@@ -156,28 +243,52 @@ function InteractiveDbTableNode({
                 e.stopPropagation();
                 data?.onToggleDelete?.();
               }}
-              className="p-1 rounded hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-              title={isDropped ? "Restore Table" : "Simulate CASCADE DROP"}
+              className={`p-1.5 rounded-md transition-all cursor-pointer ${
+                isDropped
+                  ? "bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/40 shadow-[0_0_10px_rgba(52,211,153,0.3)] animate-pulse"
+                  : "text-zinc-400 hover:text-red-400 hover:bg-red-500/15 border border-transparent hover:border-red-500/30"
+              }`}
+              title={isDropped ? "Restore Table & Foreign Keys" : "Simulate CASCADE DROP"}
             >
               {isDropped ? (
-                <RefreshCw className="h-3 w-3 text-emerald-400" />
+                <RefreshCw className="h-3.5 w-3.5" />
               ) : (
-                <Trash2 className="h-3 w-3 hover:text-red-400" />
+                <Trash2 className="h-3.5 w-3.5" />
               )}
             </button>
           )}
         </div>
       </div>
 
+      {/* Dropped Alert Banner */}
+      {isDropped && (
+        <div className="px-3.5 py-1.5 bg-red-500/10 border-b border-red-500/20 flex items-center justify-between text-[10px] font-mono text-red-300 relative z-10">
+          <span className="flex items-center gap-1.5 font-semibold">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-ping" />
+            FOREIGN KEYS DETACHED
+          </span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              data?.onToggleDelete?.();
+            }}
+            className="px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[9px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-xs"
+          >
+            <RefreshCw className="h-2.5 w-2.5" />
+            RESTORE
+          </button>
+        </div>
+      )}
+
       {/* Columns List with Row-Level ER Handles */}
-      <div className="divide-y divide-white/5 py-1">
+      <div className="divide-y divide-white/[0.04] py-1 relative z-10">
         {columns.map((col, idx) => {
           const colHandleKey = col.id || col.name || `col-${idx}`;
           return (
             <div
               key={col.id || `col-${idx}-${col.name || "unnamed"}`}
-              className={`group/row relative px-3 py-1.2 flex items-center justify-between text-xs transition-colors gap-2 ${
-                isDropped ? "opacity-40" : "hover:bg-white/[0.04]"
+              className={`group/row relative px-3.5 py-1.5 flex items-center justify-between text-xs transition-all gap-2 ${
+                isDropped ? "opacity-35" : "hover:bg-white/[0.04]"
               }`}
             >
               {/* Row Left Handle (Target/Source for Relationship) */}
@@ -185,54 +296,62 @@ function InteractiveDbTableNode({
                 type="target"
                 position={Position.Left}
                 id={`col-${colHandleKey}-left`}
-                className={`!w-2 !h-2 !-left-[5px] !border-2 !border-[#0c0d10] !rounded-full shadow-xs transition-transform group-hover/row:scale-125 z-10 cursor-crosshair ${
-                  isDropped ? "!bg-red-500" : "!bg-sky-400 hover:!bg-sky-300"
+                className={`!w-2.5 !h-2.5 !-left-[5px] !border-2 !border-[#0b0c10] !rounded-full shadow-xs transition-all group-hover/row:scale-130 z-20 cursor-crosshair ${
+                  isDropped
+                    ? "!bg-red-500"
+                    : "!bg-sky-400 hover:!bg-sky-300 shadow-[0_0_8px_rgba(56,189,248,0.7)]"
                 }`}
-                title={`Relationship connection to ${tableName}.${col.name}`}
+                title={`Connect foreign key to ${tableName}.${col.name}`}
               />
 
-              <div className="flex items-center gap-1.5 min-w-0">
+              {/* Column Name & Key Badges */}
+              <div className="flex items-center gap-2 min-w-0">
                 {col.isPk && (
                   <span
                     title="Primary Key (PK)"
-                    className="flex items-center gap-0.5 px-1 py-0.2 text-[8px] font-mono font-bold rounded bg-amber-500/15 text-[#ffdf27] border border-amber-500/30 shrink-0"
+                    className="flex items-center gap-1 px-1.5 py-0.5 text-[8px] font-mono font-bold rounded bg-amber-400/15 text-[#ffdf27] border border-[#ffdf27]/40 shadow-[0_0_8px_rgba(255,223,39,0.15)] shrink-0"
                   >
-                    <Key className="h-2.5 w-2.5" />
+                    <Key className="h-2.5 w-2.5 text-[#ffdf27]" />
                     <span>PK</span>
                   </span>
                 )}
                 {col.isFk && (
                   <span
                     title="Foreign Key (FK)"
-                    className="flex items-center gap-0.5 px-1 py-0.2 text-[8px] font-mono font-bold rounded bg-sky-500/15 text-sky-400 border border-sky-500/30 shrink-0"
+                    className="flex items-center gap-1 px-1.5 py-0.5 text-[8px] font-mono font-bold rounded bg-sky-500/15 text-sky-300 border border-sky-400/40 shadow-[0_0_8px_rgba(56,189,248,0.15)] shrink-0"
                   >
-                    <Link2 className="h-2.5 w-2.5" />
+                    <Link2 className="h-2.5 w-2.5 text-sky-300" />
                     <span>FK</span>
                   </span>
                 )}
                 {!col.isPk && !col.isFk && (
-                  <Hash className="h-2.5 w-2.5 text-zinc-600 shrink-0" />
+                  <Hash className="h-3 w-3 text-zinc-600 shrink-0" />
                 )}
                 <span
-                  className={`font-mono text-[11px] truncate ${
+                  className={`font-mono text-[11.5px] truncate tracking-tight ${
                     col.isPk
                       ? "font-semibold text-white"
                       : col.isFk
-                      ? "font-medium text-sky-300"
-                      : "text-zinc-300"
+                      ? "font-medium text-sky-200"
+                      : "text-zinc-200"
                   }`}
                 >
                   {col.name}
                 </span>
               </div>
 
-              <div className="flex items-center gap-1 shrink-0 font-mono text-[9.5px]">
-                <span className="text-zinc-500">{col.type}</span>
+              {/* Column Type & Modifiers */}
+              <div className="flex items-center gap-1.5 shrink-0 font-mono text-[10px]">
+                <span className="text-zinc-400 bg-zinc-900/60 px-1.5 py-0.5 rounded border border-[#23252b] text-[9.5px]">
+                  {col.type}
+                </span>
                 {col.isNullable && (
-                  <span className="text-zinc-600 text-[8.5px]">NULL</span>
+                  <span className="text-zinc-500 text-[8.5px] px-1 py-0.2 rounded bg-zinc-900/80 border border-zinc-800 font-mono">
+                    NULL
+                  </span>
                 )}
                 {col.isUnique && !col.isPk && (
-                  <span className="text-violet-400 font-semibold text-[8px] px-1 rounded bg-violet-500/15 border border-violet-500/30">
+                  <span className="text-purple-300 font-semibold text-[8px] px-1.5 py-0.2 rounded bg-purple-500/15 border border-purple-500/30">
                     UQ
                   </span>
                 )}
@@ -243,10 +362,12 @@ function InteractiveDbTableNode({
                 type="source"
                 position={Position.Right}
                 id={`col-${colHandleKey}-right`}
-                className={`!w-2 !h-2 !-right-[5px] !border-2 !border-[#0c0d10] !rounded-full shadow-xs transition-transform group-hover/row:scale-125 z-10 cursor-crosshair ${
-                  isDropped ? "!bg-red-500" : "!bg-emerald-400 hover:!bg-emerald-300"
+                className={`!w-2.5 !h-2.5 !-right-[5px] !border-2 !border-[#0b0c10] !rounded-full shadow-xs transition-all group-hover/row:scale-130 z-20 cursor-crosshair ${
+                  isDropped
+                    ? "!bg-red-500"
+                    : "!bg-emerald-400 hover:!bg-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.7)]"
                 }`}
-                title={`Relationship connection from ${tableName}.${col.name}`}
+                title={`Connect relationship from ${tableName}.${col.name}`}
               />
             </div>
           );
@@ -254,41 +375,53 @@ function InteractiveDbTableNode({
       </div>
 
       {/* Footer comment / metadata */}
-      {data.comment && (
-        <div className="px-3 py-1.5 border-t border-[#23252b]/60 text-[9.5px] text-zinc-500 truncate italic">
-          {data.comment}
+      <div className="px-3.5 py-2 border-t border-[#23252b] bg-black/30 rounded-b-2xl flex items-center justify-between text-[10px] text-zinc-500 font-mono relative z-10">
+        <div className="flex items-center gap-1.5 truncate">
+          <Sparkles className="h-3 w-3 text-zinc-600 shrink-0" />
+          <span className="truncate italic text-zinc-400">
+            {data.comment || "Active relation"}
+          </span>
         </div>
-      )}
+        <span className="text-[9px] uppercase tracking-wider text-zinc-600 shrink-0 font-mono">
+          PostgreSQL
+        </span>
+      </div>
 
       {/* Handwritten "Try deleting me" doodle arrow pointing down at the delete button */}
       {isDeletable && !isDropped && (
-        <div className="absolute -top-11 right-1 pointer-events-none select-none z-30 flex items-end gap-1.5">
-          <span
-            className="text-[13px] text-zinc-300 font-medium whitespace-nowrap tracking-wide leading-none pb-1"
-            style={{ fontFamily: "'Caveat', cursive, 'Brush Script MT', cursive, sans-serif" }}
-          >
-            Try deleting me
-          </span>
+        <div className="absolute -top-14 right-0 pointer-events-none select-none z-30 flex items-end gap-1.5 animate-bounce [animation-duration:2.5s]">
+          <div className="flex flex-col items-end">
+            <span
+              className="inline-flex items-center gap-1 text-[13.5px] font-semibold text-[#ffee72] whitespace-nowrap tracking-wide leading-none drop-shadow-[0_2px_8px_rgba(255,223,39,0.4)]"
+              style={{ fontFamily: "'Caveat', cursive, 'Brush Script MT', 'Comic Sans MS', cursive, sans-serif" }}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#ffdf27]" />
+              Try deleting me!
+            </span>
+            <span className="text-[9.5px] text-zinc-400 font-mono tracking-tight mt-0.5">
+              Test cascade drop
+            </span>
+          </div>
           <svg
-            width="28"
-            height="32"
-            viewBox="0 0 28 32"
+            width="32"
+            height="36"
+            viewBox="0 0 32 36"
             fill="none"
-            className="overflow-visible text-zinc-300"
+            className="overflow-visible text-[#ffdf27] drop-shadow-[0_0_6px_rgba(255,223,39,0.4)]"
           >
             {/* Smooth curving arc down towards the trash button */}
             <path
-              d="M 2 4 C 16 4, 22 12, 19 25"
+              d="M 4 4 C 20 4, 26 14, 22 28"
               stroke="currentColor"
-              strokeWidth="1.5"
+              strokeWidth="1.8"
               strokeLinecap="round"
               fill="none"
             />
             {/* Arrowhead */}
             <path
-              d="M 13 21 L 19 27 L 24 20"
+              d="M 15 24 L 22 30 L 28 22"
               stroke="currentColor"
-              strokeWidth="1.5"
+              strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
               fill="none"
@@ -321,8 +454,8 @@ function FloatingCanvasToolbar({ onReset }: { onReset: () => void }) {
   }, [getZoom]);
 
   return (
-    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0c0d10]/95 border border-[#23252b] shadow-2xl backdrop-blur-md text-xs font-medium text-zinc-300">
+    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+      <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0b0c10]/95 border border-[#23252b] shadow-2xl backdrop-blur-xl text-xs font-medium text-zinc-300">
         {/* Zoom Out */}
         <button
           onClick={() => zoomOut({ duration: 200 })}
@@ -350,10 +483,10 @@ function FloatingCanvasToolbar({ onReset }: { onReset: () => void }) {
 
         {/* Fit View */}
         <button
-          onClick={() => fitView({ padding: 0.15, duration: 300 })}
-          className="px-2 py-0.5 rounded-full hover:bg-white/10 text-[11px] text-zinc-300 hover:text-white transition-colors cursor-pointer font-sans"
+          onClick={() => fitView({ padding: 0.16, duration: 300 })}
+          className="px-2.5 py-0.5 rounded-full hover:bg-white/10 text-[11px] text-zinc-300 hover:text-white transition-colors cursor-pointer font-sans"
         >
-          Fit
+          Fit view
         </button>
 
         <div className="h-3.5 w-px bg-white/10 mx-0.5" />
@@ -366,10 +499,10 @@ function FloatingCanvasToolbar({ onReset }: { onReset: () => void }) {
               fitView({ padding: 0.16, duration: 300 });
             }, 50);
           }}
-          className="flex items-center gap-1.5 px-2 py-0.5 rounded-full hover:bg-white/10 text-[11px] text-zinc-300 hover:text-white transition-colors cursor-pointer font-sans"
+          className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full hover:bg-white/10 text-[11px] text-zinc-300 hover:text-white transition-colors cursor-pointer font-sans"
         >
-          <Sliders className="h-3 w-3" />
-          <span>Auto layout</span>
+          <Sliders className="h-3 w-3 text-[#ffdf27]" />
+          <span>Reset layout</span>
         </button>
       </div>
     </div>
@@ -402,7 +535,7 @@ export default function InteractiveLab() {
       {
         id: "users-table",
         type: "dbTable",
-        position: { x: 40, y: 70 },
+        position: { x: 30, y: 70 },
         data: {
           name: "users",
           schema: "public",
@@ -441,7 +574,7 @@ export default function InteractiveLab() {
       {
         id: "order_items-table",
         type: "dbTable",
-        position: { x: 840, y: 155 },
+        position: { x: 860, y: 155 },
         data: {
           name: "order_items",
           schema: "public",
@@ -464,7 +597,7 @@ export default function InteractiveLab() {
       {
         id: "products-table",
         type: "dbTable",
-        position: { x: 440, y: 390 },
+        position: { x: 440, y: 400 },
         data: {
           name: "products",
           schema: "public",
@@ -487,13 +620,13 @@ export default function InteractiveLab() {
   // React Flow Foreign Key Relationship Edges
   const initialEdges: Edge[] = useMemo(() => {
     const edgeStyle = {
-      stroke: "rgba(255, 255, 255, 0.45)",
-      strokeWidth: 1.5,
+      stroke: "rgba(255, 255, 255, 0.5)",
+      strokeWidth: 1.8,
       strokeDasharray: "4 4",
     };
-    const labelStyle = { fill: "#f4f4f5", fontSize: 9.5, fontFamily: "monospace" };
-    const labelBgStyle = { fill: "#0c0d10", stroke: "rgba(255,255,255,0.2)", borderRadius: 8 };
-    const labelBgPadding = [6, 2] as [number, number];
+    const labelStyle = { fill: "#f4f4f5", fontSize: 9.5, fontFamily: "monospace", fontWeight: 600 };
+    const labelBgStyle = { fill: "#0c0d12", stroke: "rgba(255,255,255,0.18)", borderRadius: 8 };
+    const labelBgPadding = [8, 3] as [number, number];
 
     const edgesList: Edge[] = [
       // users.id -> orders.user_id
@@ -553,10 +686,10 @@ export default function InteractiveLab() {
           sourceHandle: "col-id-right",
           targetHandle: "col-order_id-left",
           animated: false,
-          style: { stroke: "rgba(239, 68, 68, 0.4)", strokeWidth: 1.5, strokeDasharray: "4 4" },
+          style: { stroke: "rgba(239, 68, 68, 0.65)", strokeWidth: 1.8, strokeDasharray: "4 4" },
           label: "CASCADE DROPPED",
-          labelStyle: { fill: "#f87171", fontSize: 9, fontFamily: "monospace" },
-          labelBgStyle: { fill: "#271214", stroke: "rgba(239,68,68,0.3)", borderRadius: 8 },
+          labelStyle: { fill: "#f87171", fontSize: 9, fontFamily: "monospace", fontWeight: 700 },
+          labelBgStyle: { fill: "#271214", stroke: "rgba(239,68,68,0.4)", borderRadius: 8 },
           labelBgPadding,
         },
         {
@@ -566,10 +699,10 @@ export default function InteractiveLab() {
           sourceHandle: "col-id-right",
           targetHandle: "col-product_id-left",
           animated: false,
-          style: { stroke: "rgba(239, 68, 68, 0.4)", strokeWidth: 1.5, strokeDasharray: "4 4" },
+          style: { stroke: "rgba(239, 68, 68, 0.65)", strokeWidth: 1.8, strokeDasharray: "4 4" },
           label: "CASCADE DROPPED",
-          labelStyle: { fill: "#f87171", fontSize: 9, fontFamily: "monospace" },
-          labelBgStyle: { fill: "#271214", stroke: "rgba(239,68,68,0.3)", borderRadius: 8 },
+          labelStyle: { fill: "#f87171", fontSize: 9, fontFamily: "monospace", fontWeight: 700 },
+          labelBgStyle: { fill: "#271214", stroke: "rgba(239,68,68,0.4)", borderRadius: 8 },
           labelBgPadding,
         }
       );
@@ -594,15 +727,21 @@ export default function InteractiveLab() {
   }, [initialNodes, setNodes]);
 
   return (
-    <section className="relative py-14 px-4 md:px-8 bg-black overflow-hidden">
+    <section className="relative py-16 px-4 md:px-8 bg-black overflow-hidden">
       <div className="container mx-auto max-w-6xl">
         {/* Section Headline */}
-        <div className="text-center space-y-2.5 mb-10">
+        <div className="text-center space-y-3 mb-12">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#23252b] bg-white/[0.03] px-3.5 py-1 text-xs font-mono text-zinc-400 backdrop-blur-md shadow-2xs">
+            <Sparkles className="h-3.5 w-3.5 text-[#ffdf27]" />
+            <span>Interactive Sandbox</span>
+            <span className="h-1 w-1 rounded-full bg-[#ffc507]" />
+            <span className="text-[#ffee72] font-semibold">Live React Flow Canvas</span>
+          </div>
           <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">
             Interactive Database Flows
           </h2>
           <p className="text-sm md:text-base text-zinc-400 max-w-lg mx-auto">
-            Drag tables, connect foreign keys, and test CASCADE drops in real time.
+            Drag tables, inspect foreign key relationships, and test CASCADE drops in real time.
           </p>
         </div>
 
