@@ -27,6 +27,37 @@ export function exportSqlDdl(
 // =========================================================================
 // PostgreSQL DDL Generator
 // =========================================================================
+
+function extractTableColumns(t: any): any[] {
+  if (Array.isArray(t.data?.columns) && t.data.columns.length > 0) {
+    return t.data.columns;
+  }
+  if (Array.isArray(t.data?.fields) && t.data.fields.length > 0) {
+    return t.data.fields.map((f: any, idx: number) => {
+      const typeLower = (f.type || "").toLowerCase();
+      let sqlType = "VARCHAR(255)";
+      if (typeLower.includes("objectid")) sqlType = "UUID";
+      else if (typeLower.includes("int")) sqlType = "INTEGER";
+      else if (typeLower.includes("date") || typeLower.includes("time")) sqlType = "TIMESTAMPTZ";
+      else if (typeLower.includes("bool")) sqlType = "BOOLEAN";
+      else if (typeLower.includes("double") || typeLower.includes("float") || typeLower.includes("numeric")) sqlType = "DOUBLE PRECISION";
+      else if (typeLower.includes("array") || typeLower.includes("object") || typeLower.includes("json")) sqlType = "JSONB";
+
+      return {
+        id: String(idx),
+        name: f.name,
+        type: sqlType,
+        isPk: f.name === "_id" || f.name === "id",
+        isNullable: !f.required,
+      };
+    });
+  }
+  return [
+    { id: "1", name: "id", type: "UUID", isPk: true, isNullable: false },
+    { id: "2", name: "created_at", type: "TIMESTAMPTZ", isNullable: false },
+  ];
+}
+
 function generatePostgresDdl(
   nodes: any[],
   edges: any[],
@@ -84,7 +115,7 @@ function generatePostgresDdl(
 
   // 3. TABLES
   const tableNodes = nodes.filter(
-    (n) => n.type === "SqlTableNode" || n.type === "Table"
+    (n) => n.type === "SqlTableNode" || n.type === "Table" || n.type === "NosqlCollectionNode" || n.type === "Collection"
   );
 
   const tableMap = new Map<string, any>();
@@ -104,10 +135,7 @@ function generatePostgresDdl(
         lines.push(`DROP TABLE IF EXISTS ${tableName} CASCADE;`);
       }
 
-      const columns: any[] = t.data?.columns || [
-        { id: "1", name: "id", type: "UUID", isPk: true, isNullable: false },
-        { id: "2", name: "created_at", type: "TIMESTAMPTZ", isNullable: false },
-      ];
+      const columns: any[] = extractTableColumns(t);
 
       lines.push(`CREATE TABLE ${tableName} (`);
 
@@ -240,7 +268,7 @@ function generateMysqlDdl(
 
   // Tables
   const tableNodes = nodes.filter(
-    (n) => n.type === "SqlTableNode" || n.type === "Table"
+    (n) => n.type === "SqlTableNode" || n.type === "Table" || n.type === "NosqlCollectionNode" || n.type === "Collection"
   );
 
   if (tableNodes.length > 0) {
@@ -255,10 +283,7 @@ function generateMysqlDdl(
         lines.push(`DROP TABLE IF EXISTS \`${tableName}\`;`);
       }
 
-      const columns: any[] = t.data?.columns || [
-        { id: "1", name: "id", type: "INT", isPk: true, isNullable: false },
-        { id: "2", name: "created_at", type: "DATETIME", isNullable: false },
-      ];
+      const columns: any[] = extractTableColumns(t);
 
       lines.push(`CREATE TABLE \`${tableName}\` (`);
 
