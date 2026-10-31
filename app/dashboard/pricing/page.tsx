@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useCallback } from "react";
 import { useAuth, useUser, PricingTable } from "@clerk/nextjs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,53 +18,38 @@ export default function PricingPage() {
 
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
-  // Detect active plan from Clerk session or Convex user subscription
-  const hasClerkAiPlan = Boolean(
-    has &&
-      (has({ plan: "ai_architect_pro" }) ||
-        has({ plan: "ai_unlimited_plan" }) ||
-        has({ plan: "unlimited_plan" }))
-  );
-  const hasClerkProPlan = Boolean(
-    has && (has({ plan: "pro_architect" }) || has({ plan: "pro_plan" }))
-  );
-  const isConvexPaid =
-    userDetails?.subscription === "active" ||
-    userDetails?.subscription === "pro" ||
-    userDetails?.subscription === "ai";
-
-  const isAiPlan = hasClerkAiPlan || userDetails?.subscription === "ai";
-  const isProPlan = !isAiPlan && (hasClerkProPlan || isConvexPaid);
-
   // Activate plan in Convex database and React Context
-  const activatePlan = async (planType: "pro" | "ai") => {
-    if (!user?.primaryEmailAddress?.emailAddress) return;
-    const email = user.primaryEmailAddress.emailAddress;
-    const subType = planType === "ai" ? "ai" : "active";
+  const activatePlan = useCallback(
+    async (planType: "pro" | "ai") => {
+      if (!user?.primaryEmailAddress?.emailAddress) return;
+      const email = user.primaryEmailAddress.emailAddress;
+      const subType = planType === "ai" ? "ai" : "active";
 
-    try {
-      if (typeof updateUserSubscription === "function") {
-        await updateUserSubscription({
-          email,
-          subscription: subType,
-        });
+      try {
+        if (typeof updateUserSubscription === "function") {
+          await updateUserSubscription({
+            email,
+            subscription: subType,
+          });
+        }
+      } catch (err: unknown) {
+        console.warn(
+          "Convex sync notice: Run 'npx convex dev' in your terminal to deploy new mutations to Convex Cloud.",
+          err
+        );
       }
-    } catch (err: any) {
-      console.warn(
-        "Convex sync notice: Run 'npx convex dev' in your terminal to deploy new mutations to Convex Cloud.",
-        err?.message || err
+
+      if (setUserDetails && userDetails) {
+        setUserDetails({ ...userDetails, subscription: subType, token: 999999 });
+      }
+
+      setPaymentSuccess(true);
+      toast.success(
+        `${planType === "ai" ? "AI Architect Pro" : "Pro Architect"} plan activated successfully!`
       );
-    }
-
-    if (setUserDetails && userDetails) {
-      setUserDetails({ ...userDetails, subscription: subType, token: 999999 });
-    }
-
-    setPaymentSuccess(true);
-    toast.success(
-      `${planType === "ai" ? "AI Architect Pro" : "Pro Architect"} plan activated successfully!`
-    );
-  };
+    },
+    [user, updateUserSubscription, setUserDetails, userDetails]
+  );
 
   // Handle post-payment redirect activation (e.g. /dashboard/pricing?payment=success)
   useEffect(() => {
@@ -83,11 +68,13 @@ export default function PricingPage() {
             has({ plan: "ai_unlimited_plan" }) ||
             has({ plan: "unlimited_plan" }))
       );
-      activatePlan(isAi ? "ai" : "pro");
+      setTimeout(() => {
+        void activatePlan(isAi ? "ai" : "pro");
+      }, 0);
       // Clean URL parameters without page reload
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [user, has]);
+  }, [user, has, activatePlan]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-12 space-y-12">

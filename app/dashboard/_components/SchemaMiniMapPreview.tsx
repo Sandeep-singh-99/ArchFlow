@@ -4,9 +4,29 @@ import React, { useMemo } from "react";
 import { Database } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+interface MiniMapNode {
+  id?: string;
+  type?: string;
+  parentId?: string;
+  position?: { x: number; y: number };
+  style?: { width?: number; height?: number };
+  data?: {
+    isDomainGroup?: boolean;
+    columns?: Array<{ isPk?: boolean; isFk?: boolean; [key: string]: unknown }>;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+interface ProcessedEdge {
+  id: string;
+  d: string;
+  cardinality: string;
+}
+
 interface SchemaMiniMapPreviewProps {
-  nodes?: any[];
-  edges?: any[];
+  nodes?: Record<string, unknown>[];
+  edges?: Record<string, unknown>[];
   className?: string;
 }
 
@@ -15,12 +35,12 @@ export default function SchemaMiniMapPreview({
   edges = [],
   className = "",
 }: SchemaMiniMapPreviewProps) {
-  const safeNodes = Array.isArray(nodes) ? nodes : [];
-  const safeEdges = Array.isArray(edges) ? edges : [];
-
   // Compute node coordinates and mini-map bounding box
   const { processedNodes, processedEdges, viewBox, hasNodes } = useMemo(() => {
-    if (safeNodes.length === 0) {
+    const localNodes = Array.isArray(nodes) ? nodes : [];
+    const localEdges = Array.isArray(edges) ? edges : [];
+
+    if (localNodes.length === 0) {
       return {
         processedNodes: [],
         processedEdges: [],
@@ -30,20 +50,24 @@ export default function SchemaMiniMapPreview({
     }
 
     // Build lookup map for resolving relative parent coordinates
-    const nodeMap = new Map<string, any>();
-    safeNodes.forEach((n) => {
-      if (n && n.id) nodeMap.set(n.id, n);
+    const nodeMap = new Map<string, MiniMapNode>();
+    localNodes.forEach((n) => {
+      const node = n as MiniMapNode;
+      if (node && node.id) nodeMap.set(node.id, node);
     });
 
-    const resolved = safeNodes.map((node) => {
+    const resolved = localNodes.map((rawNode) => {
+      const node = rawNode as MiniMapNode;
       let x = node.position?.x ?? 0;
       let y = node.position?.y ?? 0;
 
       // If child of a domain container, resolve absolute coordinate
       if (node.parentId && nodeMap.has(node.parentId)) {
         const parent = nodeMap.get(node.parentId);
-        x += parent.position?.x ?? 0;
-        y += parent.position?.y ?? 0;
+        if (parent) {
+          x += parent.position?.x ?? 0;
+          y += parent.position?.y ?? 0;
+        }
       }
 
       const isDomain =
@@ -123,31 +147,38 @@ export default function SchemaMiniMapPreview({
 
     // Process edges to find start and end points
     const resolvedMap = new Map<string, (typeof resolved)[0]>();
-    resolved.forEach((item) => resolvedMap.set(item.id, item));
+    resolved.forEach((item) => {
+      if (item.id) resolvedMap.set(item.id, item);
+    });
 
-    const processedEdgesList = safeEdges
-      .map((edge) => {
-        const sourceNode = resolvedMap.get(edge.source);
-        const targetNode = resolvedMap.get(edge.target);
-        if (!sourceNode || !targetNode) return null;
+    const processedEdgesList: ProcessedEdge[] = [];
+    localEdges.forEach((edge: Record<string, unknown>) => {
+      const sourceId = edge.source as string | undefined;
+      const targetId = edge.target as string | undefined;
+      if (!sourceId || !targetId) return;
 
-        const sx = sourceNode.x + sourceNode.width;
-        const sy = sourceNode.y + sourceNode.height / 2;
-        const tx = targetNode.x;
-        const ty = targetNode.y + targetNode.height / 2;
+      const sourceNode = resolvedMap.get(sourceId);
+      const targetNode = resolvedMap.get(targetId);
+      if (!sourceNode || !targetNode) return;
 
-        const dx = Math.abs(tx - sx);
-        const controlOffset = Math.max(30, dx * 0.4);
+      const sx = sourceNode.x + sourceNode.width;
+      const sy = sourceNode.y + sourceNode.height / 2;
+      const tx = targetNode.x;
+      const ty = targetNode.y + targetNode.height / 2;
 
-        const d = `M ${sx} ${sy} C ${sx + controlOffset} ${sy}, ${tx - controlOffset} ${ty}, ${tx} ${ty}`;
+      const dx = Math.abs(tx - sx);
+      const controlOffset = Math.max(30, dx * 0.4);
 
-        return {
-          id: edge.id || `${edge.source}-${edge.target}`,
-          d,
-          cardinality: edge.data?.cardinality || edge.label || "",
-        };
-      })
-      .filter(Boolean);
+      const d = `M ${sx} ${sy} C ${sx + controlOffset} ${sy}, ${tx - controlOffset} ${ty}, ${tx} ${ty}`;
+
+      const edgeData = edge.data as Record<string, unknown> | undefined;
+      processedEdgesList.push({
+        id: (edge.id as string) || `${sourceId}-${targetId}`,
+        d,
+        cardinality:
+          (edgeData?.cardinality as string) || (edge.label as string) || "",
+      });
+    });
 
     // Separate domains (draw first) and entity nodes (draw on top)
     const domainNodes = resolved.filter((n) => n.isDomain);
@@ -155,11 +186,11 @@ export default function SchemaMiniMapPreview({
 
     return {
       processedNodes: [...domainNodes, ...regularNodes],
-      processedEdges: processedEdgesList as any[],
+      processedEdges: processedEdgesList,
       viewBox: `${adjustedMinX} ${adjustedMinY} ${computedWidth} ${computedHeight}`,
       hasNodes: true,
     };
-  }, [safeNodes, safeEdges]);
+  }, [nodes, edges]);
 
   if (!hasNodes) {
     return (

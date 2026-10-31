@@ -65,9 +65,13 @@ export default function RenameProjectModal({
       toast.success("Database schema renamed successfully");
       onSuccess?.(trimmed);
       onOpenChange(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toast.error(err?.message || "Failed to rename database schema");
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to rename database schema";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
