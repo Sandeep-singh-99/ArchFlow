@@ -414,7 +414,7 @@ export function getTwitterFullNosqlDemo(): { nodes: any[]; edges: any[] } {
       source: "coll-tweets",
       target: "embed-tweet-media",
       sourceHandle: "field-media-right",
-      targetHandle: "left",
+      targetHandle: "embed-field-mediaId-left",
       type: "erRelationship",
       data: {
         cardinality: "1:N",
