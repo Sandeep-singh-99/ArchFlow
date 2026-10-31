@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Database,
+  Boxes,
   MoreVertical,
   Pencil,
   Copy,
@@ -33,6 +34,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { exportSqlDdl } from "@/lib/sqlDdlExporter";
 import RenameProjectModal from "./RenameProjectModal";
+import { getSchemaType } from "@/lib/schemaClassifier";
 
 interface SchemaTableViewProps {
   agents: Agent[];
@@ -108,21 +110,25 @@ export default function SchemaTableView({
   };
 
   return (
-    <div className="w-full rounded-xl border border-border/80 bg-card overflow-hidden shadow-xs">
+    <div className="rounded-xl border border-border/80 bg-card overflow-hidden shadow-xs">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr className="border-b border-border/70 bg-muted/30 text-muted-foreground font-mono text-[11px] uppercase tracking-wider">
+        <table className="w-full text-left text-xs">
+          <thead className="bg-muted/40 border-b border-border text-muted-foreground font-mono uppercase text-[10px] tracking-wider">
+            <tr>
               <th className="py-3 px-4 font-semibold">Schema Name</th>
+              <th className="py-3 px-3 font-semibold">Type</th>
               <th className="py-3 px-3 font-semibold">Status</th>
               <th className="py-3 px-3 font-semibold">Entities</th>
               <th className="py-3 px-3 font-semibold">Relations</th>
               <th className="py-3 px-3 font-semibold">Last Modified</th>
-              <th className="py-3 px-4 font-semibold text-right">Actions</th>
+              <th className="py-3 px-4 text-right font-semibold">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border/50">
+          <tbody className="divide-y divide-border/60">
             {agents.map((agent) => {
+              const schemaType = getSchemaType(agent);
+              const isNoSql = schemaType === "nosql";
+
               const nodes = Array.isArray(agent.nodes) ? agent.nodes : [];
               const edges = Array.isArray(agent.edges) ? agent.edges : [];
 
@@ -149,8 +155,18 @@ export default function SchemaTableView({
                   {/* Schema Name */}
                   <td className="py-3.5 px-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-lg bg-[#ffc507]/10 text-[#ffee72] flex items-center justify-center border border-[#ffdf27]/20 shrink-0">
-                        <Database className="h-4 w-4 text-[#ffdf27]" />
+                      <div
+                        className={`h-8 w-8 rounded-lg flex items-center justify-center border shrink-0 ${
+                          isNoSql
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                            : "bg-[#ffc507]/10 text-[#ffee72] border-[#ffdf27]/20"
+                        }`}
+                      >
+                        {isNoSql ? (
+                          <Boxes className="h-4 w-4 text-emerald-400" />
+                        ) : (
+                          <Database className="h-4 w-4 text-[#ffdf27]" />
+                        )}
                       </div>
                       <div className="min-w-0">
                         <Link
@@ -166,13 +182,27 @@ export default function SchemaTableView({
                     </div>
                   </td>
 
+                  {/* Architecture Type */}
+                  <td className="py-3.5 px-3">
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] font-mono py-0 px-2 font-medium ${
+                        isNoSql
+                          ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+                          : "border-[#ffdf27]/30 text-[#ffee72] bg-[#ffc507]/10"
+                      }`}
+                    >
+                      {isNoSql ? "NoSQL" : "SQL"}
+                    </Badge>
+                  </td>
+
                   {/* Status */}
                   <td className="py-3.5 px-3">
                     <Badge
                       variant="outline"
                       className={`text-[10px] font-mono py-0 px-2 ${
                         agent.published
-                          ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+                          ? "border-sky-500/30 text-sky-400 bg-sky-500/10"
                           : "border-border/60 text-muted-foreground/80 bg-muted/40"
                       }`}
                     >
@@ -184,7 +214,9 @@ export default function SchemaTableView({
                   <td className="py-3.5 px-3">
                     <div className="flex items-center gap-1.5 font-mono text-xs text-foreground">
                       <Layers className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                      <span>{tableCount} tables</span>
+                      <span>
+                        {tableCount} {isNoSql ? "collections" : "tables"}
+                      </span>
                       {viewCount > 0 && (
                         <span className="text-muted-foreground text-[10px]">
                           (+{viewCount} v)
@@ -197,7 +229,7 @@ export default function SchemaTableView({
                   <td className="py-3.5 px-3">
                     <div className="flex items-center gap-1.5 font-mono text-xs text-foreground">
                       <GitFork className="h-3.5 w-3.5 text-sky-400 shrink-0" />
-                      <span>{edges.length} FK links</span>
+                      <span>{edges.length} {isNoSql ? "relations" : "FK links"}</span>
                     </div>
                   </td>
 
@@ -228,8 +260,7 @@ export default function SchemaTableView({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md cursor-pointer"
-                            title="More options"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
                           >
                             <MoreVertical className="h-3.5 w-3.5" />
                           </Button>
@@ -268,9 +299,7 @@ export default function SchemaTableView({
                             <span>Export PostgreSQL</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() =>
-                              handleQuickExportSql(agent, "mysql")
-                            }
+                            onClick={() => handleQuickExportSql(agent, "mysql")}
                             className="cursor-pointer gap-2 text-xs"
                           >
                             <Code2 className="h-3.5 w-3.5 text-sky-500" />
@@ -309,6 +338,7 @@ export default function SchemaTableView({
         </table>
       </div>
 
+      {/* Rename Modal */}
       {renameTarget && (
         <RenameProjectModal
           open={Boolean(renameTarget)}

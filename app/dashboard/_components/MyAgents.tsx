@@ -29,10 +29,12 @@ import SchemaTableView from "./SchemaTableView";
 import DashboardMetricsBar from "./DashboardMetricsBar";
 import DashboardToolbar, {
   FilterStatus,
+  TypeFilter,
   SortOption,
   ViewMode,
 } from "./DashboardToolbar";
 import { useAuth } from "@clerk/nextjs";
+import { getSchemaType } from "@/lib/schemaClassifier";
 
 interface MyAgentsProps {
   onOpenCreateDialog?: () => void;
@@ -51,6 +53,7 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
   // Search, Filter, Sort & View State
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [sortBy, setSortBy] = useState<SortOption>("recent");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
@@ -109,6 +112,20 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
     }
   };
 
+  // Counts of SQL vs NoSQL schemas across all user projects
+  const { sqlCount, nosqlCount } = useMemo(() => {
+    let sql = 0;
+    let nosql = 0;
+    agentList.forEach((agent) => {
+      if (getSchemaType(agent) === "nosql") {
+        nosql++;
+      } else {
+        sql++;
+      }
+    });
+    return { sqlCount: sql, nosqlCount: nosql };
+  }, [agentList]);
+
   // Filter and sort the agents
   const filteredAndSortedAgents = useMemo(() => {
     let result = [...agentList];
@@ -119,6 +136,11 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
       result = result.filter((agent) =>
         (agent.name || "").toLowerCase().includes(q)
       );
+    }
+
+    // Architecture Type filter (All / SQL / NoSQL)
+    if (typeFilter !== "all") {
+      result = result.filter((agent) => getSchemaType(agent) === typeFilter);
     }
 
     // Status filter
@@ -140,7 +162,7 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
     }
 
     return result;
-  }, [agentList, searchQuery, statusFilter, sortBy]);
+  }, [agentList, searchQuery, typeFilter, statusFilter, sortBy]);
 
   if (loading) {
     return (
@@ -221,12 +243,16 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
               onSearchChange={setSearchQuery}
               statusFilter={statusFilter}
               onStatusFilterChange={setStatusFilter}
+              typeFilter={typeFilter}
+              onTypeFilterChange={setTypeFilter}
               sortBy={sortBy}
               onSortByChange={setSortBy}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
               totalCount={agentList.length}
               filteredCount={filteredAndSortedAgents.length}
+              sqlCount={sqlCount}
+              nosqlCount={nosqlCount}
             />
           )}
         </div>
@@ -242,8 +268,8 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
                 No Database Schemas Yet
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Create your first relational schema with visual tables, foreign
-                keys, and instant PostgreSQL or MySQL DDL generation.
+                Create your first relational SQL schema or NoSQL document model with visual tables,
+                collections, foreign keys, and instant export.
               </p>
             </div>
             {onOpenCreateDialog && (
@@ -276,6 +302,7 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
               onClick={() => {
                 setSearchQuery("");
                 setStatusFilter("all");
+                setTypeFilter("all");
               }}
               className="gap-1.5 text-xs cursor-pointer"
             >
@@ -321,7 +348,7 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
               ) : (
                 "this schema"
               )}
-              ? This action cannot be undone. All tables, columns, foreign keys,
+              ? This action cannot be undone. All tables, collections, columns, foreign keys,
               and indexes will be permanently deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>

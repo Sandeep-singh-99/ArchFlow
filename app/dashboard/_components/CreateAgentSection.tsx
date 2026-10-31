@@ -9,6 +9,8 @@ import {
   Zap,
   Lock,
   AlertCircle,
+  Database,
+  Boxes,
 } from "lucide-react";
 import React, { useContext, useState } from "react";
 import Link from "next/link";
@@ -36,6 +38,7 @@ export default function CreateAgentSection() {
   const [openUpgradeDialog, setOpenUpgradeDialog] = useState(false);
   const CreateAgentMutation = useMutation(api.agent.CreateAgent);
   const [agentName, setAgentName] = useState("");
+  const [schemaType, setSchemaType] = useState<"sql" | "nosql">("sql");
   const [loading, setLoading] = useState(false);
 
   const { userDetails } = useContext(UserDetailContext);
@@ -99,11 +102,16 @@ export default function CreateAgentSection() {
       await CreateAgentMutation({
         agentId: agentId,
         name: finalName,
+        schemaType: schemaType,
         userId: userDetails?._id,
       });
       setOpenDialog(false);
       setLoading(false);
-      toast.success("Database schema canvas created!");
+      toast.success(
+        schemaType === "nosql"
+          ? "NoSQL database schema canvas created!"
+          : "SQL relational schema canvas created!"
+      );
       router.push(`/agent-builder/${agentId}`);
     } catch (err) {
       console.error(err);
@@ -163,9 +171,8 @@ export default function CreateAgentSection() {
               Design & Orchestrate Production Schemas
             </h1>
             <p className="text-xs md:text-sm text-muted-foreground mt-1 max-w-2xl leading-relaxed">
-              Interactive entity-relationship modeling for PostgreSQL, MySQL, and
-              Prisma. Visual table design, foreign keys, triggers, and instant DDL
-              export.
+              Interactive entity-relationship modeling for SQL (PostgreSQL, MySQL)
+              and NoSQL (MongoDB, Document Stores). Visual tables, collections, foreign keys, and instant export.
             </p>
           </div>
         </div>
@@ -190,26 +197,119 @@ export default function CreateAgentSection() {
                   <span>Create New Database Schema</span>
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Give your database schema a project name to get started.
+                  Give your database schema a project name and choose its architecture.
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-2 pt-1">
-                <label className="text-xs font-medium text-foreground">
-                  Database Schema Name
-                </label>
-                <Input
-                  placeholder="e.g. E-Commerce PostgreSQL Schema"
-                  value={agentName}
-                  onChange={(e) => setAgentName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") CreateAgent();
-                  }}
-                  autoFocus
-                />
+              <div className="space-y-4 pt-1">
+                {/* Schema Name Input */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-foreground">
+                    Database Schema Name
+                  </label>
+                  <Input
+                    placeholder={
+                      schemaType === "sql"
+                        ? "e.g. E-Commerce PostgreSQL Schema"
+                        : "e.g. Social Media MongoDB Cluster"
+                    }
+                    value={agentName}
+                    onChange={(e) => setAgentName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") CreateAgent();
+                    }}
+                    autoFocus
+                  />
+                </div>
+
+                {/* Project Architecture: SQL vs NoSQL */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-foreground">
+                      Architecture Type
+                    </label>
+                    <span className="text-[10px] font-mono text-muted-foreground">
+                      Helps filter & tag projects
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {/* SQL Option */}
+                    <button
+                      type="button"
+                      onClick={() => setSchemaType("sql")}
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between relative ${
+                        schemaType === "sql"
+                          ? "border-[#ffdf27] bg-[#ffc507]/10 ring-2 ring-[#ffdf27]/30 shadow-xs"
+                          : "border-border/80 bg-card/60 hover:border-zinc-600 hover:bg-card/90"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full mb-2">
+                        <div
+                          className={`p-1.5 rounded-lg ${
+                            schemaType === "sql"
+                              ? "bg-[#ffdf27]/20 text-[#ffee72]"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          <Database className="h-4 w-4" />
+                        </div>
+                        {schemaType === "sql" && (
+                          <Badge className="bg-[#ffdf27] text-zinc-950 text-[9px] px-1.5 py-0 font-bold font-mono">
+                            SELECTED
+                          </Badge>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-foreground font-mono">
+                          SQL (Relational)
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
+                          Postgres, MySQL, tables, views, triggers & FK links
+                        </p>
+                      </div>
+                    </button>
+
+                    {/* NoSQL Option */}
+                    <button
+                      type="button"
+                      onClick={() => setSchemaType("nosql")}
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between relative ${
+                        schemaType === "nosql"
+                          ? "border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/30 shadow-xs"
+                          : "border-border/80 bg-card/60 hover:border-zinc-600 hover:bg-card/90"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full mb-2">
+                        <div
+                          className={`p-1.5 rounded-lg ${
+                            schemaType === "nosql"
+                              ? "bg-emerald-500/20 text-emerald-400"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          <Boxes className="h-4 w-4" />
+                        </div>
+                        {schemaType === "nosql" && (
+                          <Badge className="bg-emerald-500 text-zinc-950 text-[9px] px-1.5 py-0 font-bold font-mono">
+                            SELECTED
+                          </Badge>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-foreground font-mono">
+                          NoSQL (Document)
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
+                          MongoDB, collections, embedded sub-docs & JSON
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <DialogFooter>
+              <DialogFooter className="pt-2">
                 <Button
                   size="sm"
                   onClick={() => CreateAgent()}

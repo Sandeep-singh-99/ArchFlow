@@ -11,6 +11,8 @@ import {
   ArrowDownAZ,
   Clock,
   Layers,
+  Database,
+  Boxes,
 } from "lucide-react";
 import {
   Select,
@@ -21,6 +23,7 @@ import {
 } from "@/components/ui/select";
 
 export type FilterStatus = "all" | "published" | "draft";
+export type TypeFilter = "all" | "sql" | "nosql";
 export type SortOption = "recent" | "name" | "entities";
 export type ViewMode = "grid" | "table";
 
@@ -29,12 +32,16 @@ interface DashboardToolbarProps {
   onSearchChange: (query: string) => void;
   statusFilter: FilterStatus;
   onStatusFilterChange: (status: FilterStatus) => void;
+  typeFilter: TypeFilter;
+  onTypeFilterChange: (type: TypeFilter) => void;
   sortBy: SortOption;
   onSortByChange: (sort: SortOption) => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
-  totalCount: number;
-  filteredCount: number;
+  totalCount?: number;
+  filteredCount?: number;
+  sqlCount?: number;
+  nosqlCount?: number;
 }
 
 export default function DashboardToolbar({
@@ -42,15 +49,17 @@ export default function DashboardToolbar({
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
+  typeFilter,
+  onTypeFilterChange,
   sortBy,
   onSortByChange,
   viewMode,
   onViewModeChange,
-  totalCount,
-  filteredCount,
+  sqlCount,
+  nosqlCount,
 }: DashboardToolbarProps) {
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-2">
+    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-2">
       {/* Search Input */}
       <div className="relative flex-1 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -73,15 +82,53 @@ export default function DashboardToolbar({
       </div>
 
       {/* Filter, Sort & View Controls */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Count indicator if filtered */}
-        {filteredCount !== totalCount && (
-          <span className="text-[11px] font-mono text-muted-foreground px-2 py-1 rounded bg-muted/40">
-            {filteredCount} of {totalCount}
-          </span>
-        )}
+      <div className="flex flex-wrap items-center gap-2.5">
+        {/* Architecture Type Filter (All / SQL / NoSQL) */}
+        <div className="flex items-center rounded-lg border border-border/80 bg-card/60 p-0.5">
+          <button
+            type="button"
+            onClick={() => onTypeFilterChange("all")}
+            className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
+              typeFilter === "all"
+                ? "bg-secondary text-foreground shadow-2xs font-semibold"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            All Types
+          </button>
+          <button
+            type="button"
+            onClick={() => onTypeFilterChange("sql")}
+            className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+              typeFilter === "sql"
+                ? "bg-[#ffdf27]/15 text-[#ffee72] border border-[#ffdf27]/30 shadow-2xs font-semibold"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Database className="h-3 w-3 text-[#ffdf27]" />
+            <span>SQL</span>
+            {typeof sqlCount === "number" && (
+              <span className="text-[10px] font-mono opacity-70">({sqlCount})</span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => onTypeFilterChange("nosql")}
+            className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+              typeFilter === "nosql"
+                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-2xs font-semibold"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Boxes className="h-3 w-3 text-emerald-400" />
+            <span>NoSQL</span>
+            {typeof nosqlCount === "number" && (
+              <span className="text-[10px] font-mono opacity-70">({nosqlCount})</span>
+            )}
+          </button>
+        </div>
 
-        {/* Status Filter Pills */}
+        {/* Status Filter (All / Published / Draft) */}
         <div className="flex items-center rounded-lg border border-border/80 bg-card/60 p-0.5">
           {(
             [
@@ -105,7 +152,7 @@ export default function DashboardToolbar({
         </div>
 
         {/* Sort Dropdown */}
-        <div className="w-[155px]">
+        <div className="w-[145px]">
           <Select
             value={sortBy}
             onValueChange={(val) => onSortByChange(val as SortOption)}
@@ -137,7 +184,7 @@ export default function DashboardToolbar({
         </div>
 
         {/* Distinct Divider Spacing between Sort and View Switcher */}
-        <div className="h-4 w-px bg-border/80 hidden sm:block mx-1" />
+        <div className="h-4 w-px bg-border/80 hidden sm:block mx-0.5" />
 
         {/* View Switcher Toggle (Grid vs Table) */}
         <div className="flex items-center rounded-lg border border-border/80 bg-card/60 p-0.5">

@@ -6,13 +6,17 @@ export const CreateAgent = mutation({
     name: v.string(),
     agentId: v.string(),
     userId: v.id("UserTable"),
+    schemaType: v.optional(v.string()),
     nodes: v.optional(v.any()),
     edges: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    const chosenType = args.schemaType ?? "sql";
     const results = await ctx.db.insert("AgentTable", {
       name: args.name,
       agentId: args.agentId,
+      schemaType: chosenType,
+      config: { schemaType: chosenType },
       published: false,
       userId: args.userId,
       nodes: args.nodes ?? [],
@@ -122,6 +126,8 @@ export const DuplicateAgent = mutation({
     return await ctx.db.insert("AgentTable", {
       name: `${existing.name} (Copy)`,
       agentId: newAgentId,
+      schemaType: existing.schemaType ?? existing.config?.schemaType ?? "sql",
+      config: existing.config ?? { schemaType: existing.schemaType ?? "sql" },
       published: false,
       userId: args.userId,
       nodes: existing.nodes ?? [],

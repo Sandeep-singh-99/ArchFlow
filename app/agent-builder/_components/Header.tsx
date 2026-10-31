@@ -7,6 +7,8 @@ import {
   Workflow,
   Copy,
   Check,
+  Database,
+  Boxes,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -23,6 +25,7 @@ import MermaidImportDialog from "./MermaidImportDialog";
 import SqlExportDialog from "./SqlExportDialog";
 import ExportImageDialog from "./ExportImageDialog";
 import NosqlDemoDialog from "./NosqlDemoDialog";
+import { getSchemaType } from "@/lib/schemaClassifier";
 
 type Props = {
   agentDetail: Agent | undefined;
@@ -32,6 +35,9 @@ type Props = {
 export default function Header({ agentDetail, previewHeader = false }: Props) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const schemaType = getSchemaType(agentDetail);
+  const isNoSql = schemaType === "nosql";
 
   // Generate dynamic Mermaid.js syntax from nodes if present
   const nodes = agentDetail?.nodes || [];
@@ -77,8 +83,20 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
           <h2 className="font-bold text-sm text-foreground">
             {agentDetail?.name || "Database Schema Studio"}
           </h2>
-          <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground border-border hidden sm:inline">
-            Database Schema Studio
+          <Badge
+            variant="outline"
+            className={`text-[10px] font-mono hidden sm:inline-flex items-center gap-1 py-0 px-2 font-medium ${
+              isNoSql
+                ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+                : "border-[#ffdf27]/30 text-[#ffee72] bg-[#ffc507]/10"
+            }`}
+          >
+            {isNoSql ? (
+              <Boxes className="h-3 w-3 text-emerald-400" />
+            ) : (
+              <Database className="h-3 w-3 text-[#ffdf27]" />
+            )}
+            <span>{isNoSql ? "NoSQL Document" : "SQL Relational"}</span>
           </Badge>
         </div>
       </div>

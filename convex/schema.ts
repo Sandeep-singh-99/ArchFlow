@@ -1,4 +1,4 @@
-import { defineSchema, defineTable} from 'convex/server'
+import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
 export default defineSchema({
@@ -13,6 +13,7 @@ export default defineSchema({
     AgentTable: defineTable({
         agentId: v.string(),
         name: v.string(),
+        schemaType: v.optional(v.string()),
         config: v.optional(v.any()),
         published: v.boolean(),
         nodes: v.optional(v.any()),

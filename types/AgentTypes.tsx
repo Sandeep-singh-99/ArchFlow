@@ -1,9 +1,12 @@
 import { Id } from "@/convex/_generated/dataModel";
 
+export type SchemaProjectType = "sql" | "nosql";
+
 export type Agent = {
     _id: Id<"AgentTable">;
     agentId: string;
     name: string;
+    schemaType?: "sql" | "nosql" | string;
     config?: any;
     published: boolean;
     userId: Id<"UserTable">;

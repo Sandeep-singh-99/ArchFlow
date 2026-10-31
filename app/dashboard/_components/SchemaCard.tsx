@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Database,
+  Boxes,
   MoreVertical,
   Pencil,
   Copy,
@@ -31,6 +32,7 @@ import {
 import { toast } from "sonner";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { getSchemaType } from "@/lib/schemaClassifier";
 
 interface SchemaCardProps {
   agent: Agent;
@@ -48,6 +50,9 @@ export default function SchemaCard({
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [cardName, setCardName] = useState(agent.name);
   const duplicateAgentMutation = useMutation(api.agent.DuplicateAgent);
+
+  const schemaType = getSchemaType(agent);
+  const isNoSql = schemaType === "nosql";
 
   const nodes = Array.isArray(agent.nodes) ? agent.nodes : [];
   const edges = Array.isArray(agent.edges) ? agent.edges : [];
@@ -118,21 +123,49 @@ export default function SchemaCard({
   return (
     <div className="group relative rounded-xl border border-border/80 bg-card hover:border-zinc-600 transition-all duration-200 shadow-xs hover:shadow-md flex flex-col justify-between overflow-hidden">
       {/* Subtle top ambient glow */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#ffdf27]/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div
+        className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent ${
+          isNoSql ? "via-emerald-500/35" : "via-[#ffdf27]/25"
+        } to-transparent opacity-0 group-hover:opacity-100 transition-opacity`}
+      />
 
       {/* Main Card Content */}
       <div className="p-4 space-y-3.5">
         {/* Header Bar */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-[#ffc507]/10 text-[#ffee72] flex items-center justify-center border border-[#ffdf27]/20 shrink-0 shadow-2xs">
-              <Database className="h-4 w-4 text-[#ffdf27]" />
+          <div className="flex items-center gap-2">
+            <div
+              className={`h-8 w-8 rounded-lg flex items-center justify-center border shrink-0 shadow-2xs ${
+                isNoSql
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                  : "bg-[#ffc507]/10 text-[#ffee72] border-[#ffdf27]/20"
+              }`}
+            >
+              {isNoSql ? (
+                <Boxes className="h-4 w-4 text-emerald-400" />
+              ) : (
+                <Database className="h-4 w-4 text-[#ffdf27]" />
+              )}
             </div>
+
+            {/* Architecture Type Badge */}
+            <Badge
+              variant="outline"
+              className={`text-[10px] font-mono py-0 px-2 font-medium ${
+                isNoSql
+                  ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+                  : "border-[#ffdf27]/30 text-[#ffee72] bg-[#ffc507]/10"
+              }`}
+            >
+              {isNoSql ? "NoSQL" : "SQL"}
+            </Badge>
+
+            {/* Status Badge */}
             <Badge
               variant="outline"
               className={`text-[10px] font-mono py-0 px-2 ${
                 agent.published
-                  ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+                  ? "border-sky-500/30 text-sky-400 bg-sky-500/10"
                   : "border-border/60 text-muted-foreground/80 bg-muted/40"
               }`}
             >
@@ -227,7 +260,7 @@ export default function SchemaCard({
           <div className="flex items-center gap-1.5 text-[11px] font-mono px-2 py-0.5 rounded-md bg-muted/50 border border-border/60 text-foreground">
             <Layers className="h-3 w-3 text-emerald-400 shrink-0" />
             <span>
-              {tableCount} {tableCount === 1 ? "table" : "tables"}
+              {tableCount} {isNoSql ? (tableCount === 1 ? "collection" : "collections") : (tableCount === 1 ? "table" : "tables")}
             </span>
           </div>
           <div className="flex items-center gap-1.5 text-[11px] font-mono px-2 py-0.5 rounded-md bg-muted/50 border border-border/60 text-foreground">
@@ -242,7 +275,6 @@ export default function SchemaCard({
             </div>
           )}
         </div>
-
       </div>
 
       {/* Footer Action Row */}
