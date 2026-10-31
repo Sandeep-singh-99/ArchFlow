@@ -31,15 +31,6 @@ import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 
-const suggestedTemplates = [
-  "E-Commerce PostgreSQL Schema",
-  "SaaS Multi-Tenant Database",
-  "FinTech Ledger & Transactions",
-  "Healthcare Patient Records",
-  "Social Network Graph & Feeds",
-  "Inventory & Logistics Schema",
-];
-
 export default function CreateAgentSection() {
   const [openDialog, setOpenDialog] = useState(false);
   const [openUpgradeDialog, setOpenUpgradeDialog] = useState(false);
@@ -199,64 +190,31 @@ export default function CreateAgentSection() {
                   <span>Create New Database Schema</span>
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Give your database schema a project name, or select a
-                  recommended architectural template.
+                  Give your database schema a project name to get started.
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-4 py-2">
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-foreground">
-                    Database Schema Name
-                  </label>
-                  <Input
-                    placeholder="e.g. E-Commerce PostgreSQL Schema"
-                    value={agentName}
-                    onChange={(e) => setAgentName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") CreateAgent();
-                    }}
-                    autoFocus
-                  />
-                </div>
-
-                {/* Suggestions List */}
-                <div className="space-y-1.5">
-                  <span className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider">
-                    Quick Suggestions
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {suggestedTemplates.map((template) => (
-                      <button
-                        key={template}
-                        type="button"
-                        onClick={() => {
-                          setAgentName(template);
-                        }}
-                        className={`text-[11px] px-2.5 py-1 rounded-md border transition-colors cursor-pointer text-left ${
-                          agentName === template
-                            ? "bg-[#ffc507]/20 border-[#ffdf27] text-[#ffee72]"
-                            : "bg-muted/70 hover:bg-secondary text-muted-foreground hover:text-foreground border-border/80"
-                        }`}
-                      >
-                        {template}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              <div className="space-y-2 pt-1">
+                <label className="text-xs font-medium text-foreground">
+                  Database Schema Name
+                </label>
+                <Input
+                  placeholder="e.g. E-Commerce PostgreSQL Schema"
+                  value={agentName}
+                  onChange={(e) => setAgentName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") CreateAgent();
+                  }}
+                  autoFocus
+                />
               </div>
 
-              <DialogFooter className="gap-2 sm:gap-0">
-                <DialogClose asChild>
-                  <Button variant="outline" size="sm">
-                    Cancel
-                  </Button>
-                </DialogClose>
+              <DialogFooter>
                 <Button
                   size="sm"
                   onClick={() => CreateAgent()}
                   disabled={loading || !agentName.trim()}
-                  className="bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 border-none font-semibold cursor-pointer shadow-xs"
+                  className="w-full sm:w-auto bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 border-none font-semibold cursor-pointer shadow-xs"
                 >
                   {loading && (
                     <Loader className="mr-2 h-3.5 w-3.5 animate-spin" />

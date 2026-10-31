@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Agent } from "@/types/AgentTypes";
 import { Id } from "@/convex/_generated/dataModel";
-import SchemaMiniMapPreview from "./SchemaMiniMapPreview";
 import RenameProjectModal from "./RenameProjectModal";
 import { exportSqlDdl } from "@/lib/sqlDdlExporter";
 import { Badge } from "@/components/ui/badge";
@@ -28,8 +27,6 @@ import {
   FileCode,
   Layers,
   GitFork,
-  Eye,
-  EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation } from "convex/react";
@@ -50,7 +47,6 @@ export default function SchemaCard({
 }: SchemaCardProps) {
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [cardName, setCardName] = useState(agent.name);
-  const [showPreview, setShowPreview] = useState(false);
   const duplicateAgentMutation = useMutation(api.agent.DuplicateAgent);
 
   const nodes = Array.isArray(agent.nodes) ? agent.nodes : [];
@@ -144,25 +140,8 @@ export default function SchemaCard({
             </Badge>
           </div>
 
-          {/* Quick Actions & Menu */}
+          {/* Quick Actions Menu */}
           <div className="flex items-center gap-1 shrink-0">
-            {/* Quick Preview Toggle Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowPreview(!showPreview)}
-              className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md cursor-pointer"
-              title={
-                showPreview ? "Hide diagram preview" : "Show diagram preview"
-              }
-            >
-              {showPreview ? (
-                <EyeOff className="h-3.5 w-3.5" />
-              ) : (
-                <Eye className="h-3.5 w-3.5" />
-              )}
-            </Button>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -264,16 +243,6 @@ export default function SchemaCard({
           )}
         </div>
 
-        {/* Expandable Diagram Preview */}
-        {showPreview && (
-          <div className="rounded-lg overflow-hidden border border-border/60 bg-background/50 pt-1 animate-in fade-in duration-200">
-            <SchemaMiniMapPreview
-              nodes={nodes}
-              edges={edges}
-              className="h-36 w-full"
-            />
-          </div>
-        )}
       </div>
 
       {/* Footer Action Row */}
