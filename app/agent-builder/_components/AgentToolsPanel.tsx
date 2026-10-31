@@ -2,7 +2,6 @@
 
 import React, { useContext, useState } from "react";
 import { WorkflowContext } from "@/context/WorkflowContext";
-import { useReactFlow } from "@xyflow/react";
 import {
   Table,
   Eye,
@@ -48,12 +47,10 @@ import {
   DomainPreset,
   DOMAIN_THEMES,
 } from "@/lib/domainThemes";
-import { getTwitterFullNosqlDemo } from "@/lib/nosqlTwitterDemo";
 import { toast } from "sonner";
 
 export default function AgentToolsPanel() {
   const { setAddedNodes, setNodeEdges } = useContext(WorkflowContext);
-  const { fitView } = useReactFlow();
   const [open, setOpen] = useState(false);
 
   const getOffset = () => Math.floor(Math.random() * 60) - 30;
@@ -320,18 +317,6 @@ export default function AgentToolsPanel() {
     setOpen(false);
   };
 
-  const loadTwitterDemo = () => {
-    const { nodes: demoNodes, edges: demoEdges } = getTwitterFullNosqlDemo();
-    setAddedNodes(demoNodes);
-    setNodeEdges(demoEdges);
-    setOpen(false);
-    toast.success("Loaded Twitter / X NoSQL Architecture Demo!", {
-      description: "5 Collections, embedded media, follower graph, and fan-out timelines loaded.",
-    });
-    setTimeout(() => {
-      fitView({ padding: 0.2, duration: 600 });
-    }, 150);
-  };
 
   // Domain Containers
   const addDomainNode = (preset?: DomainPreset) => {
@@ -583,27 +568,7 @@ export default function AgentToolsPanel() {
 
             {/* NOSQL NODES */}
             <TabsContent value="nosql" className="space-y-1 focus-visible:outline-none">
-              {/* Quick Load NoSQL Demo: Twitter / X */}
-              <div className="p-2 mb-2 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
-                    <Sparkles className="h-3 w-3 text-emerald-500" />
-                    <span>Social Media Demo</span>
-                  </div>
-                  <div className="text-[10px] text-muted-foreground truncate">
-                    Twitter / X Collections, Feed & Graph
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={loadTwitterDemo}
-                  className="h-6 px-2 text-[10px] font-semibold bg-emerald-500 hover:bg-emerald-600 text-zinc-950 border-none cursor-pointer shrink-0 shadow-xs"
-                >
-                  Load Demo
-                </Button>
-              </div>
-
-              <DropdownMenuLabel className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-2 py-0.5">
+                            <DropdownMenuLabel className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-2 py-0.5">
                 Document & NoSQL Objects
               </DropdownMenuLabel>
 
