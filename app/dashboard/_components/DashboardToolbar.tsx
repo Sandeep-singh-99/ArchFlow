@@ -14,13 +14,6 @@ import {
   Database,
   Boxes,
 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export type FilterStatus = "all" | "published" | "draft";
 export type TypeFilter = "all" | "sql" | "nosql";
@@ -58,8 +51,14 @@ export default function DashboardToolbar({
   sqlCount,
   nosqlCount,
 }: DashboardToolbarProps) {
+  const sortOptions = [
+    { id: "recent", label: "Recently Updated", shortLabel: "Recent", icon: Clock },
+    { id: "name", label: "Name (A-Z)", shortLabel: "Name", icon: ArrowDownAZ },
+    { id: "entities", label: "Most Entities", shortLabel: "Entities", icon: Layers },
+  ] as const;
+
   return (
-    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-2">
+    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 pt-2">
       {/* Search Input */}
       <div className="relative flex-1 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -151,36 +150,25 @@ export default function DashboardToolbar({
           ))}
         </div>
 
-        {/* Sort Dropdown */}
-        <div className="w-[145px]">
-          <Select
-            value={sortBy}
-            onValueChange={(val) => onSortByChange(val as SortOption)}
-          >
-            <SelectTrigger className="h-9 text-xs bg-card/60 border-border/80">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent align="end">
-              <SelectItem value="recent" className="text-xs cursor-pointer">
-                <span className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                  Recently Updated
-                </span>
-              </SelectItem>
-              <SelectItem value="name" className="text-xs cursor-pointer">
-                <span className="flex items-center gap-1.5">
-                  <ArrowDownAZ className="h-3.5 w-3.5 text-muted-foreground" />
-                  Name (A-Z)
-                </span>
-              </SelectItem>
-              <SelectItem value="entities" className="text-xs cursor-pointer">
-                <span className="flex items-center gap-1.5">
-                  <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-                  Most Entities
-                </span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
+        {/* Sort Section: 3-option direct pill group (Recently Updated / Name A-Z / Most Entities) */}
+        <div className="flex items-center rounded-lg border border-border/80 bg-card/60 p-0.5">
+          {sortOptions.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onSortByChange(item.id)}
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                sortBy === item.id
+                  ? "bg-secondary text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              title={`Sort by ${item.label}`}
+            >
+              <item.icon className="h-3 w-3 text-muted-foreground" />
+              <span className="hidden sm:inline">{item.label}</span>
+              <span className="sm:hidden">{item.shortLabel}</span>
+            </button>
+          ))}
         </div>
 
         {/* Distinct Divider Spacing between Sort and View Switcher */}

@@ -150,15 +150,19 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
       result = result.filter((agent) => !agent.published);
     }
 
-    // Sort order
+    // Sort order (Recently Updated / Name A-Z / Most Entities)
     if (sortBy === "recent") {
       result.sort((a, b) => (b._creationTime || 0) - (a._creationTime || 0));
     } else if (sortBy === "name") {
-      result.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-    } else if (sortBy === "entities") {
-      result.sort(
-        (a, b) => (b.nodes?.length || 0) - (a.nodes?.length || 0)
+      result.sort((a, b) =>
+        (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
       );
+    } else if (sortBy === "entities") {
+      result.sort((a, b) => {
+        const aCount = Array.isArray(a.nodes) ? a.nodes.length : 0;
+        const bCount = Array.isArray(b.nodes) ? b.nodes.length : 0;
+        return bCount - aCount;
+      });
     }
 
     return result;
@@ -303,6 +307,7 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
                 setSearchQuery("");
                 setStatusFilter("all");
                 setTypeFilter("all");
+                setSortBy("recent");
               }}
               className="gap-1.5 text-xs cursor-pointer"
             >
