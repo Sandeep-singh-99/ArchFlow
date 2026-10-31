@@ -1,14 +1,15 @@
 /**
- * Comprehensive Mermaid to ReactFlow Parser and Auto-Layout Engine.
+ * Comprehensive Mermaid to Architecture Canvas Parser and Auto-Layout Engine.
  * Supports:
- * - Directives: graph TD, graph TB, graph LR, graph RL, flowchart TD, flowchart LR, sequenceDiagram, erDiagram
- * - Shapes: [Rectangle], (Rounded), ([Pill/Stadium]), [(Cylinder/DB)], {Diamond/Decision}, {{Hexagon}}
- * - Edges: -->, ---, -.->, ==>, labeled edges (-->|label| or -- label -->), and chained arrows (A --> B --> C)
- * - Sequence Diagrams: actor, participant, A->>B: msg, A-->>B: resp, activation, loop, alt, autonumber
- * - Entity-Relationship Diagrams (erDiagram): entities, fields (PK/FK/types), cardinalities (||--o{, }o--||, etc.)
- * - Automatic semantic node type inference (StartNode, EndNode, IfElseNode, Database, Frontend, Backend, AI)
- * - Kahn's topological DAG rank-based auto-layout with branch lane routing
+ * - Directives: graph TD, graph TB, graph LR, flowchart TD, flowchart LR, sequenceDiagram, erDiagram
+ * - Subgraphs: subgraph Container["Title"] ... end (maps directly to DomainGroupNode containers with nested parenting)
+ * - Shapes: [(Cylinder/DB)] -> SqlTableNode, [Box] -> SqlTableNode/DbSchemaNode, ([Pill]) -> SqlViewNode, {Diamond} -> SqlTriggerNode
+ * - Entity-Relationship Diagrams (erDiagram): entities, typed columns (PK/FK/UK), descriptions, relationships (||--o{, ||--||, etc.)
+ * - Native Dagre hierarchical Auto-Layout integration with dimension-aware positioning and zero node overlap.
+ * - Guaranteed node connectivity with column-specific and node-level handle resolution.
  */
+
+import { getAutoLayout, isDomainGroupNode } from "./autoLayout";
 
 export interface ParsedMermaidResult {
   nodes: any[];
@@ -18,16 +19,43 @@ export interface ParsedMermaidResult {
   edgeCount: number;
 }
 
-export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResult {
+export interface ParseMermaidOptions {
+  direction?: "LR" | "TD" | "TB";
+  nodeSep?: number;
+  rankSep?: number;
+}
+
+export function parseMermaidToReactFlow(
+  mermaidCode: string,
+  options?: ParseMermaidOptions
+): ParsedMermaidResult {
   if (!mermaidCode || !mermaidCode.trim()) {
-    return { nodes: [], edges: [], direction: "TD", nodeCount: 0, edgeCount: 0 };
+    return { nodes: [], edges: [], direction: "LR", nodeCount: 0, edgeCount: 0 };
   }
 
   const rawLines = mermaidCode.split(/\r?\n/);
   const isSequence = /^\s*sequenceDiagram/im.test(mermaidCode);
   const isErDiagram = /^\s*erDiagram/im.test(mermaidCode);
 
-  let direction: "TD" | "LR" = isSequence || isErDiagram ? "LR" : "TD";
+  let detectedDirection: "TD" | "LR" = isSequence || isErDiagram ? "LR" : "TD";
+
+  // Check if header specifies direction
+  for (const line of rawLines) {
+    const headerMatch = line.trim().match(/^(?:graph|flowchart)\s+(TD|TB|LR|RL)/i);
+    if (headerMatch) {
+      const dir = headerMatch[1].toUpperCase();
+      detectedDirection = dir === "LR" || dir === "RL" ? "LR" : "TD";
+      break;
+    }
+  }
+
+  const direction: "TD" | "LR" = options?.direction
+    ? options.direction === "TB" || options.direction === "TD"
+      ? "TD"
+      : "LR"
+    : detectedDirection;
+
+  // Node registration
   const nodeMap = new Map<
     string,
     {
@@ -35,21 +63,41 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
       label: string;
       rawShape: string;
       explicitType?: string;
-      role?: string;
+      subgraphId?: string;
+      subgraphTitle?: string;
+      columns?: any[];
     }
   >();
+
+  // Case-insensitive entity mapper for ER Diagrams so "USERS" and "users" match
+  const entityCaseMap = new Map<string, string>();
+  const getCanonicalEntity = (raw: string): string => {
+    const trimmed = raw.trim().replace(/['"`]/g, "");
+    const lower = trimmed.toLowerCase();
+    if (entityCaseMap.has(lower)) {
+      return entityCaseMap.get(lower)!;
+    }
+    entityCaseMap.set(lower, trimmed);
+    return trimmed;
+  };
+
+  // Subgraph / Domain Group tracking
+  const subgraphMap = new Map<string, { id: string; title: string }>();
+  let activeSubgraph: { id: string; title: string } | null = null;
 
   interface RawEdge {
     source: string;
     target: string;
     label?: string;
+    cardinality?: string;
+    sourceRelation?: string;
+    targetRelation?: string;
     animated?: boolean;
     style?: any;
     isResponse?: boolean;
   }
   const rawEdges: RawEdge[] = [];
 
-  // Helper to format camelCase / snake_case into human-readable labels
   const formatParticipantLabel = (name: string): string => {
     let formatted = name.replace(/[_-]+/g, " ");
     formatted = formatted.replace(/([a-z])([A-Z])/g, "$1 $2");
@@ -57,30 +105,38 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
     return formatted.trim();
   };
 
-  // Helper to map ER types to SQL data types
   const mapErTypeToSql = (typeStr: string): string => {
-    const t = typeStr.toLowerCase();
+    const t = (typeStr || "").toLowerCase();
     if (t === "string" || t === "varchar") return "VARCHAR(255)";
     if (t === "text") return "TEXT";
+    if (t === "uuid") return "UUID";
     if (t === "int" || t === "integer") return "INTEGER";
+    if (t === "bigint" || t === "long") return "BIGINT";
     if (t === "decimal" || t === "float" || t === "double" || t === "numeric") return "DECIMAL(10,2)";
-    if (t === "datetime" || t === "timestamp") return "TIMESTAMP";
+    if (t === "datetime" || t === "timestamp" || t === "timestamptz") return "TIMESTAMPTZ";
     if (t === "date") return "DATE";
     if (t === "boolean" || t === "bool") return "BOOLEAN";
+    if (t === "json" || t === "jsonb" || t === "object") return "JSONB";
     return typeStr.toUpperCase();
   };
 
-  // Helper to format ER cardinality symbols
-  const formatCardinality = (sym: string): string => {
-    if (sym.includes("--o{") || sym.includes("--|{")) return "1:N";
-    if (sym.includes("}o--") || sym.includes("|{--")) return "N:1";
-    if (sym.includes("}o--o{") || sym.includes("}o--|{")) return "M:N";
-    if (sym.includes("||--||")) return "1:1";
-    return "";
+  const formatCardinality = (sym: string): { text: string; srcRel: string; tgtRel: string } => {
+    if (sym.includes("--o{") || sym.includes("..o{") || sym.includes("--|{") || sym.includes("..|{")) {
+      return { text: "1:N", srcRel: "1", tgtRel: "N" };
+    }
+    if (sym.includes("}o--") || sym.includes("}o..") || sym.includes("|{--") || sym.includes("|{..")) {
+      return { text: "N:1", srcRel: "N", tgtRel: "1" };
+    }
+    if (sym.includes("}o--o{") || sym.includes("}o..o{") || sym.includes("}o--|{") || sym.includes("}o..|{")) {
+      return { text: "N:M", srcRel: "N", tgtRel: "N" };
+    }
+    if (sym.includes("||--||") || sym.includes("||..||") || sym.includes("||--o|") || sym.includes("||..o|")) {
+      return { text: "1:1", srcRel: "1", tgtRel: "1" };
+    }
+    return { text: "1:N", srcRel: "1", tgtRel: "N" };
   };
 
-  // Helper to register or update node in map
-  const registerNode = (id: string, label?: string, rawShape?: string) => {
+  const registerNode = (id: string, label?: string, rawShape?: string, columns?: any[]) => {
     const cleanId = id.trim().replace(/['"`]/g, "");
     if (!cleanId) return cleanId;
 
@@ -90,8 +146,6 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
       finalLabel = label.trim();
     } else if (existing?.label && existing.label !== cleanId) {
       finalLabel = existing.label;
-    } else if (label !== undefined && label.trim() !== "") {
-      finalLabel = label.trim();
     } else {
       finalLabel = formatParticipantLabel(cleanId);
     }
@@ -103,22 +157,32 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
       finalShape = existing.rawShape;
     }
 
+    const currentSub = activeSubgraph || (existing?.subgraphId ? { id: existing.subgraphId, title: existing.subgraphTitle || "" } : null);
+
     nodeMap.set(cleanId, {
       id: cleanId,
       label: finalLabel,
       rawShape: finalShape,
+      subgraphId: currentSub?.id,
+      subgraphTitle: currentSub?.title,
+      columns: columns || existing?.columns,
     });
     return cleanId;
   };
 
-  // Helper to extract node token with bracket shapes
-  const parseNodeToken = (token: string): { id: string; label?: string; shape?: string } => {
+  const parseNodeToken = (token: string): { id: string; label?: string; shape?: string; columns?: any[] } => {
     const t = token.trim();
 
-    // 1. Cylinder: id[(Label)]
+    // 1. Cylinder: id[("Label" or 'Label')]
     const cylMatch = t.match(/^([\w\-.:]+)\s*\[\(\s*["']?([\s\S]+?)["']?\s*\)\]$/);
     if (cylMatch) {
-      return { id: cylMatch[1], label: cylMatch[2], shape: "cylinder" };
+      const parsedColumns = parseMultiLineColumns(cylMatch[2]);
+      return {
+        id: cylMatch[1],
+        label: parsedColumns.name || cylMatch[2],
+        shape: "cylinder",
+        columns: parsedColumns.columns,
+      };
     }
 
     // 2. Stadium/Pill: id([Label])
@@ -145,13 +209,19 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
       return { id: roundedMatch[1], label: roundedMatch[2], shape: "rounded" };
     }
 
-    // 6. Box: id[Label]
+    // 6. Box: id["Label"]
     const boxMatch = t.match(/^([\w\-.:]+)\s*\[\s*["']?([\s\S]+?)["']?\s*\]$/);
     if (boxMatch) {
-      return { id: boxMatch[1], label: boxMatch[2], shape: "box" };
+      const parsedColumns = parseMultiLineColumns(boxMatch[2]);
+      return {
+        id: boxMatch[1],
+        label: parsedColumns.name || boxMatch[2],
+        shape: "box",
+        columns: parsedColumns.columns,
+      };
     }
 
-    // 7. Plain identifier without brackets
+    // 7. Plain identifier
     const plainMatch = t.match(/^([\w\-.:]+)$/);
     if (plainMatch) {
       return { id: plainMatch[1], label: plainMatch[1], shape: "box" };
@@ -160,28 +230,89 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
     return { id: t, label: t, shape: "box" };
   };
 
+  // Helper to parse multi-line labels like "USERS<br/>• id (PK)<br/>• email"
+  function parseMultiLineColumns(rawLabel: string): { name: string; columns?: any[] } {
+    if (!rawLabel.includes("<br/>") && !rawLabel.includes("\n") && !rawLabel.includes("•")) {
+      return { name: rawLabel };
+    }
+
+    const segments = rawLabel.split(/(?:<br\s*\/?>|\n)+/).map((s) => s.trim()).filter(Boolean);
+    const tableName = segments[0]?.replace(/^\[+|\]+$/g, "").trim() || "table";
+
+    const columns: any[] = [];
+    for (let i = 1; i < segments.length; i++) {
+      const line = segments[i].replace(/^[•\-\*]\s*/, "").trim();
+      if (!line) continue;
+
+      const colMatch = line.match(/^([\w\-]+)(?:\s*\(([^)]+)\))?(?:\s*:\s*([\w()]+))?/i);
+      if (colMatch) {
+        const colName = colMatch[1];
+        const tags = (colMatch[2] || "").toUpperCase();
+        const colType = colMatch[3] || (tags.includes("PK") ? "UUID" : "VARCHAR(255)");
+
+        columns.push({
+          id: `col-${i}`,
+          name: colName,
+          type: mapErTypeToSql(colType),
+          isPk: tags.includes("PK"),
+          isFk: tags.includes("FK"),
+          isUnique: tags.includes("UK") || tags.includes("PK"),
+          isNullable: !tags.includes("PK"),
+        });
+      }
+    }
+
+    return {
+      name: tableName,
+      columns: columns.length > 0 ? columns : undefined,
+    };
+  }
+
   // ER Diagram State
   let currentErEntity: string | null = null;
   const erEntityFields = new Map<
     string,
-    { type: string; name: string; isPk: boolean; isFk: boolean }[]
+    {
+      type: string;
+      name: string;
+      isPk: boolean;
+      isFk: boolean;
+      isUnique: boolean;
+      comment?: string;
+    }[]
   >();
 
-  // Process line by line
-  for (let line of rawLines) {
-    line = line.trim();
+  // --- Parse Line by Line ---
+  for (let rawLine of rawLines) {
+    // Strip trailing comments and extra whitespaces
+    let line = rawLine.replace(/%%.*$/, "").trim();
+    if (!line || line.startsWith("//")) continue;
 
-    // Ignore empty lines and Mermaid comments
-    if (!line || line.startsWith("%%") || line.startsWith("//")) continue;
+    // --- Subgraph Support (Container Boundaries) ---
+    const subgraphMatch = line.match(/^subgraph\s+([A-Za-z0-9_.:]+)(?:\s*\[\s*["']?([^"']+)["']?\s*\])?/i);
+    if (subgraphMatch) {
+      const subId = subgraphMatch[1].trim();
+      const subTitle = (subgraphMatch[2] || subId).trim();
+      activeSubgraph = { id: subId, title: subTitle };
+      subgraphMap.set(subId, activeSubgraph);
+      continue;
+    }
+
+    if (line === "end" || line.startsWith("end ")) {
+      if (activeSubgraph) {
+        activeSubgraph = null;
+        continue;
+      }
+    }
 
     // --- Entity-Relationship Diagram Mode ---
     if (isErDiagram) {
       if (line.startsWith("erDiagram")) continue;
 
       // Inside entity block: ENTITY {
-      const entityStartMatch = line.match(/^([A-Za-z0-9_]+)\s*\{$/);
+      const entityStartMatch = line.match(/^([A-Za-z0-9_\-]+)\s*\{$/);
       if (entityStartMatch) {
-        currentErEntity = entityStartMatch[1];
+        currentErEntity = getCanonicalEntity(entityStartMatch[1]);
         registerNode(currentErEntity, formatParticipantLabel(currentErEntity), "entity");
         if (!erEntityFields.has(currentErEntity)) erEntityFields.set(currentErEntity, []);
         continue;
@@ -193,50 +324,53 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
           continue;
         }
 
+        // Entity field match: type name [PK/FK/UK] ["comment"]
         const fieldMatch = line.match(
-          /^\s*([A-Za-z0-9_()]+)\s+([A-Za-z0-9_]+)(?:\s+(PK|FK|UK|FK\s+PK|PK\s+FK))?(?:\s+["'][^"']*["'])?\s*$/i
+          /^\s*([A-Za-z0-9_()]+)\s+([A-Za-z0-9_]+)(?:\s+([A-Za-z0-9_,\s]+?))?(?:\s+["']([^"']*)["'])?\s*$/i
         );
         if (fieldMatch) {
           const type = fieldMatch[1];
           const name = fieldMatch[2];
           const constraint = (fieldMatch[3] || "").toUpperCase();
+          const comment = fieldMatch[4]?.trim() || "";
+
           const isPk = constraint.includes("PK");
           const isFk = constraint.includes("FK");
+          const isUnique = constraint.includes("UK") || isPk;
 
           erEntityFields.get(currentErEntity)!.push({
             type,
             name,
             isPk,
             isFk,
+            isUnique,
+            comment,
           });
           continue;
         }
       }
 
-      // Relationship: USER ||--o{ ORDER : places
+      // Relationship: USER ||--o{ ORDER : "places"
       const relMatch = line.match(
-        /^([A-Za-z0-9_]+)\s*([|o}{]+--[|o}{]+)\s*([A-Za-z0-9_]+)\s*(?::\s*["']?([^"'\r\n]+)["']?)?$/
+        /^([A-Za-z0-9_\-]+)\s*([|o}{]+(?:--|\.\.)[|o}{]+|--[->]|->)\s*([A-Za-z0-9_\-]+)(?:\s*:\s*["']?([^"'\r\n]+?)["']?)?$/
       );
       if (relMatch) {
-        const sourceId = relMatch[1].trim();
+        const sourceId = getCanonicalEntity(relMatch[1]);
         const cardSym = relMatch[2].trim();
-        const targetId = relMatch[3].trim();
+        const targetId = getCanonicalEntity(relMatch[3]);
         const relLabel = relMatch[4]?.trim() || "";
 
         registerNode(sourceId, formatParticipantLabel(sourceId), "entity");
         registerNode(targetId, formatParticipantLabel(targetId), "entity");
 
-        const cardText = formatCardinality(cardSym);
-        const displayLabel = relLabel
-          ? cardText
-            ? `${relLabel} (${cardText})`
-            : relLabel
-          : cardText;
-
+        const cardData = formatCardinality(cardSym);
         rawEdges.push({
           source: sourceId,
           target: targetId,
-          label: displayLabel || undefined,
+          label: relLabel || cardData.text,
+          cardinality: cardData.text,
+          sourceRelation: cardData.srcRel,
+          targetRelation: cardData.tgtRel,
           animated: true,
         });
         continue;
@@ -255,43 +389,20 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
         line.startsWith("else ") ||
         line.startsWith("opt ") ||
         line.startsWith("par ") ||
-        line === "end" ||
         line.startsWith("Note ")
       ) {
         continue;
       }
 
-      // Check actor: actor User [as "Customer"]
-      const actorMatch = line.match(/^actor\s+([\w\-.:]+)(?:\s+as\s+["']?([^"']+)["']?)?$/i);
-      if (actorMatch) {
-        const id = actorMatch[1];
-        const label = actorMatch[2] || formatParticipantLabel(id);
-        registerNode(id, label, "actor");
-        continue;
-      }
-
-      // Check participant: participant Frontend [as "Web App"]
-      const partMatch = line.match(/^participant\s+([\w\-.:]+)(?:\s+as\s+["']?([^"']+)["']?)?$/i);
-      if (partMatch) {
-        const id = partMatch[1];
-        const label = partMatch[2] || formatParticipantLabel(id);
-        registerNode(id, label, "participant");
-        continue;
-      }
-
-      // Check sequence message: Sender->>Receiver: Message or Sender-->>Receiver: Response
       const seqArrowMatch = line.match(
         /^([A-Za-z0-9_.:]+)\s*(-->>|->>|-->|->|-\)|--\)|-x|--x)\s*([+-]?)\s*([A-Za-z0-9_.:]+)\s*:\s*(.*)$/
       );
       if (seqArrowMatch) {
-        const sourceId = seqArrowMatch[1].trim();
-        const arrow = seqArrowMatch[2].trim();
-        const targetId = seqArrowMatch[4].trim();
-        const msg = seqArrowMatch[5]?.trim();
-        const isResponse = arrow.startsWith("--");
-
-        registerNode(sourceId, formatParticipantLabel(sourceId));
-        registerNode(targetId, formatParticipantLabel(targetId));
+        const sourceId = registerNode(seqArrowMatch[1]);
+        const arrow = seqArrowMatch[2];
+        const targetId = registerNode(seqArrowMatch[4]);
+        const msg = seqArrowMatch[5].trim();
+        const isResponse = arrow.includes(">>") || arrow.includes("--");
 
         rawEdges.push({
           source: sourceId,
@@ -299,32 +410,23 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
           label: msg,
           isResponse,
           animated: true,
-          style: isResponse ? { strokeDasharray: "5 5", strokeWidth: 2 } : { strokeWidth: 2 },
         });
         continue;
       }
     }
 
-    // --- Standard Graph / Flowchart Mode ---
-    const headerMatch = line.match(/^(?:graph|flowchart)\s+(TD|TB|LR|RL)/i);
-    if (headerMatch) {
-      const dir = headerMatch[1].toUpperCase();
-      direction = dir === "LR" || dir === "RL" ? "LR" : "TD";
-      continue;
-    }
-
+    // --- Standard Flowchart / Graph Mode ---
+    if (line.match(/^(?:graph|flowchart)\s+(TD|TB|LR|RL)/i)) continue;
     if (
       line.startsWith("classDef") ||
       line.startsWith("class ") ||
       line.startsWith("style ") ||
-      line.startsWith("click ") ||
-      line.startsWith("subgraph") ||
-      line === "end"
+      line.startsWith("click ")
     ) {
       continue;
     }
 
-    // Regex for edge connectors
+    // Extract edge connectors
     const edgePattern =
       /(?:-->\|([^|]+)\|)|(?:--\s*["']?([^"'-]+?)["']?\s*-->)|(?:==\s*["']?([^"'-]+?)["']?\s*==>)|(?:-\.\s*["']?([^"'-]+?)["']?\s*\.->)|(?:-->)|(?:==>)|(?:-\.->)|(?:---)/g;
 
@@ -362,8 +464,8 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
         const sourceData = parseNodeToken(nodeSegments[i].token);
         const targetData = parseNodeToken(nodeSegments[i + 1].token);
 
-        const sourceId = registerNode(sourceData.id, sourceData.label, sourceData.shape);
-        const targetId = registerNode(targetData.id, targetData.label, targetData.shape);
+        const sourceId = registerNode(sourceData.id, sourceData.label, sourceData.shape, sourceData.columns);
+        const targetId = registerNode(targetData.id, targetData.label, targetData.shape, targetData.columns);
 
         if (sourceId && targetId) {
           rawEdges.push({
@@ -377,186 +479,59 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
     } else {
       const nodeData = parseNodeToken(line);
       if (nodeData.id) {
-        registerNode(nodeData.id, nodeData.label, nodeData.shape);
+        registerNode(nodeData.id, nodeData.label, nodeData.shape, nodeData.columns);
       }
     }
   }
 
-  // --- Topological Layering & Layout Engine (Kahn's Algorithm) ---
-  const adj = new Map<string, string[]>();
-  const inDegree = new Map<string, number>();
-
-  for (const [id] of nodeMap) {
-    adj.set(id, []);
-    inDegree.set(id, 0);
-  }
-
-  for (const edge of rawEdges) {
-    if (isSequence && edge.isResponse) continue;
-
-    if (adj.has(edge.source) && inDegree.has(edge.target)) {
-      adj.get(edge.source)!.push(edge.target);
-      inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1);
-    }
-  }
-
-  // Compute Longest-Path Rank using Kahn's algorithm
-  const rank = new Map<string, number>();
-  const remainingInDegree = new Map<string, number>();
-  const queue: string[] = [];
-
-  for (const [id, deg] of inDegree) {
-    remainingInDegree.set(id, deg);
-    rank.set(id, 0);
-    if (deg === 0) {
-      queue.push(id);
-    }
-  }
-
-  if (queue.length === 0 && nodeMap.size > 0) {
-    const firstId = Array.from(nodeMap.keys())[0];
-    queue.push(firstId);
-  }
-
-  let head = 0;
-  while (head < queue.length) {
-    const u = queue[head++];
-    const currentRank = rank.get(u) || 0;
-    const neighbors = adj.get(u) || [];
-
-    for (const v of neighbors) {
-      const vRank = rank.get(v) || 0;
-      rank.set(v, Math.max(vRank, currentRank + 1));
-
-      const remDeg = (remainingInDegree.get(v) || 1) - 1;
-      remainingInDegree.set(v, remDeg);
-
-      if (remDeg === 0) {
-        queue.push(v);
-      }
-    }
-  }
-
-  // Assign sequential ranks to any nodes remaining in cycles
-  for (const [id] of nodeMap) {
-    if (!queue.includes(id)) {
-      const maxRank = Math.max(0, ...Array.from(rank.values()));
-      rank.set(id, maxRank + 1);
-      queue.push(id);
-    }
-  }
-
-  // Group nodes by layer/rank
-  const layers = new Map<number, string[]>();
-  for (const [id, r] of rank) {
-    if (!layers.has(r)) layers.set(r, []);
-    layers.get(r)!.push(id);
-  }
-
-  const sortedRanks = Array.from(layers.keys()).sort((a, b) => a - b);
-
-  // Identify nodes that belong to side branches (e.g. Yes branch of a Decision node)
-  const branchOffsetMap = new Map<string, number>();
-  for (const edge of rawEdges) {
-    const sourceInfo = nodeMap.get(edge.source);
-    if (sourceInfo?.rawShape === "diamond") {
-      const lbl = (edge.label || "").toLowerCase();
-      const isPositive = lbl.includes("yes") || lbl.includes("true") || lbl.includes("valid");
-      if (isPositive) {
-        // Mark target and its direct linear descendants for lateral branch shift
-        let curr: string | undefined = edge.target;
-        while (curr) {
-          branchOffsetMap.set(curr, 160); // Shift right by 160px
-          const nextNeighbors: string[] = adj.get(curr) || [];
-          if (nextNeighbors.length === 1 && (inDegree.get(nextNeighbors[0]) || 0) === 1) {
-            curr = nextNeighbors[0];
-          } else {
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  // 3. Convert parsed nodes to ReactFlow nodes
+  // --- Build ReactFlow Nodes ---
   const rfNodes: any[] = [];
-  const nodeIfElseOutCount = new Map<string, number>();
 
-  for (const r of sortedRanks) {
-    const nodesInLayer = layers.get(r) || [];
-    const countInLayer = nodesInLayer.length;
+  // Register DomainGroupNode containers for all discovered subgraphs
+  subgraphMap.forEach((sub, subId) => {
+    rfNodes.push({
+      id: `domain-${subId}`,
+      type: "DomainGroupNode",
+      position: { x: 0, y: 0 },
+      data: {
+        label: sub.title,
+        name: sub.title,
+        description: `${sub.title} domain boundary`,
+        colorTheme: "indigo",
+        isDomainGroup: true,
+      },
+    });
+  });
 
-    nodesInLayer.forEach((id, idx) => {
-      const info = nodeMap.get(id)!;
-      const textLower = (info.label + " " + info.id).toLowerCase();
-      const inDeg = inDegree.get(info.id) || 0;
-      const outDeg = (adj.get(info.id) || []).length;
+  // Convert parsed nodes
+  nodeMap.forEach((info) => {
+    let nodeType = "SqlTableNode";
+    const textLower = (info.label + " " + info.id).toLowerCase();
 
-      let nodeType = isErDiagram ? "SqlTableNode" : "default";
-      let role = isErDiagram ? "database" : "custom";
-      let dbFormat: "sql" | "nosql" | undefined = isErDiagram ? "sql" : undefined;
+    if (info.rawShape === "diamond") {
+      nodeType = "SqlTriggerNode";
+    } else if (info.rawShape === "pill" || textLower.includes("view")) {
+      nodeType = "SqlViewNode";
+    } else if (info.rawShape === "cylinder" || isErDiagram || textLower.includes("table") || textLower.includes("users") || textLower.includes("orders")) {
+      nodeType = "SqlTableNode";
+    }
 
-      // Dynamic Coordinate Positioning:
-      let posX = 0;
-      let posY = 0;
+    const dataPayload: any = {
+      label: info.label,
+      name: info.id.toLowerCase(),
+      database: "public",
+      columns: [],
+    };
 
-      if (isErDiagram) {
-        posX = r * 440 + 80;
-        const layerCenterOffset = ((countInLayer - 1) / 2) * 260;
-        posY = idx * 260 - layerCenterOffset + 240;
-      } else if (direction === "LR") {
-        posX = r * 330 + 80;
-        const layerCenterOffset = ((countInLayer - 1) / 2) * 160;
-        posY = idx * 160 - layerCenterOffset + 240;
-      } else {
-        // Vertical TD Layout:
-        posY = r * 220 + 80;
-        const branchOffset = branchOffsetMap.get(id) || 0;
-        if (countInLayer === 1) {
-          posX = 380 + branchOffset;
-        } else {
-          const layerCenterOffset = ((countInLayer - 1) / 2) * 280;
-          posX = idx * 280 - layerCenterOffset + 380;
-        }
-      }
+    if (info.subgraphId) {
+      dataPayload.domainId = `domain-${info.subgraphId}`;
+      dataPayload.domainName = info.subgraphTitle;
+    }
 
-      // Build data payload
-      const dataPayload: any = {
-        label: info.label,
-        name: info.label,
-        type: nodeType,
-        settings: {
-          name: info.label,
-          role,
-          ...(dbFormat ? { dbFormat } : {}),
-        },
-      };
-
-      if (isErDiagram) {
-        const fields = erEntityFields.get(info.id) || [];
-        const colDefinitions = fields.map((f) => {
-          const sqlType = mapErTypeToSql(f.type);
-          const pkStr = f.isPk ? " PRIMARY KEY" : "";
-          const fkStr = f.isFk ? " /* FK */" : "";
-          return `  ${f.name} ${sqlType}${pkStr}${fkStr}`;
-        });
-
-        const fallbackCols = [
-          "  id VARCHAR(255) PRIMARY KEY",
-          "  name VARCHAR(255)",
-          "  created_at TIMESTAMP",
-        ];
-
-        const finalCols = colDefinitions.length > 0 ? colDefinitions : fallbackCols;
-        const generatedSql = `CREATE TABLE ${info.id.toLowerCase()} (\n${finalCols.join(",\n")}\n);`;
-
-        dataPayload.settings.role = "database";
-        dataPayload.settings.dbFormat = "sql";
-        dataPayload.settings.dbTableName = info.id.toLowerCase();
-        dataPayload.settings.dbSql = generatedSql;
-        dataPayload.settings.sqlSchema = generatedSql;
-        dataPayload.settings.tech = "Relational Entity";
-        dataPayload.settings.action = `${fields.length || 3} Columns Schema`;
+    // Structured columns
+    if (isErDiagram) {
+      const fields = erEntityFields.get(info.id) || [];
+      if (fields.length > 0) {
         dataPayload.columns = fields.map((f, i) => ({
           id: `col-${i + 1}`,
           name: f.name,
@@ -564,80 +539,86 @@ export function parseMermaidToReactFlow(mermaidCode: string): ParsedMermaidResul
           isPk: f.isPk,
           isFk: f.isFk,
           isNullable: !f.isPk,
-          isUnique: f.isPk,
+          isUnique: f.isUnique,
+          defaultValue: f.isPk && f.type.toLowerCase().includes("uuid") ? "gen_random_uuid()" : undefined,
+          comment: f.comment || undefined,
         }));
-        if (!dataPayload.columns.length) {
-          dataPayload.columns = [
-            { id: "1", name: "id", type: "UUID", isPk: true, isNullable: false },
-            { id: "2", name: "created_at", type: "TIMESTAMP", isNullable: false },
-          ];
-        }
       } else {
-        dataPayload.settings.role = role;
-        if (role === "database") {
-          dataPayload.settings.dbTableName = info.label.toLowerCase().replace(/\s+/g, "_");
-        }
+        dataPayload.columns = [
+          { id: "col-1", name: "id", type: "UUID", isPk: true, isNullable: false, defaultValue: "gen_random_uuid()" },
+          { id: "col-2", name: "name", type: "VARCHAR(255)", isNullable: false },
+          { id: "col-3", name: "created_at", type: "TIMESTAMPTZ", isNullable: false, defaultValue: "CURRENT_TIMESTAMP" },
+        ];
       }
+    } else if (info.columns && info.columns.length > 0) {
+      dataPayload.columns = info.columns;
+    } else {
+      dataPayload.columns = [
+        { id: "col-1", name: "id", type: "UUID", isPk: true, isNullable: false, defaultValue: "gen_random_uuid()" },
+        { id: "col-2", name: "created_at", type: "TIMESTAMPTZ", isNullable: false, defaultValue: "CURRENT_TIMESTAMP" },
+      ];
+    }
 
-      rfNodes.push({
-        id: info.id,
-        type: nodeType,
-        position: { x: Math.round(posX), y: Math.round(posY) },
-        data: dataPayload,
-      });
+    rfNodes.push({
+      id: info.id,
+      type: nodeType,
+      position: { x: 0, y: 0 },
+      parentId: info.subgraphId ? `domain-${info.subgraphId}` : undefined,
+      data: dataPayload,
     });
-  }
+  });
 
-  // 4. Combine duplicate consecutive calls and route handles
+  // --- Build ReactFlow Edges with Explicit Handle Resolution ---
   const rfEdges: any[] = [];
-  const edgeDedupeMap = new Map<string, { edge: RawEdge; labels: string[] }>();
+  let edgeIdx = 0;
+
+  // Node lookup map by exact ID and lowercase ID
+  const nodeLookup = new Map<string, any>();
+  rfNodes.forEach((n) => {
+    nodeLookup.set(n.id, n);
+    nodeLookup.set(n.id.toLowerCase(), n);
+  });
 
   for (const e of rawEdges) {
-    const key = `${e.source}__${e.target}__${e.isResponse ? "resp" : "fwd"}`;
-    const existing = edgeDedupeMap.get(key);
-    if (existing) {
-      if (e.label && !existing.labels.includes(e.label)) {
-        existing.labels.push(e.label);
-      }
-    } else {
-      edgeDedupeMap.set(key, {
-        edge: e,
-        labels: e.label ? [e.label] : [],
-      });
-    }
-  }
+    const srcNode = nodeLookup.get(e.source) || nodeLookup.get(e.source?.toLowerCase());
+    const tgtNode = nodeLookup.get(e.target) || nodeLookup.get(e.target?.toLowerCase());
 
-  let edgeIdx = 0;
-  for (const [, { edge: e, labels }] of edgeDedupeMap) {
-    const sourceNode = rfNodes.find((n) => n.id === e.source);
-    const targetNode = rfNodes.find((n) => n.id === e.target);
+    const actualSourceId = srcNode ? srcNode.id : e.source;
+    const actualTargetId = tgtNode ? tgtNode.id : e.target;
 
-    let sourceHandle: string | undefined = undefined;
-    let targetHandle: string | undefined = undefined;
-
-    const displayLabel = labels.length > 1 ? labels.join(" / ") : labels[0] || undefined;
+    const isHorizontal = direction === "LR";
+    const sourceHandle = isHorizontal ? "right" : "bottom";
+    const targetHandle = isHorizontal ? "left" : "top";
 
     rfEdges.push({
-      id: `edge-${e.source}-${e.target}-${edgeIdx++}`,
-      source: e.source,
-      target: e.target,
-      ...(sourceHandle ? { sourceHandle } : {}),
-      ...(targetHandle ? { targetHandle } : {}),
+      id: `edge-${actualSourceId}-${actualTargetId}-${edgeIdx++}`,
+      source: actualSourceId,
+      target: actualTargetId,
+      type: "erRelationship",
+      sourceHandle,
+      targetHandle,
       animated: true,
-      label: displayLabel,
-      labelStyle: { fill: "#ffffff", fontWeight: 500, fontSize: 11 },
-      labelBgStyle: { fill: "rgba(0, 0, 0, 0.75)", stroke: "#ffffff", strokeWidth: 1 },
-      labelBgPadding: [12, 6],
-      labelBgBorderRadius: 8,
-      style: e.style || { stroke: "#10b981", strokeWidth: 2 },
+      data: {
+        cardinality: e.cardinality || "1:N",
+        sourceRelation: e.sourceRelation || "1",
+        targetRelation: e.targetRelation || "N",
+        label: e.label,
+      },
     });
   }
 
+  // --- Auto-Layout using enhanced Dagre layout engine ---
+  const layout = getAutoLayout(rfNodes, rfEdges, {
+    direction: direction === "TD" ? "TB" : "LR",
+    nodeSep: options?.nodeSep || 90,
+    rankSep: options?.rankSep || 140,
+  });
+
   return {
-    nodes: rfNodes,
-    edges: rfEdges,
+    nodes: layout.nodes,
+    edges: layout.edges,
     direction,
-    nodeCount: rfNodes.length,
-    edgeCount: rfEdges.length,
+    nodeCount: layout.nodes.length,
+    edgeCount: layout.edges.length,
   };
 }

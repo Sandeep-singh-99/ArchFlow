@@ -215,31 +215,36 @@ function DomainGroupNode({
         handleClassName="!w-3 !h-3 !rounded-sm !bg-background !border-2 !border-primary"
       />
 
-      {/* Optional Domain-level handles for high-level domain relationships */}
+      {/* Domain-level handles for high-level domain relationships */}
       <Handle
         type="target"
         position={Position.Top}
-        id="domain-top"
+        id="top"
         className="!w-3 !h-3 !bg-muted-foreground/40 !border-2 !border-background opacity-0 group-hover/domain:opacity-100 transition-opacity"
       />
       <Handle
         type="source"
         position={Position.Bottom}
-        id="domain-bottom"
+        id="bottom"
         className="!w-3 !h-3 !bg-muted-foreground/40 !border-2 !border-background opacity-0 group-hover/domain:opacity-100 transition-opacity"
       />
       <Handle
         type="target"
         position={Position.Left}
-        id="domain-left"
+        id="left"
         className="!w-3 !h-3 !bg-muted-foreground/40 !border-2 !border-background opacity-0 group-hover/domain:opacity-100 transition-opacity"
       />
       <Handle
         type="source"
         position={Position.Right}
-        id="domain-right"
+        id="right"
         className="!w-3 !h-3 !bg-muted-foreground/40 !border-2 !border-background opacity-0 group-hover/domain:opacity-100 transition-opacity"
       />
+      {/* Compatibility aliases for domain-* */}
+      <Handle type="target" position={Position.Top} id="domain-top" className="opacity-0 pointer-events-none" />
+      <Handle type="source" position={Position.Bottom} id="domain-bottom" className="opacity-0 pointer-events-none" />
+      <Handle type="target" position={Position.Left} id="domain-left" className="opacity-0 pointer-events-none" />
+      <Handle type="source" position={Position.Right} id="domain-right" className="opacity-0 pointer-events-none" />
 
       {/* Domain Container Header Bar */}
       <div

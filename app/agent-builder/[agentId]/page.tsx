@@ -241,7 +241,15 @@ export default function AgentBuilder() {
           rankSep: 110,
         });
 
+        const isHorizontal = direction === "LR";
+        const updatedEdges = (nodeEdges || []).map((e: any) => ({
+          ...e,
+          sourceHandle: isHorizontal ? "right" : "bottom",
+          targetHandle: isHorizontal ? "left" : "top",
+        }));
+
         setAddedNodes(layout.nodes);
+        setNodeEdges(updatedEdges);
         toast.success(
           `Schema organized (${direction === "LR" ? "Left-to-Right" : "Top-to-Bottom"} hierarchical layout)`
         );

@@ -31,20 +31,27 @@ export function estimateNodeDimensions(node: any): { width: number; height: numb
   switch (type) {
     case "SqlTableNode":
     case "Table": {
-      const colCount = node.data?.columns?.length || 2;
-      return { width: 300, height: 80 + colCount * 36 };
+      const colCount = node.data?.columns?.length || 3;
+      return { width: 310, height: Math.max(160, 72 + colCount * 36) };
     }
     case "NosqlCollectionNode":
     case "Collection": {
+      const fieldCount = node.data?.fields?.length || 4;
+      return { width: 300, height: Math.max(160, 72 + fieldCount * 34) };
+    }
+    case "NosqlEmbeddedNode":
+    case "EmbeddedObject":
+    case "Embedded": {
       const fieldCount = node.data?.fields?.length || 3;
-      return { width: 290, height: 80 + fieldCount * 34 };
+      return { width: 270, height: Math.max(140, 68 + fieldCount * 32) };
     }
     case "SqlViewNode":
     case "View":
       return { width: 280, height: 180 };
     case "SqlIndexNode":
     case "Index":
-      return { width: 240, height: 140 };
+    case "NosqlIndexNode":
+      return { width: 250, height: 140 };
     case "SqlFunctionNode":
     case "StoredFunction":
       return { width: 260, height: 160 };
@@ -54,8 +61,14 @@ export function estimateNodeDimensions(node: any): { width: number; height: numb
     case "SqlEnumNode":
     case "Enum": {
       const valCount = node.data?.values?.length || 3;
-      return { width: 240, height: 70 + valCount * 28 };
+      return { width: 240, height: Math.max(120, 68 + valCount * 28) };
     }
+    case "NosqlValidationNode":
+    case "ValidationSchema":
+      return { width: 260, height: 150 };
+    case "NosqlDocumentNode":
+    case "Document":
+      return { width: 280, height: 200 };
     case "DbNoteNode":
     case "Note":
     case "TextNode":
@@ -64,14 +77,14 @@ export function estimateNodeDimensions(node: any): { width: number; height: numb
     case "DbSchemaNode":
     case "Database":
     case "Schema":
-      return { width: 260, height: 160 };
+      return { width: 270, height: 160 };
     case "DomainGroupNode":
     case "DomainGroup":
     case "domainGroup":
     case "group":
-      return { width: 380, height: 260 };
+      return { width: 440, height: 320 };
     default:
-      return { width: 260, height: 160 };
+      return { width: 280, height: 180 };
   }
 }
 
@@ -104,8 +117,8 @@ export function getAutoLayout(
 
   const {
     direction = "LR",
-    nodeSep = 70,
-    rankSep = 110,
+    nodeSep = 90,
+    rankSep = 140,
     align,
   } = options;
 
@@ -116,8 +129,8 @@ export function getAutoLayout(
     ranksep: rankSep,
     align: align,
     compound: true,
-    marginx: 50,
-    marginy: 50,
+    marginx: 80,
+    marginy: 80,
   });
   g.setDefaultEdgeLabel(() => ({}));
 
@@ -177,8 +190,8 @@ export function getAutoLayout(
       // Group container node
       const left = Math.round(dNode.x - dNode.width / 2);
       const top = Math.round(dNode.y - dNode.height / 2);
-      const w = Math.max(340, Math.round(dNode.width));
-      const h = Math.max(220, Math.round(dNode.height));
+      const w = Math.max(420, Math.round(dNode.width));
+      const h = Math.max(280, Math.round(dNode.height));
 
       return {
         ...node,
@@ -203,7 +216,7 @@ export function getAutoLayout(
             parentId: parentId,
             position: {
               x: Math.round(dNode.x - dNode.width / 2 - pLeft),
-              y: Math.round(dNode.y - dNode.height / 2 - pTop),
+              y: Math.max(50, Math.round(dNode.y - dNode.height / 2 - pTop)),
             },
           };
         }
@@ -219,6 +232,25 @@ export function getAutoLayout(
       };
     }
   });
+
+  // Step 6: Normalize standalone coordinates so the minimum x and y start cleanly at (80, 80)
+  const standaloneNodes = updatedNodes.filter((n) => !n.parentId);
+  if (standaloneNodes.length > 0) {
+    const minX = Math.min(...standaloneNodes.map((n) => n.position.x));
+    const minY = Math.min(...standaloneNodes.map((n) => n.position.y));
+
+    const shiftX = minX < 80 ? 80 - minX : 0;
+    const shiftY = minY < 80 ? 80 - minY : 0;
+
+    if (shiftX > 0 || shiftY > 0) {
+      updatedNodes.forEach((n) => {
+        if (!n.parentId) {
+          n.position.x += shiftX;
+          n.position.y += shiftY;
+        }
+      });
+    }
+  }
 
   // CRITICAL for React Flow: Group/Parent nodes MUST be ordered before child nodes in the array
   const parentOrderedNodes = [

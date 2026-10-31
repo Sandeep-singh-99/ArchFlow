@@ -127,6 +127,20 @@ export default function ErRelationshipEdge({
 }: EdgeProps) {
   const { setNodeEdges } = useContext(WorkflowContext);
 
+  // Guard against unmounted or unpositioned handles
+  if (
+    typeof sourceX !== "number" ||
+    typeof sourceY !== "number" ||
+    typeof targetX !== "number" ||
+    typeof targetY !== "number" ||
+    !isFinite(sourceX) ||
+    !isFinite(sourceY) ||
+    !isFinite(targetX) ||
+    !isFinite(targetY)
+  ) {
+    return null;
+  }
+
   const isSelf = source === target;
 
   let edgePath: string;

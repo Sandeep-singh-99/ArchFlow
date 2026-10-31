@@ -46,6 +46,8 @@ function NosqlCollectionNode({ data, selected }: { data: NosqlCollectionNodeData
       {/* Node-level fallback handles for general connections */}
       <Handle type="target" position={Position.Top} id="top" className="!w-2.5 !h-2.5 !bg-emerald-500 border-2 border-background z-20" />
       <Handle type="source" position={Position.Bottom} id="bottom" className="!w-2.5 !h-2.5 !bg-emerald-500 border-2 border-background z-20" />
+      <Handle type="target" position={Position.Left} id="left" className="!w-2.5 !h-2.5 !bg-emerald-500 border-2 border-background z-20 !top-[22px]" title={`Connect to ${collectionName}`} />
+      <Handle type="source" position={Position.Right} id="right" className="!w-2.5 !h-2.5 !bg-emerald-500 border-2 border-background z-20 !top-[22px]" title={`Connect from ${collectionName}`} />
 
       {/* Header */}
       <div className="px-3.5 py-2.5 border-b border-border/80 bg-emerald-500/10 rounded-t-xl flex items-center justify-between gap-2">
