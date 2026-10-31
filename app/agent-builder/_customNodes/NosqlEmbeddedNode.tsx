@@ -31,14 +31,14 @@ function NosqlEmbeddedNode({ data, selected }: { data: NosqlEmbeddedNodeData; se
 
   return (
     <div
-      className={`min-w-[220px] max-w-[280px] rounded-xl border bg-card/95 backdrop-blur-md shadow-lg transition-all ${
+      className={`min-w-[220px] max-w-[280px] rounded-xl border bg-card/95 backdrop-blur-md shadow-lg transition-all relative ${
         selected ? "border-fuchsia-500 ring-2 ring-fuchsia-500/30 shadow-fuchsia-500/20" : "border-border/80 hover:border-fuchsia-500/50"
       }`}
     >
-      <Handle type="target" position={Position.Top} id="top" className="!w-2.5 !h-2.5 !bg-fuchsia-500 border-2 border-background" />
-      <Handle type="source" position={Position.Bottom} id="bottom" className="!w-2.5 !h-2.5 !bg-fuchsia-500 border-2 border-background" />
-      <Handle type="target" position={Position.Left} id="left" className="!w-2.5 !h-2.5 !bg-fuchsia-500 border-2 border-background" />
-      <Handle type="source" position={Position.Right} id="right" className="!w-2.5 !h-2.5 !bg-fuchsia-500 border-2 border-background" />
+      <Handle type="target" position={Position.Top} id="top" className="!w-2.5 !h-2.5 !bg-fuchsia-500 border-2 border-background z-20" />
+      <Handle type="source" position={Position.Bottom} id="bottom" className="!w-2.5 !h-2.5 !bg-fuchsia-500 border-2 border-background z-20" />
+      <Handle type="target" position={Position.Left} id="left" className="!w-2.5 !h-2.5 !bg-fuchsia-500 border-2 border-background z-20" />
+      <Handle type="source" position={Position.Right} id="right" className="!w-2.5 !h-2.5 !bg-fuchsia-500 border-2 border-background z-20" />
 
       {/* Header */}
       <div className="px-3.5 py-2.5 border-b border-border/80 bg-fuchsia-500/10 rounded-t-xl flex items-center justify-between gap-2">
@@ -67,16 +67,36 @@ function NosqlEmbeddedNode({ data, selected }: { data: NosqlEmbeddedNodeData; se
         </div>
       )}
 
-      {/* Fields */}
-      <div className="divide-y divide-border/40 py-1">
-        {fields.map((f, idx) => (
-          <div key={idx} className="px-3 py-1.5 flex items-center justify-between text-xs font-mono hover:bg-muted/30">
-            <span className="text-foreground">{f.name}</span>
-            <span className="text-[10px] text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded">
-              {f.type}
-            </span>
-          </div>
-        ))}
+      {/* Fields with Row-level handles */}
+      <div className="divide-y divide-border/40 py-1 overflow-visible [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {fields.map((f, idx) => {
+          const fieldKey = f.name || `embed-${idx}`;
+          return (
+            <div
+              key={idx}
+              className="group/row relative px-3 py-1.5 flex items-center justify-between text-xs font-mono hover:bg-muted/40 transition-colors gap-2"
+            >
+              <Handle
+                type="target"
+                position={Position.Left}
+                id={`embed-field-${fieldKey}-left`}
+                className="!w-2 !h-2 !-left-[5px] !bg-sky-500 hover:!bg-sky-400 !border-2 !border-background !rounded-full shadow-xs transition-transform group-hover/row:scale-125 z-10"
+                title={`Connect relationship to ${schemaName}.${f.name}`}
+              />
+              <span className="text-foreground truncate">{f.name}</span>
+              <span className="text-[10px] text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded shrink-0">
+                {f.type}
+              </span>
+              <Handle
+                type="source"
+                position={Position.Right}
+                id={`embed-field-${fieldKey}-right`}
+                className="!w-2 !h-2 !-right-[5px] !bg-fuchsia-500 hover:!bg-fuchsia-400 !border-2 !border-background !rounded-full shadow-xs transition-transform group-hover/row:scale-125 z-10"
+                title={`Connect relationship from ${schemaName}.${f.name}`}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

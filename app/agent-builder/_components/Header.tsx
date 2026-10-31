@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import MermaidImportDialog from "./MermaidImportDialog";
 import SqlExportDialog from "./SqlExportDialog";
 import ExportImageDialog from "./ExportImageDialog";
+import NosqlDemoDialog from "./NosqlDemoDialog";
 
 type Props = {
   agentDetail: Agent | undefined;
@@ -83,6 +84,9 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-2.5">
+        {/* NoSQL Architecture Demos */}
+        <NosqlDemoDialog agentDetail={agentDetail} />
+
         {/* 1. Real SQL DDL Exporter */}
         <SqlExportDialog agentDetail={agentDetail} />
 
