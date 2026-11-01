@@ -1,27 +1,15 @@
 "use client";
-import { Button } from "@/components/ui/button";
 import { Agent } from "@/types/AgentTypes";
 import {
   ChevronLeft,
-  FileCode,
   Workflow,
-  Copy,
-  Check,
   Database,
   Boxes,
 } from "lucide-react";
 import Link from "next/link";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { useState } from "react";
-import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import MermaidImportDialog from "./MermaidImportDialog";
+import MermaidExportDialog from "./MermaidExportDialog";
 import SqlExportDialog from "./SqlExportDialog";
 import ExportImageDialog from "./ExportImageDialog";
 import { getSchemaType } from "@/lib/schemaClassifier";
@@ -32,39 +20,8 @@ type Props = {
 };
 
 export default function Header({ agentDetail, previewHeader = false }: Props) {
-  const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-
   const schemaType = getSchemaType(agentDetail);
   const isNoSql = schemaType === "nosql";
-
-  // Generate dynamic Mermaid.js syntax from nodes if present
-  const nodes = agentDetail?.nodes || [];
-  const edges = agentDetail?.edges || [];
-
-  let mermaidCode = "graph TD\n";
-  if (nodes.length > 0) {
-    nodes.forEach((n: any) => {
-      const label = n.data?.label || n.type;
-      mermaidCode += `    ${n.id}["${label}"]\n`;
-    });
-    if (edges.length > 0) {
-      edges.forEach((e: any) => {
-        mermaidCode += `    ${e.source} --> ${e.target}\n`;
-      });
-    } else {
-      mermaidCode += "    %% Connect your nodes on the canvas to generate edges\n";
-    }
-  } else {
-    mermaidCode = "erDiagram\n    USERS ||--o{ ORDERS : places\n    ORDERS ||--|{ ORDER_ITEMS : contains\n    PRODUCTS ||--o{ ORDER_ITEMS : ordered_in\n";
-  }
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(mermaidCode);
-    setCopied(true);
-    toast.success("Mermaid syntax copied to clipboard!");
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
     <div className="w-full px-4 py-2.5 border-b border-border bg-background/90 backdrop-blur flex items-center justify-between">
@@ -107,56 +64,9 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
         {/* 2. Export High-Res Image (PNG/SVG) */}
         <ExportImageDialog architectureName={agentDetail?.name || "database-schema"} />
 
+        {/* 3. Mermaid Import & Export Dialogs */}
         <MermaidImportDialog agentDetail={agentDetail} />
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setOpen(true)}
-          className="h-8 gap-1.5 text-xs font-semibold hidden md:inline-flex"
-        >
-          <FileCode className="h-3.5 w-3.5 text-muted-foreground" />
-          <span>Export Mermaid</span>
-        </Button>
-
-        {/* Export Modal */}
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="sm:max-w-xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-base">
-                <FileCode className="h-4 w-4 text-primary" />
-                <span>Architecture Mermaid.js Code</span>
-              </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground">
-                Paste this into your GitHub README, Notion document, or Architecture RFC for instant rendering.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="relative mt-2">
-              <pre className="p-4 rounded-lg bg-muted border border-border font-mono text-xs overflow-x-auto text-foreground max-h-[300px]">
-                {mermaidCode}
-              </pre>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={copyToClipboard}
-                className="absolute top-2.5 right-2.5 h-7 gap-1 text-[11px] font-semibold bg-card/80"
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-3 w-3 text-primary" />
-                    <span>Copied</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3 w-3" />
-                    <span>Copy</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <MermaidExportDialog agentDetail={agentDetail} />
       </div>
     </div>
   );
