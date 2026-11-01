@@ -7,8 +7,11 @@ export default defineSchema({
         email: v.string(),
         imageUrl: v.string(),
         subscription: v.optional(v.string()),
-        token: v.number()
-    }),
+        token: v.number(),
+        role: v.optional(v.string()), // "user" | "admin"
+    })
+        .index("by_email", ["email"])
+        .index("by_role", ["role"]),
 
     AgentTable: defineTable({
         agentId: v.string(),
@@ -28,5 +31,22 @@ export default defineSchema({
         content: v.string(),
         sessionId: v.string(),
         createdAt: v.number()
+    }),
+
+    FeedbackTable: defineTable({
+        userId: v.optional(v.id("UserTable")),
+        userEmail: v.string(),
+        userName: v.string(),
+        userTier: v.string(), // "free" | "pro" | "ai"
+        type: v.string(), // "bug" | "feature_request" | "ui_ux" | "performance" | "general" | "praise"
+        rating: v.number(), // 1 - 5 stars
+        title: v.optional(v.string()),
+        message: v.string(),
+        status: v.string(), // "new" | "in_review" | "resolved" | "archived"
+        createdAt: v.number(),
     })
+        .index("by_status", ["status"])
+        .index("by_type", ["type"])
+        .index("by_userTier", ["userTier"])
+        .index("by_createdAt", ["createdAt"]),
 })

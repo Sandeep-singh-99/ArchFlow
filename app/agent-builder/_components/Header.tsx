@@ -12,6 +12,7 @@ import MermaidImportDialog from "./MermaidImportDialog";
 import MermaidExportDialog from "./MermaidExportDialog";
 import SqlExportDialog from "./SqlExportDialog";
 import ExportImageDialog from "./ExportImageDialog";
+import UserFeedbackDialog from "@/components/feedback/UserFeedbackDialog";
 import { getSchemaType } from "@/lib/schemaClassifier";
 
 type Props = {
@@ -67,6 +68,9 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
         {/* 3. Mermaid Import & Export Dialogs */}
         <MermaidImportDialog agentDetail={agentDetail} />
         <MermaidExportDialog agentDetail={agentDetail} />
+
+        {/* 4. User Feedback Dialog */}
+        <UserFeedbackDialog />
       </div>
     </div>
   );

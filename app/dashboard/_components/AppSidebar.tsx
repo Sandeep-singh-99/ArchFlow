@@ -23,10 +23,12 @@ import {
   Network,
   Sparkles,
   Zap,
+  MessageSquareHeart,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useContext, useEffect, useState } from "react";
+import UserFeedbackDialog from "@/components/feedback/UserFeedbackDialog";
 
 const NavigationOptions = [
   {
@@ -202,6 +204,23 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 );
               })}
+
+              {/* Give Feedback Button */}
+              <SidebarMenuItem className="flex justify-center pt-1">
+                <UserFeedbackDialog
+                  trigger={
+                    <SidebarMenuButton
+                      tooltip="Give Feedback"
+                      className="font-medium text-xs rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
+                    >
+                      <MessageSquareHeart className="size-4 shrink-0 text-pink-400" />
+                      <span className="truncate group-data-[collapsible=icon]:hidden">
+                        Feedback
+                      </span>
+                    </SidebarMenuButton>
+                  }
+                />
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

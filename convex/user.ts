@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 
 export const CreateNewUser = mutation({
   args: {
@@ -10,22 +10,60 @@ export const CreateNewUser = mutation({
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("UserTable")
-      .filter((q) => q.eq(q.field("email"), args.email))
-      .collect();
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
 
-    if (user?.length === 0) {
+    if (!user) {
       const userData = {
         name: args.name,
-        email: args?.email,
+        email: args.email,
         imageUrl: args.imageUrl,
         token: 5000,
+        role: "user", // Default role set to "user"
       };
 
-      const result = await ctx.db.insert("UserTable", userData);
-      return result;
+      const id = await ctx.db.insert("UserTable", userData);
+      return { _id: id, ...userData };
     }
 
-    return user[0];
+    // Backfill legacy users missing role field to default "user"
+    if (!user.role) {
+      await ctx.db.patch(user._id, { role: "user" });
+      return { ...user, role: "user" };
+    }
+
+    return user;
+  },
+});
+
+export const GetUserByEmail = query({
+  args: {
+    email: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("UserTable")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+  },
+});
+
+export const SetUserRole = mutation({
+  args: {
+    email: v.string(),
+    role: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("UserTable")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+
+    if (user) {
+      await ctx.db.patch(user._id, { role: args.role });
+      return { success: true, role: args.role };
+    }
+    return { success: false };
   },
 });
 
@@ -37,7 +75,7 @@ export const UpdateUserSubscription = mutation({
   handler: async (ctx, args) => {
     const users = await ctx.db
       .query("UserTable")
-      .filter((q) => q.eq(q.field("email"), args.email))
+      .withIndex("by_email", (q) => q.eq("email", args.email))
       .collect();
 
     if (users && users.length > 0) {
