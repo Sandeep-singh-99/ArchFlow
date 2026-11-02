@@ -42,10 +42,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Save, Loader, Layers, Plus, Sparkles } from "lucide-react";
+import { Save, Loader, Layers, Plus, Sparkles, Bot } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import AgentStudioChatDrawer from "../_components/AgentStudioChatDrawer";
 import { toast } from "sonner";
 import { getAutoLayout, isDomainGroupNode } from "@/lib/autoLayout";
 import { DOMAIN_PRESETS, DomainPreset, DOMAIN_THEMES } from "@/lib/domainThemes";
+import { getSchemaType } from "@/lib/schemaClassifier";
 
 export default function AgentBuilder() {
   const {
@@ -70,6 +73,7 @@ export default function AgentBuilder() {
   const [bgVariant, setBgVariant] = useState<BackgroundVariantType>("dots");
   const [showMiniMap, setShowMiniMap] = useState(true);
   const [selectedNodesList, setSelectedNodesList] = useState<any[]>([]);
+  const [isAiChatOpen, setIsAiChatOpen] = useState(false);
 
   const GetAgentDetail = async () => {
     try {
@@ -478,9 +482,29 @@ export default function AgentBuilder() {
           {/* Radar MiniMap */}
           {showMiniMap && <FlowMiniMap />}
 
-          {/* Left Palette: System Components */}
-          <Panel position="top-left">
+          {/* Left Palette: System Components & AI Copilot Trigger */}
+          <Panel position="top-left" className="flex flex-col gap-2 z-30">
             <AgentToolsPanel />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsAiChatOpen((prev) => !prev)}
+                  className={`h-9 w-9 rounded-xl border border-border/80 bg-card/95 backdrop-blur-md shadow-xl transition-all cursor-pointer flex items-center justify-center ${
+                    isAiChatOpen
+                      ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-400 ring-2 ring-emerald-500/20"
+                      : "text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/30 active:scale-95"
+                  }`}
+                  aria-label="Open AI Copilot Chat"
+                >
+                  <Bot className="h-4 w-4 text-emerald-400" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="text-xs font-medium">
+                AI Studio Copilot (LangGraph + RAG)
+              </TooltipContent>
+            </Tooltip>
           </Panel>
 
           {/* Right Inspector: Node Specifications (only visible when a node is selected) */}
@@ -531,6 +555,14 @@ export default function AgentBuilder() {
           </Panel>
         </ReactFlow>
       </div>
+
+      {/* Left-Side AI Chat Drawer (Short-term memory, LangGraph, Pinecone RAG, Gemini) */}
+      <AgentStudioChatDrawer
+        isOpen={isAiChatOpen}
+        onClose={() => setIsAiChatOpen(false)}
+        agentName={agentDetail?.name}
+        schemaType={getSchemaType({ ...agentDetail, nodes: addedNodes })}
+      />
     </div>
   );
 }

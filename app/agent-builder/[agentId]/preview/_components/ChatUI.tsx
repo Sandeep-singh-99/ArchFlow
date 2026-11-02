@@ -18,6 +18,7 @@ import axios from "axios";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { v4 as uuidv4 } from "uuid";
+import MarkdownRenderer from "@/components/chat/MarkdownRenderer";
 
 type Props = {
   GenerateAgentToolConfig: () => void;
@@ -228,7 +229,11 @@ export default function ChatUI({
                       : "bg-white border border-gray-100 text-gray-700 rounded-tl-none"
                   }`}
                 >
-                  {msg.content}
+                  {msg.role === "ai" ? (
+                    <MarkdownRenderer content={msg.content} />
+                  ) : (
+                    msg.content
+                  )}
 
                   {/* Actions (Copy) */}
                   <button
