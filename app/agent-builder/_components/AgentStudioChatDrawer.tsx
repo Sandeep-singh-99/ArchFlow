@@ -680,7 +680,13 @@ export default function AgentStudioChatDrawer({
 
       setAddedNodes(currentNodes);
       setNodeEdges(currentEdges);
-      toast.success(actionsLog.join(" • "));
+      if (createdCount > 1) {
+        toast.success(`Generated ${createdCount} tables & relationships on canvas!`);
+      } else if (actionsLog.length > 0) {
+        toast.success(actionsLog.slice(0, 2).join(" • "));
+      } else {
+        toast.success("Canvas updated!");
+      }
     }
   };
 
@@ -754,14 +760,14 @@ export default function AgentStudioChatDrawer({
 
   const quickPrompts = isNoSql
     ? [
+        "Design a complete e-commerce database schema",
         "Create a payments collection linked to orders",
         "Should I embed or reference items in this NoSQL document?",
         "Suggest MongoDB compound indexes for queries",
-        "Generate Mongoose schema for my collections",
       ]
     : [
+        "Design a complete e-commerce database schema",
         "Create a payments table with amount, currency and link to orders",
-        "Delete the reviews table",
         "Add a phone_number column to users table",
         "Analyze my canvas schema for missing foreign keys",
       ];
@@ -896,27 +902,6 @@ export default function AgentStudioChatDrawer({
                   <MarkdownRenderer content={msg.content} />
                 ) : (
                   <div className="whitespace-pre-wrap font-sans">{msg.content}</div>
-                )}
-
-                {/* If AI message executed actions on React Flow canvas */}
-                {msg.role === "ai" && msg.canvasActions && msg.canvasActions.length > 0 && (
-                  <div className="mt-2.5 pt-2 border-t border-border/60 flex flex-wrap gap-1.5">
-                    {msg.canvasActions.map((action: any, idx: number) => (
-                      <span
-                        key={idx}
-                        className="inline-flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/25"
-                      >
-                        <Sparkles className="h-3 w-3 text-emerald-400" />
-                        <span>
-                          {action.type === "CREATE_NODE" && `Created ${action.name || "table"}`}
-                          {action.type === "DELETE_NODE" && `Deleted ${action.targetName || "table"}`}
-                          {action.type === "UPDATE_NODE" && `Updated ${action.targetName || "table"}`}
-                          {action.type === "CONNECT_NODES" && `Connected ${action.sourceTable} → ${action.targetTable}`}
-                          {action.type === "AUTO_LAYOUT" && "Canvas Auto-Arranged"}
-                        </span>
-                      </span>
-                    ))}
-                  </div>
                 )}
               </div>
 
