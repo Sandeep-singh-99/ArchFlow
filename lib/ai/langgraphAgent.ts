@@ -1,7 +1,6 @@
 import { StateGraph, Annotation, START, END, MemorySaver } from "@langchain/langgraph";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { BaseMessage, HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
-import { retrieveRelevantDocs } from "./pineconeRAG";
 
 export interface CanvasAction {
   type: "CREATE_NODE" | "DELETE_NODE" | "UPDATE_NODE" | "CONNECT_NODES" | "AUTO_LAYOUT";
@@ -69,10 +68,6 @@ const AgentState = Annotation.Root({
   }),
   query: Annotation<string>(),
   canvasSchema: Annotation<any>(),
-  retrievedContext: Annotation<string[]>({
-    reducer: (x, y) => y ?? x,
-    default: () => [],
-  }),
   finalResponse: Annotation<string>(),
   canvasActions: Annotation<CanvasAction[]>({
     reducer: (x, y) => y ?? x,
@@ -83,21 +78,7 @@ const AgentState = Annotation.Root({
 // Single in-memory checkpointer for short-term session memory (ephemeral, not saved to DB)
 const inMemorySaver = new MemorySaver();
 
-// 1. RAG Node: Retrieves context from Pinecone for all tasks
-async function ragRetrievalNode(state: typeof AgentState.State) {
-  const query = state.query || "";
-  let retrieved: string[] = [];
-
-  if (query.trim()) {
-    retrieved = await retrieveRelevantDocs(query, 4);
-  }
-
-  return {
-    retrievedContext: retrieved,
-  };
-}
-
-// 2. Gemini Generator Node with Canvas Action Capabilities
+// Gemini Generator Node with Canvas Action Capabilities
 async function geminiGeneratorNode(state: typeof AgentState.State) {
   const apiKey = process.env.GOOGLE_API_KEY || "";
   const model = new ChatGoogleGenerativeAI({
@@ -163,12 +144,6 @@ async function geminiGeneratorNode(state: typeof AgentState.State) {
 - Output clean PostgreSQL / MySQL / SQLite DDL or Prisma schemas with primary keys and foreign keys.
 - Enforce 3NF normalization, foreign key constraints, and relational indexing.`;
 
-  const retrievedDocs = state.retrievedContext || [];
-  const formattedDocs =
-    retrievedDocs.length > 0
-      ? retrievedDocs.map((doc, idx) => `[Source ${idx + 1}]: ${doc}`).join("\n\n")
-      : "Standard relational (3NF) & NoSQL database architecture best practices.";
-
   const systemPrompt = `You are ArchFlow's AI Database Schema & Architecture Copilot.
 You have direct control over the React Flow database canvas and can create, delete, update, and connect any node.
 
@@ -186,9 +161,6 @@ You are strictly and exclusively a Database Schema & Architecture assistant.
   Always return "canvasActions": [] for off-topic requests.
 
 ${architectureDirective}
-
-=== RETRIEVED PINECONE RAG KNOWLEDGE ===
-${formattedDocs}
 
 === LIVE CANVAS DATABASE CONTEXT ===
 ${formattedCanvas}
@@ -338,10 +310,8 @@ You MUST return your answer strictly as a JSON object with this exact shape:
 
 // Build the LangGraph Workflow
 const workflow = new StateGraph(AgentState)
-  .addNode("ragRetriever", ragRetrievalNode)
   .addNode("geminiGenerator", geminiGeneratorNode)
-  .addEdge(START, "ragRetriever")
-  .addEdge("ragRetriever", "geminiGenerator")
+  .addEdge(START, "geminiGenerator")
   .addEdge("geminiGenerator", END);
 
 export const agentGraphApp = workflow.compile({
@@ -376,6 +346,5 @@ export async function runAgentStudioChat({
   return {
     response: result.finalResponse,
     canvasActions: result.canvasActions || [],
-    retrievedContext: result.retrievedContext || [],
   };
 }

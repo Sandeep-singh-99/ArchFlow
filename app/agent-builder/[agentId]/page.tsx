@@ -600,7 +600,7 @@ export default function AgentBuilder() {
         </ReactFlow>
       </div>
 
-      {/* Left-Side AI Chat Drawer (Short-term memory, LangGraph, Pinecone RAG, Gemini) */}
+      {/* Left-Side AI Chat Drawer (Short-term memory, LangGraph, Gemini Copilot) */}
       <AgentStudioChatDrawer
         isOpen={isAiChatOpen}
         onClose={() => setIsAiChatOpen(false)}

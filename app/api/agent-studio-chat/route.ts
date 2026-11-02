@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
     const currentSessionId = sessionId || `session_${Date.now()}`;
 
-    // Run LangGraph with Pinecone RAG and Short-term Memory (in-memory)
+    // Run LangGraph with Gemini Generator and Short-term Memory (in-memory)
     // Note: Previous chat is intentionally NOT saved to any database.
     const result = await runAgentStudioChat({
       query: message,
@@ -25,7 +25,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       response: result.response,
       canvasActions: result.canvasActions,
-      retrievedContext: result.retrievedContext,
       sessionId: currentSessionId,
     });
   } catch (error: any) {
