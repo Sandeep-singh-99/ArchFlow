@@ -16,6 +16,12 @@ export interface CanvasAction {
     isUnique?: boolean;
     isNullable?: boolean;
     defaultValue?: string;
+    references?: string;
+  }>;
+  fields?: Array<{
+    name: string;
+    type: string;
+    required?: boolean;
   }>;
   query?: string;
   text?: string;
@@ -29,15 +35,30 @@ export interface CanvasAction {
     isUnique?: boolean;
     isNullable?: boolean;
     defaultValue?: string;
+    references?: string;
+  }>;
+  addFields?: Array<{
+    name: string;
+    type: string;
+    required?: boolean;
   }>;
   removeColumns?: string[];
+  removeFields?: string[];
   renameTable?: string;
   changeNodeType?: string;
   relations?: Array<{
     targetTable: string;
     cardinality?: "1:1" | "1:N" | "N:M";
+    sourceColumn?: string;
+    targetColumn?: string;
+    connectToField?: boolean;
   }>;
   sourceTable?: string;
+  sourceColumn?: string;
+  targetTable?: string;
+  targetColumn?: string;
+  connectToField?: boolean;
+  cardinality?: "1:1" | "1:N" | "N:M";
 }
 
 // Graph State Definition with Annotation
@@ -104,10 +125,11 @@ async function geminiGeneratorNode(state: typeof AgentState.State) {
             n.data?.columns?.map((c: any) => ({
               name: c.name,
               type: c.type,
-              isPk: c.isPrimaryKey,
-              isFk: c.isForeignKey,
-              isUnique: c.isUnique,
+              isPk: !!(c.isPrimaryKey || c.isPk),
+              isFk: !!(c.isForeignKey || c.isFk),
+              isUnique: !!c.isUnique,
               isNullable: c.isNullable,
+              references: c.references || c.referencesTable,
             })) || [],
           fields: n.data?.fields || [],
           query: n.data?.query,
@@ -117,6 +139,8 @@ async function geminiGeneratorNode(state: typeof AgentState.State) {
           id: e.id,
           source: e.source,
           target: e.target,
+          sourceHandle: e.sourceHandle,
+          targetHandle: e.targetHandle,
           cardinality: e.data?.cardinality || e.label || "1:N",
         })),
       },
@@ -175,11 +199,16 @@ ${formattedCanvas}
 3. If the user asks to create an entity (e.g. "Create categories table"), and that entity is NOT in the "nodes" list above, you MUST emit a CREATE_NODE action. Do NOT say it is already present.
 4. When the user requests a complete multi-table schema (e.g. users, categories, products, orders, order_items, payments):
    - Emit a CREATE_NODE for EVERY single requested entity.
-   - FOR EVERY TABLE THAT REFERENCES ANOTHER TABLE, YOU MUST INCLUDE THE "relations" ARRAY in its CREATE_NODE (and/or mark "isForeignKey": true and "references": "target_table" on the column):
-     * e.g., "products": "relations": [{"targetTable": "categories", "cardinality": "1:N"}]
-     * e.g., "orders": "relations": [{"targetTable": "users", "cardinality": "1:N"}]
-     * e.g., "order_items": "relations": [{"targetTable": "orders", "cardinality": "1:N"}, {"targetTable": "products", "cardinality": "1:N"}]
-     * e.g., "payments": "relations": [{"targetTable": "orders", "cardinality": "1:N"}]
+   - FOR EVERY TABLE THAT REFERENCES ANOTHER TABLE, YOU MUST SPECIFY FIELD-LEVEL CONNECTIONS:
+     * Mark "isForeignKey": true and "references": "target_table(target_column)" on the foreign key column.
+     * In "relations", provide the source primary key column and target foreign key column:
+       e.g., "products": "relations": [{"targetTable": "categories", "cardinality": "1:N", "sourceColumn": "id", "targetColumn": "category_id"}]
+       e.g., "orders": "relations": [{"targetTable": "users", "cardinality": "1:N", "sourceColumn": "id", "targetColumn": "user_id"}]
+       e.g., "order_items": "relations": [
+         {"targetTable": "orders", "cardinality": "1:N", "sourceColumn": "id", "targetColumn": "order_id"},
+         {"targetTable": "products", "cardinality": "1:N", "sourceColumn": "id", "targetColumn": "product_id"}
+       ]
+       e.g., "payments": "relations": [{"targetTable": "orders", "cardinality": "1:N", "sourceColumn": "id", "targetColumn": "order_id"}]
    - Include {"type": "AUTO_LAYOUT"} so all nodes and connecting relationship edges are automatically organized hierarchically without overlap.
 
 === OUTPUT FORMAT RULE ===
@@ -199,11 +228,11 @@ You MUST return your answer strictly as a JSON object with this exact shape:
      "name": "table_name",
      "columns": [
        { "name": "id", "type": "UUID", "isPrimaryKey": true, "isNullable": false },
-       { "name": "user_id", "type": "UUID", "isForeignKey": true, "references": "users" },
+       { "name": "user_id", "type": "UUID", "isForeignKey": true, "references": "users(id)" },
        { "name": "amount", "type": "DECIMAL(10,2)" }
      ],
      "relations": [
-       { "targetTable": "users", "cardinality": "1:N" }
+       { "targetTable": "users", "cardinality": "1:N", "sourceColumn": "id", "targetColumn": "user_id" }
      ],
      "query": "SELECT ... (if SqlViewNode)",
      "text": "Note content (if DbNoteNode)"
@@ -220,20 +249,44 @@ You MUST return your answer strictly as a JSON object with this exact shape:
      "type": "UPDATE_NODE",
      "targetName": "existing_table_name",
      "renameTable": "new_name", // optional
-     "changeNodeType": "SqlTableNode", // optional, e.g. convert view to table
-     "addColumns": [
-       { "name": "new_column", "type": "VARCHAR(255)", "isNullable": true }
+     "changeNodeType": "SqlTableNode" | "NosqlCollectionNode", // optional
+     "addColumns": [ // For SQL tables
+       { "name": "new_column", "type": "VARCHAR(255)", "isNullable": true, "isForeignKey": true, "references": "other_table(id)" }
      ],
-     "removeColumns": ["old_col"] // optional
+     "addFields": [ // For NoSQL collections
+       { "name": "amount", "type": "Number" },
+       { "name": "status", "type": "String" },
+       { "name": "transactionId", "type": "String" }
+     ],
+     "removeColumns": ["old_col"], // optional
+     "removeFields": ["old_field"] // optional
    }
 
+=== CRITICAL: IMPLEMENTING SUGGESTED FIELDS & CONFIRMATIONS ===
+- When the user asks to analyze/improve a schema and you suggest missing fields (e.g. "payments lacks amount, status, transactionId"):
+  If the user responds with "implement this field", "add them", "ok", "yes", "apply", or "update payment model":
+  YOU MUST EMIT AN "UPDATE_NODE" ACTION with those exact fields in "addFields" (for NoSQL) or "addColumns" (for SQL) targeting that table.
+  NEVER merely claim in text that fields were added without returning the "UPDATE_NODE" in "canvasActions", because without "UPDATE_NODE" the canvas does not update!
+
 4. Connect two nodes:
-   {
-     "type": "CONNECT_NODES",
-     "sourceTable": "users",
-     "targetTable": "orders",
-     "cardinality": "1:N"
-   }
+   - Field-to-field connection (default for foreign keys):
+     {
+       "type": "CONNECT_NODES",
+       "sourceTable": "users",
+       "sourceColumn": "id",
+       "targetTable": "orders",
+       "targetColumn": "user_id",
+       "cardinality": "1:N"
+     }
+   - Model-level / Table-level connection (when user asks "not any specific field", "only on model", "connect models", or "do not connect to _id"):
+     {
+       "type": "CONNECT_NODES",
+       "sourceTable": "users",
+       "targetTable": "payments",
+       "connectToField": false,
+       "cardinality": "1:N"
+     }
+     IMPORTANT: If the user explicitly says "connect to user model not any specific field" or "only on model", set "connectToField": false so it connects directly to the model node header and NOT to _id or any field. Do NOT force an _id foreign key when user specifically asks not to connect fields.
 
 5. Auto-arrange canvas:
    {

@@ -47,6 +47,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import AgentStudioChatDrawer from "../_components/AgentStudioChatDrawer";
 import { toast } from "sonner";
 import { getAutoLayout, isDomainGroupNode } from "@/lib/autoLayout";
+import { resolveNodeFieldHandle, isFieldHandle } from "@/lib/fieldHandleResolver";
 import { DOMAIN_PRESETS, DomainPreset, DOMAIN_THEMES } from "@/lib/domainThemes";
 import { getSchemaType } from "@/lib/schemaClassifier";
 
@@ -246,11 +247,54 @@ export default function AgentBuilder() {
         });
 
         const isHorizontal = direction === "LR";
-        const updatedEdges = (nodeEdges || []).map((e: any) => ({
-          ...e,
-          sourceHandle: isHorizontal ? "right" : "bottom",
-          targetHandle: isHorizontal ? "left" : "top",
-        }));
+        const updatedEdges = (nodeEdges || []).map((e: any) => {
+          const hasSourceFieldHandle = isFieldHandle(e.sourceHandle);
+          const hasTargetFieldHandle = isFieldHandle(e.targetHandle);
+
+          // Preserve existing field connections if already wired to column/field handles
+          if (hasSourceFieldHandle && hasTargetFieldHandle) {
+            return e;
+          }
+
+          // Upgrade generic edges to field-level handles if table/collection nodes exist
+          const srcNode = (addedNodes || []).find((n: any) => n.id === e.source);
+          const tgtNode = (addedNodes || []).find((n: any) => n.id === e.target);
+          if (srcNode && tgtNode) {
+            const srcSide = isHorizontal ? "right" : "bottom";
+            const tgtSide = isHorizontal ? "left" : "top";
+            const srcH = resolveNodeFieldHandle(
+              srcNode,
+              e.data?.sourceColumn,
+              "parent",
+              srcSide as any,
+              tgtNode
+            );
+            const tgtH = resolveNodeFieldHandle(
+              tgtNode,
+              e.data?.targetColumn,
+              "child",
+              tgtSide as any,
+              srcNode
+            );
+
+            return {
+              ...e,
+              sourceHandle: srcH.handleId,
+              targetHandle: tgtH.handleId,
+              data: {
+                ...(e.data || {}),
+                sourceColumn: srcH.colName || e.data?.sourceColumn,
+                targetColumn: tgtH.colName || e.data?.targetColumn,
+              },
+            };
+          }
+
+          return {
+            ...e,
+            sourceHandle: isHorizontal ? "right" : "bottom",
+            targetHandle: isHorizontal ? "left" : "top",
+          };
+        });
 
         setAddedNodes(layout.nodes);
         setNodeEdges(updatedEdges);

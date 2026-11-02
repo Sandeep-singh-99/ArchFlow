@@ -10,6 +10,7 @@
  */
 
 import { getAutoLayout, isDomainGroupNode } from "./autoLayout";
+import { resolveNodeFieldHandle } from "./fieldHandleResolver";
 
 export interface ParsedMermaidResult {
   nodes: any[];
@@ -587,8 +588,31 @@ export function parseMermaidToReactFlow(
     const actualTargetId = tgtNode ? tgtNode.id : e.target;
 
     const isHorizontal = direction === "LR";
-    const sourceHandle = isHorizontal ? "right" : "bottom";
-    const targetHandle = isHorizontal ? "left" : "top";
+    let sourceHandle = isHorizontal ? "right" : "bottom";
+    let targetHandle = isHorizontal ? "left" : "top";
+    let sourceColName: string | undefined = undefined;
+    let targetColName: string | undefined = undefined;
+
+    if (srcNode && tgtNode) {
+      const srcH = resolveNodeFieldHandle(
+        srcNode,
+        undefined,
+        "parent",
+        (isHorizontal ? "right" : "bottom") as any,
+        tgtNode
+      );
+      const tgtH = resolveNodeFieldHandle(
+        tgtNode,
+        undefined,
+        "child",
+        (isHorizontal ? "left" : "top") as any,
+        srcNode
+      );
+      sourceHandle = srcH.handleId;
+      targetHandle = tgtH.handleId;
+      sourceColName = srcH.colName;
+      targetColName = tgtH.colName;
+    }
 
     rfEdges.push({
       id: `edge-${actualSourceId}-${actualTargetId}-${edgeIdx++}`,
@@ -602,6 +626,8 @@ export function parseMermaidToReactFlow(
         cardinality: e.cardinality || "1:N",
         sourceRelation: e.sourceRelation || "1",
         targetRelation: e.targetRelation || "N",
+        sourceColumn: sourceColName,
+        targetColumn: targetColName,
         label: e.label,
       },
     });
