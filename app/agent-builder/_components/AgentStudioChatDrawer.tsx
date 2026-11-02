@@ -78,6 +78,21 @@ export default function AgentStudioChatDrawer({
     toast.success("Short-term chat memory reset. Previous chats are not stored.");
   };
 
+  const handleAutoArrangeCanvas = () => {
+    if (!addedNodes || addedNodes.length === 0) return;
+    try {
+      const { nodes: layoutedNodes, edges: layoutedEdges } = getAutoLayout(
+        addedNodes,
+        nodeEdges || []
+      );
+      setAddedNodes(layoutedNodes);
+      setNodeEdges(layoutedEdges);
+      toast.success("Canvas auto-arranged! Overlaps fixed.");
+    } catch (e) {
+      toast.error("Failed to auto-arrange canvas.");
+    }
+  };
+
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
@@ -96,253 +111,385 @@ export default function AgentStudioChatDrawer({
   const applyCanvasActions = (actions: any[]) => {
     if (!Array.isArray(actions) || actions.length === 0) return;
 
-    setAddedNodes((prevNodes: any[]) => {
-      let currentNodes = [...(prevNodes || [])];
-      let currentEdges = [...(nodeEdges || [])];
-      let hasChanges = false;
-      const actionsLog: string[] = [];
+    let currentNodes = [...(addedNodes || [])];
+    let currentEdges = [...(nodeEdges || [])];
+    let hasChanges = false;
+    const actionsLog: string[] = [];
 
-      for (const action of actions) {
-        if (!action || !action.type) continue;
+    // Normalizes entity names: strips schema prefixes, column references, and _id/Id
+    const normalizeName = (str: string): string => {
+      if (!str) return "";
+      let s = str.toLowerCase().trim();
+      if (s.includes(".")) s = s.split(".")[0];
+      s = s.replace(/\(.*?\)/g, "").trim();
+      if (s.endsWith("_id")) {
+        s = s.slice(0, -3);
+      } else if (s.endsWith("id") && s.length > 2) {
+        s = s.slice(0, -2);
+      }
+      return s;
+    };
 
-        if (action.type === "DELETE_NODE") {
-          const target = (action.targetName || action.name || "").toLowerCase().trim();
-          if (!target) continue;
+    // Checks singular/plural and root equality between table names and reference queries
+    const isNameMatch = (nodeName: string, query: string): boolean => {
+      const n = normalizeName(nodeName);
+      const q = normalizeName(query);
+      if (!n || !q) return false;
+      if (n === q) return true;
+      if (`${n}s` === q || `${q}s` === n) return true;
+      if (`${n}es` === q || `${q}es` === n) return true;
+      if (n.replace(/ies$/, "y") === q || q.replace(/ies$/, "y") === n) return true;
+      if (n.replace(/y$/, "ies") === q || q.replace(/y$/, "ies") === n) return true;
+      return false;
+    };
 
-          const matchedNodes = currentNodes.filter((n: any) => {
-            const name = (n.data?.name || n.data?.tableName || n.data?.label || "").toLowerCase();
-            const id = (n.id || "").toLowerCase();
-            return name === target || id === target || id.includes(target);
-          });
+    // Robust multi-tier node resolver
+    const findNode = (nameOrId: string, nodesList: any[]): any => {
+      if (!nameOrId) return null;
+      const rawQ = nameOrId.toLowerCase().trim();
+      const qNorm = normalizeName(nameOrId);
 
-          if (matchedNodes.length > 0) {
-            const matchedIds = new Set(matchedNodes.map((n: any) => n.id));
-            currentNodes = currentNodes.filter((n: any) => !matchedIds.has(n.id));
-            currentEdges = currentEdges.filter(
-              (e: any) => !matchedIds.has(e.source) && !matchedIds.has(e.target)
-            );
-            hasChanges = true;
-            actionsLog.push(`Deleted "${target}"`);
-          }
-        } else if (action.type === "CREATE_NODE") {
-          const tableName = action.name || "new_table";
-          const nodeType =
-            action.nodeType || (schemaType === "nosql" ? "NosqlCollectionNode" : "SqlTableNode");
-          const cleanName = tableName.toLowerCase().replace(/[^a-z0-9_]/g, "_");
-          const newId = `${cleanName}-${Date.now()}`;
+      // 1. Exact match on table name or node ID
+      const exact = nodesList.find((n: any) => {
+        const name = (n.data?.name || n.data?.tableName || n.data?.label || "").toLowerCase().trim();
+        const id = (n.id || "").toLowerCase().trim();
+        return name === rawQ || id === rawQ;
+      });
+      if (exact) return exact;
 
-          let nodeData: any = {
-            label: tableName,
-            name: tableName,
-            schema: "public",
-          };
+      // 2. Normalized root/plural match
+      const normMatch = nodesList.find((n: any) => {
+        const name = (n.data?.name || n.data?.tableName || n.data?.label || "").toLowerCase().trim();
+        return isNameMatch(name, qNorm);
+      });
+      if (normMatch) return normMatch;
 
-          if (nodeType === "SqlTableNode") {
-            const rawCols =
-              action.columns && action.columns.length > 0
-                ? action.columns
-                : [{ name: "id", type: "UUID", isPrimaryKey: true, isNullable: false }];
+      // 3. ID prefix match (e.g. "users-174123" matches "users")
+      const idMatch = nodesList.find((n: any) => {
+        const id = (n.id || "").toLowerCase().trim();
+        return id.startsWith(`${qNorm}-`) || id.startsWith(`${rawQ}-`);
+      });
+      if (idMatch) return idMatch;
 
-            nodeData.columns = rawCols.map((col: any, idx: number) => ({
-              id: `col-${idx + 1}`,
-              name: col.name,
-              type: col.type || "VARCHAR(255)",
-              isPrimaryKey: !!col.isPrimaryKey,
-              isForeignKey: !!col.isForeignKey,
-              isUnique: !!col.isUnique,
-              isNullable: col.isNullable !== undefined ? col.isNullable : !col.isPrimaryKey,
-              defaultValue: col.defaultValue || "",
-            }));
-          } else if (nodeType === "SqlViewNode") {
-            nodeData.query = action.query || `SELECT * FROM users;`;
-            nodeData.columns = (action.columns || []).map((c: any) => c.name || c);
-          } else if (nodeType === "SqlIndexNode") {
-            nodeData.tableName = action.tableName || "";
-            nodeData.columns = (action.columns || []).map((c: any) => `${c.name || c} ASC`);
-          } else if (nodeType === "NosqlCollectionNode") {
-            const rawFields =
-              action.columns && action.columns.length > 0
-                ? action.columns
-                : [{ name: "_id", type: "ObjectId", required: true }];
-            nodeData.fields = rawFields.map((f: any) => ({
-              name: f.name,
-              type: f.type || "String",
-              required: !!f.isPrimaryKey || !f.isNullable,
-            }));
-          } else if (nodeType === "DbNoteNode" || nodeType === "TextNode") {
-            nodeData.text = action.text || action.name || "Note";
-          }
+      // 4. Substring fallback for names longer than 3 characters
+      if (qNorm.length >= 3) {
+        const subMatch = nodesList.find((n: any) => {
+          const name = (n.data?.name || n.data?.tableName || n.data?.label || "").toLowerCase().trim();
+          const id = (n.id || "").toLowerCase().trim();
+          return name.includes(qNorm) || id.includes(qNorm);
+        });
+        if (subMatch) return subMatch;
+      }
 
-          // Compute clean non-overlapping position without moving other nodes
-          let posX = 320;
-          let posY = 180;
+      return null;
+    };
 
-          const firstRelation = Array.isArray(action.relations) && action.relations[0];
-          if (firstRelation) {
-            const relTarget = (firstRelation.targetTable || "").toLowerCase().trim();
-            const relNode = currentNodes.find((n: any) => {
-              const name = (n.data?.name || n.data?.tableName || n.data?.label || "").toLowerCase();
-              return name === relTarget || n.id.toLowerCase().includes(relTarget);
-            });
-            if (relNode?.position) {
-              posX = (relNode.position.x || 300) + 360;
-              posY = relNode.position.y || 180;
-            }
-          } else if (currentNodes.length > 0) {
-            const lastNode = currentNodes[currentNodes.length - 1];
-            if (lastNode?.position) {
-              posX = (lastNode.position.x || 300) + 360;
-              posY = lastNode.position.y || 180;
-            }
-          }
+    // Pending relationships collection
+    const pendingRelations: Array<{
+      childTable: string;
+      parentTable: string;
+      cardinality?: string;
+    }> = [];
 
-          const newNode = {
-            id: newId,
-            type: nodeType,
-            position: { x: posX, y: posY },
-            data: nodeData,
-          };
+    // PASS 1: Node lifecycle (CREATE, DELETE, UPDATE)
+    for (const action of actions) {
+      if (!action || !action.type) continue;
 
-          currentNodes.push(newNode);
+      if (action.type === "DELETE_NODE") {
+        const target = (action.targetName || action.name || "").toLowerCase().trim();
+        if (!target) continue;
+
+        const matchedNodes = currentNodes.filter((n: any) => {
+          const name = (n.data?.name || n.data?.tableName || n.data?.label || "").toLowerCase();
+          const id = (n.id || "").toLowerCase();
+          return isNameMatch(name, target) || id.includes(target);
+        });
+
+        if (matchedNodes.length > 0) {
+          const matchedIds = new Set(matchedNodes.map((n: any) => n.id));
+          currentNodes = currentNodes.filter((n: any) => !matchedIds.has(n.id));
+          currentEdges = currentEdges.filter(
+            (e: any) => !matchedIds.has(e.source) && !matchedIds.has(e.target)
+          );
           hasChanges = true;
-          actionsLog.push(`Created "${tableName}"`);
+          actionsLog.push(`Deleted "${target}"`);
+        }
+      } else if (action.type === "CREATE_NODE") {
+        const tableName = action.name || "new_table";
+        const nodeType =
+          action.nodeType || (schemaType === "nosql" ? "NosqlCollectionNode" : "SqlTableNode");
+        const cleanName = tableName.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+        const newId = `${cleanName}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
 
-          // Automatically wire relations if target table exists
-          if (Array.isArray(action.relations)) {
-            for (const rel of action.relations) {
-              const tgtName = (rel.targetTable || "").toLowerCase().trim();
-              const targetNode = currentNodes.find((n: any) => {
-                const name = (n.data?.name || n.data?.tableName || n.data?.label || "").toLowerCase();
-                return name === tgtName || n.id.toLowerCase().includes(tgtName);
+        let nodeData: any = {
+          label: tableName,
+          name: tableName,
+          schema: "public",
+        };
+
+        if (nodeType === "SqlTableNode") {
+          const rawCols =
+            action.columns && action.columns.length > 0
+              ? action.columns
+              : [{ name: "id", type: "UUID", isPrimaryKey: true, isNullable: false }];
+
+          nodeData.columns = rawCols.map((col: any, idx: number) => ({
+            id: `col-${idx + 1}`,
+            name: col.name,
+            type: col.type || "VARCHAR(255)",
+            isPrimaryKey: !!col.isPrimaryKey || !!col.isPk,
+            isForeignKey: !!col.isForeignKey || !!col.isFk,
+            isUnique: !!col.isUnique,
+            isNullable: col.isNullable !== undefined ? col.isNullable : !col.isPrimaryKey,
+            defaultValue: col.defaultValue || "",
+          }));
+
+          // Discover relationships declared in columns
+          for (const col of rawCols) {
+            const refTarget =
+              col.references ||
+              col.referencesTable ||
+              col.targetTable ||
+              col.fkTarget;
+            if (refTarget) {
+              pendingRelations.push({
+                childTable: tableName,
+                parentTable: refTarget,
+                cardinality: "1:N",
               });
-
-              if (targetNode && targetNode.id !== newId) {
-                currentEdges.push({
-                  id: `edge-${newId}-${targetNode.id}`,
-                  source: newId,
-                  target: targetNode.id,
-                  type: "erRelationship",
-                  animated: true,
-                  data: { cardinality: rel.cardinality || "1:N" },
-                  label: rel.cardinality || "1:N",
-                  style: { stroke: "#10b981", strokeWidth: 2 },
-                });
-                actionsLog.push(`Connected to "${targetNode.data?.name || tgtName}"`);
-              }
+            } else if (col.isForeignKey || col.isFk) {
+              pendingRelations.push({
+                childTable: tableName,
+                parentTable: col.name,
+                cardinality: "1:N",
+              });
+            } else if (
+              typeof col.name === "string" &&
+              (col.name.endsWith("_id") || col.name.endsWith("Id")) &&
+              !col.isPrimaryKey &&
+              !col.isPk &&
+              col.name !== "id" &&
+              col.name !== "_id"
+            ) {
+              pendingRelations.push({
+                childTable: tableName,
+                parentTable: col.name,
+                cardinality: "1:N",
+              });
             }
           }
-        } else if (action.type === "UPDATE_NODE") {
-          const target = (action.targetName || action.name || "").toLowerCase().trim();
-          if (!target) continue;
+        } else if (nodeType === "SqlViewNode") {
+          nodeData.query = action.query || `SELECT * FROM users;`;
+          nodeData.columns = (action.columns || []).map((c: any) => c.name || c);
+        } else if (nodeType === "SqlIndexNode") {
+          nodeData.tableName = action.tableName || "";
+          nodeData.columns = (action.columns || []).map((c: any) => `${c.name || c} ASC`);
+        } else if (nodeType === "NosqlCollectionNode") {
+          const rawFields =
+            action.columns && action.columns.length > 0
+              ? action.columns
+              : [{ name: "_id", type: "ObjectId", required: true }];
+          nodeData.fields = rawFields.map((f: any) => ({
+            name: f.name,
+            type: f.type || "String",
+            required: !!f.isPrimaryKey || !f.isNullable,
+          }));
 
-          let updated = false;
-          currentNodes = currentNodes.map((n: any) => {
-            const name = (n.data?.name || n.data?.tableName || n.data?.label || "").toLowerCase();
-            if (name === target || n.id.toLowerCase().includes(target)) {
-              updated = true;
-              const updatedData = { ...n.data };
-
-              if (action.renameTable) {
-                updatedData.name = action.renameTable;
-                updatedData.label = action.renameTable;
-              }
-
-              if (Array.isArray(action.addColumns) && action.addColumns.length > 0) {
-                const existingCols = updatedData.columns || [];
-                const newCols = action.addColumns.map((col: any, idx: number) => ({
-                  id: `col-${Date.now()}-${idx}`,
-                  name: col.name,
-                  type: col.type || "VARCHAR(255)",
-                  isPrimaryKey: !!col.isPrimaryKey,
-                  isForeignKey: !!col.isForeignKey,
-                  isUnique: !!col.isUnique,
-                  isNullable: col.isNullable !== undefined ? col.isNullable : true,
-                  defaultValue: col.defaultValue || "",
-                }));
-                updatedData.columns = [...existingCols, ...newCols];
-              }
-
-              if (Array.isArray(action.removeColumns) && action.removeColumns.length > 0) {
-                const toRemove = new Set(action.removeColumns.map((c: string) => c.toLowerCase()));
-                updatedData.columns = (updatedData.columns || []).filter(
-                  (c: any) => !toRemove.has(c.name?.toLowerCase())
-                );
-              }
-
-              return {
-                ...n,
-                type: action.changeNodeType || n.type,
-                data: updatedData,
-              };
+          // Discover relationships in NoSQL fields (e.g. user_id, category_id)
+          for (const f of rawFields) {
+            if (
+              typeof f.name === "string" &&
+              (f.name.endsWith("_id") || f.name.endsWith("Id")) &&
+              f.name !== "_id" &&
+              f.name !== "id"
+            ) {
+              pendingRelations.push({
+                childTable: tableName,
+                parentTable: f.name,
+                cardinality: "1:N",
+              });
             }
-            return n;
-          });
-
-          if (updated) {
-            hasChanges = true;
-            actionsLog.push(`Updated "${target}"`);
           }
-        } else if (action.type === "CONNECT_NODES") {
-          const srcName = (action.sourceTable || "").toLowerCase().trim();
-          const tgtName = (action.targetTable || "").toLowerCase().trim();
+        } else if (nodeType === "DbNoteNode" || nodeType === "TextNode") {
+          nodeData.text = action.text || action.name || "Note";
+        }
 
-          const srcNode = currentNodes.find((n: any) => {
-            const name = (n.data?.name || n.data?.tableName || n.data?.label || "").toLowerCase();
-            return name === srcName || n.id.toLowerCase().includes(srcName);
-          });
+        // Calculate staggered coordinates
+        let desiredX = 100;
+        let desiredY = 100;
+        if (currentNodes.length > 0) {
+          const last = currentNodes[currentNodes.length - 1];
+          desiredX = (last.position?.x || 100) + 360;
+          desiredY = last.position?.y || 100;
+        }
 
-          const tgtNode = currentNodes.find((n: any) => {
-            const name = (n.data?.name || n.data?.tableName || n.data?.label || "").toLowerCase();
-            return name === tgtName || n.id.toLowerCase().includes(tgtName);
-          });
+        const newNode = {
+          id: newId,
+          type: nodeType,
+          position: { x: Math.round(desiredX), y: Math.round(desiredY) },
+          data: nodeData,
+        };
 
-          if (srcNode && tgtNode) {
-            currentEdges.push({
-              id: `edge-${srcNode.id}-${tgtNode.id}`,
-              source: srcNode.id,
-              target: tgtNode.id,
-              type: "erRelationship",
-              animated: true,
-              data: { cardinality: action.cardinality || "1:N" },
-              label: action.cardinality || "1:N",
-              style: { stroke: "#10b981", strokeWidth: 2 },
-            });
-            hasChanges = true;
-            actionsLog.push(`Connected "${srcName}" to "${tgtName}"`);
+        currentNodes.push(newNode);
+        hasChanges = true;
+        actionsLog.push(`Created "${tableName}"`);
+
+        // Register relationships from action.relations
+        if (Array.isArray(action.relations)) {
+          for (const rel of action.relations) {
+            const target =
+              typeof rel === "string"
+                ? rel
+                : rel.targetTable || rel.table || rel.target || rel.to || rel.references;
+            if (target) {
+              pendingRelations.push({
+                childTable: tableName,
+                parentTable: target,
+                cardinality: typeof rel === "object" ? rel.cardinality || "1:N" : "1:N",
+              });
+            }
           }
-        } else if (action.type === "AUTO_LAYOUT") {
+        }
+      } else if (action.type === "UPDATE_NODE") {
+        const target = (action.targetName || action.name || "").toLowerCase().trim();
+        if (!target) continue;
+
+        let updated = false;
+        currentNodes = currentNodes.map((n: any) => {
+          const name = (n.data?.name || n.data?.tableName || n.data?.label || "").toLowerCase();
+          if (isNameMatch(name, target) || n.id.toLowerCase().includes(target)) {
+            updated = true;
+            const updatedData = { ...n.data };
+
+            if (action.renameTable) {
+              updatedData.name = action.renameTable;
+              updatedData.label = action.renameTable;
+            }
+
+            if (Array.isArray(action.addColumns) && action.addColumns.length > 0) {
+              const existingCols = updatedData.columns || [];
+              const newCols = action.addColumns.map((col: any, idx: number) => ({
+                id: `col-${Date.now()}-${idx}`,
+                name: col.name,
+                type: col.type || "VARCHAR(255)",
+                isPrimaryKey: !!col.isPrimaryKey || !!col.isPk,
+                isForeignKey: !!col.isForeignKey || !!col.isFk,
+                isUnique: !!col.isUnique,
+                isNullable: col.isNullable !== undefined ? col.isNullable : true,
+                defaultValue: col.defaultValue || "",
+              }));
+              updatedData.columns = [...existingCols, ...newCols];
+            }
+
+            if (Array.isArray(action.removeColumns) && action.removeColumns.length > 0) {
+              const toRemove = new Set(action.removeColumns.map((c: string) => c.toLowerCase()));
+              updatedData.columns = (updatedData.columns || []).filter(
+                (c: any) => !toRemove.has(c.name?.toLowerCase())
+              );
+            }
+
+            return {
+              ...n,
+              type: action.changeNodeType || n.type,
+              data: updatedData,
+            };
+          }
+          return n;
+        });
+
+        if (updated) {
           hasChanges = true;
-          actionsLog.push("Auto-arranged canvas");
+          actionsLog.push(`Updated "${target}"`);
+        }
+      } else if (action.type === "CONNECT_NODES") {
+        const source = action.sourceTable || action.source || action.from;
+        const target = action.targetTable || action.target || action.to;
+        if (source && target) {
+          pendingRelations.push({
+            parentTable: source,
+            childTable: target,
+            cardinality: action.cardinality || "1:N",
+          });
+        }
+      }
+    }
+
+    // PASS 2: Wire all relationships (all nodes now exist in currentNodes!)
+    for (const rel of pendingRelations) {
+      let parentNode = findNode(rel.parentTable, currentNodes);
+      let childNode = findNode(rel.childTable, currentNodes);
+
+      if (parentNode && childNode && parentNode.id !== childNode.id) {
+        // Automatically verify/orient parent vs child:
+        // If parentNode actually contains a foreign key pointing to childNode, swap them!
+        const parentCols = parentNode.data?.columns || [];
+        const parentHasFkToChild = parentCols.some(
+          (c: any) =>
+            isNameMatch(childNode.data?.name || childNode.id, c.name) ||
+            isNameMatch(childNode.data?.name || childNode.id, c.references || "")
+        );
+        if (parentHasFkToChild) {
+          const temp = parentNode;
+          parentNode = childNode;
+          childNode = temp;
+        }
+
+        const edgeId = `edge-${parentNode.id}-${childNode.id}`;
+
+        // Avoid duplicate edges
+        const edgeExists = currentEdges.some(
+          (e: any) =>
+            (e.source === parentNode.id && e.target === childNode.id) ||
+            (e.source === childNode.id && e.target === parentNode.id)
+        );
+
+        if (!edgeExists) {
+          currentEdges.push({
+            id: edgeId,
+            source: parentNode.id,
+            target: childNode.id,
+            sourceHandle: "right",
+            targetHandle: "left",
+            type: "erRelationship",
+            animated: true,
+            data: { cardinality: rel.cardinality || "1:N" },
+            label: rel.cardinality || "1:N",
+            style: { stroke: "#10b981", strokeWidth: 2 },
+          });
+          hasChanges = true;
+          actionsLog.push(
+            `Connected "${parentNode.data?.name || parentNode.id}" → "${childNode.data?.name || childNode.id}"`
+          );
+        }
+      }
+    }
+
+    // PASS 3: Dagre auto-layout & state update
+    if (hasChanges) {
+      const createdCount = actions.filter((a) => a.type === "CREATE_NODE").length;
+      const shouldAutoLayout =
+        actions.some((a) => a.type === "AUTO_LAYOUT") ||
+        createdCount >= 2 ||
+        pendingRelations.length > 0;
+
+      if (shouldAutoLayout) {
+        try {
+          const { nodes: layoutedNodes, edges: layoutedEdges } = getAutoLayout(
+            currentNodes,
+            currentEdges,
+            { direction: "LR", nodeSep: 90, rankSep: 140 }
+          );
+          currentNodes = layoutedNodes;
+          currentEdges = layoutedEdges;
+        } catch (e) {
+          console.error("Auto layout error:", e);
         }
       }
 
-      if (hasChanges) {
-        setNodeEdges(currentEdges);
-
-        // ONLY trigger Dagre auto-layout if user explicitly asked for AUTO_LAYOUT
-        const shouldAutoLayout = actions.some((a) => a.type === "AUTO_LAYOUT");
-        if (shouldAutoLayout) {
-          try {
-            const { nodes: layoutedNodes, edges: layoutedEdges } = getAutoLayout(
-              currentNodes,
-              currentEdges
-            );
-            setNodeEdges(layoutedEdges);
-            toast.success(actionsLog.join(" • "));
-            return layoutedNodes;
-          } catch (e) {
-            toast.success(actionsLog.join(" • "));
-            return currentNodes;
-          }
-        }
-
-        // PRESERVE user's manual layout: Keep all existing nodes exactly where they were
-        toast.success(actionsLog.join(" • "));
-        return currentNodes;
-      }
-
-      return prevNodes;
-    });
+      setAddedNodes(currentNodes);
+      setNodeEdges(currentEdges);
+      toast.success(actionsLog.join(" • "));
+    }
   };
 
   const handleSendMessage = async (textToSend?: string) => {
@@ -490,15 +637,20 @@ export default function AgentStudioChatDrawer({
         </div>
       </div>
 
-      {/* Canvas Context Live Indicator */}
+      {/* Canvas Context Live Indicator with 1-click Auto-Arrange */}
       <div className="px-3.5 py-1.5 bg-emerald-500/5 border-b border-emerald-500/10 flex items-center justify-between text-[11px] text-muted-foreground">
         <div className="flex items-center gap-1.5 text-emerald-500 font-medium">
           <Database className="h-3.5 w-3.5" />
-          <span>Canvas Context Linked</span>
+          <span>Canvas Linked ({addedNodes?.length || 0})</span>
         </div>
-        <div className="font-mono text-[10px]">
-          {addedNodes?.length || 0} objects • {nodeEdges?.length || 0} flows
-        </div>
+        <button
+          onClick={handleAutoArrangeCanvas}
+          className="flex items-center gap-1 px-2 py-0.5 rounded bg-muted/70 hover:bg-emerald-500/10 hover:text-emerald-400 text-[10px] font-medium border border-border/70 transition-colors cursor-pointer"
+          title="Auto-arrange canvas to eliminate node overlaps"
+        >
+          <Sparkles className="h-3 w-3 text-emerald-400" />
+          <span>Fix Overlaps</span>
+        </button>
       </div>
 
       {/* Message History */}
