@@ -59,6 +59,10 @@ export default function PricingPage() {
     description: string;
     monthlyPrice: number;
     yearlyPrice: number;
+    originalMonthlyPrice?: number;
+    originalYearlyPrice?: number;
+    discountPercent?: number;
+    expiryDate?: string;
     currency?: string;
     validityDays?: number;
     tokenQuota?: number;
@@ -68,7 +72,14 @@ export default function PricingPage() {
       return;
     }
 
-    const price = billingCycle === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
+    const isDiscountExpired = Boolean(
+      plan.expiryDate && new Date(`${plan.expiryDate}T23:59:59`).getTime() < Date.now()
+    );
+    const hasActiveDiscount = Boolean(plan.discountPercent && plan.discountPercent > 0 && !isDiscountExpired);
+
+    const price = billingCycle === "yearly"
+      ? (hasActiveDiscount ? plan.yearlyPrice : (plan.originalYearlyPrice ?? plan.yearlyPrice))
+      : (hasActiveDiscount ? plan.monthlyPrice : (plan.originalMonthlyPrice ?? plan.monthlyPrice));
 
     if (price === 0) {
       toast.info("You already have access to the Free Starter plan");
@@ -248,6 +259,7 @@ export default function PricingPage() {
             discountPercent: undefined as number | undefined,
             originalMonthlyPrice: undefined as number | undefined,
             originalYearlyPrice: undefined as number | undefined,
+            expiryDate: undefined as string | undefined,
           },
           {
             _id: "default-pro",
@@ -272,6 +284,7 @@ export default function PricingPage() {
             discountPercent: undefined as number | undefined,
             originalMonthlyPrice: undefined as number | undefined,
             originalYearlyPrice: undefined as number | undefined,
+            expiryDate: undefined as string | undefined,
           },
           {
             _id: "default-ai",
@@ -298,6 +311,7 @@ export default function PricingPage() {
             discountPercent: undefined as number | undefined,
             originalMonthlyPrice: undefined as number | undefined,
             originalYearlyPrice: undefined as number | undefined,
+            expiryDate: undefined as string | undefined,
           },
         ];
 
@@ -384,7 +398,16 @@ export default function PricingPage() {
             (currentSub === "active" && plan.planCode === "pro") ||
             (currentSub === "ai_unlimited" && plan.planCode === "ai");
 
-          const price = billingCycle === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
+          const isDiscountExpired = Boolean(
+            plan.expiryDate && new Date(`${plan.expiryDate}T23:59:59`).getTime() < Date.now()
+          );
+          const hasActiveDiscount = Boolean(plan.discountPercent && plan.discountPercent > 0 && !isDiscountExpired);
+
+          const price = billingCycle === "yearly"
+            ? (hasActiveDiscount ? plan.yearlyPrice : (plan.originalYearlyPrice ?? plan.yearlyPrice))
+            : (hasActiveDiscount ? plan.monthlyPrice : (plan.originalMonthlyPrice ?? plan.monthlyPrice));
+
+          const originalPrice = billingCycle === "yearly" ? plan.originalYearlyPrice : plan.originalMonthlyPrice;
           const isProcessing = processingPlanId === String(plan._id || plan.planCode);
 
           return (
@@ -432,15 +455,25 @@ export default function PricingPage() {
                         /{billingCycle === "yearly" ? "year" : "month"}
                       </span>
                     </div>
-                    {plan.discountPercent && plan.discountPercent > 0 && (
+                    {hasActiveDiscount && plan.discountPercent && (
                       <Badge className="bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-mono font-bold px-2 py-0.5">
                         {plan.discountPercent}% OFF
                       </Badge>
                     )}
                   </div>
-                  {plan.discountPercent && plan.discountPercent > 0 && (billingCycle === "yearly" ? plan.originalYearlyPrice : plan.originalMonthlyPrice) && (
-                    <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
-                      Original: <span className="line-through">₹{(billingCycle === "yearly" ? plan.originalYearlyPrice : plan.originalMonthlyPrice)?.toLocaleString()}</span>
+                  {hasActiveDiscount && originalPrice && (
+                    <div className="text-[11px] text-zinc-500 font-mono mt-0.5 flex items-center gap-1.5 flex-wrap">
+                      <span>Original: <span className="line-through">₹{originalPrice.toLocaleString()}</span></span>
+                      {plan.expiryDate && (
+                        <span className="text-amber-400/90 font-medium">
+                          • Discount ends {plan.expiryDate}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {isDiscountExpired && plan.expiryDate && (
+                    <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                      Promotional discount ended on {plan.expiryDate}
                     </p>
                   )}
                   {billingCycle === "yearly" && price > 0 && (

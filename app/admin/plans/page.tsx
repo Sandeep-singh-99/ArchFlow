@@ -411,107 +411,136 @@ export default function AdminPlansPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {plans.map((plan) => (
-            <Card
-              key={plan._id}
-              className={`flex flex-col border transition-all duration-200 rounded-2xl ${
-                plan.isActive
-                  ? "border-border bg-card/90 shadow-md hover:border-amber-400/40"
-                  : "border-border/40 bg-card/30 opacity-70"
-              }`}
-            >
-              {/* Card Header */}
-              <CardHeader className="space-y-2 pb-4 border-b border-border/40">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg font-bold">{plan.name}</CardTitle>
-                    {plan.badge && (
-                      <Badge className="text-[10px] uppercase font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                        {plan.badge}
-                      </Badge>
+          {plans.map((plan) => {
+            const isExpired = Boolean(
+              plan.expiryDate && new Date(`${plan.expiryDate}T23:59:59`).getTime() < Date.now()
+            );
+            const hasActiveDiscount = Boolean(plan.discountPercent && plan.discountPercent > 0 && !isExpired);
+
+            return (
+              <Card
+                key={plan._id}
+                className={`flex flex-col border transition-all duration-200 rounded-2xl ${
+                  plan.isActive
+                    ? "border-border bg-card/90 shadow-md hover:border-amber-400/40"
+                    : "border-border/40 bg-card/30 opacity-70"
+                }`}
+              >
+                {/* Card Header */}
+                <CardHeader className="space-y-2 pb-4 border-b border-border/40">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg font-bold">{plan.name}</CardTitle>
+                      {plan.badge && (
+                        <Badge className="text-[10px] uppercase font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                          {plan.badge}
+                        </Badge>
+                      )}
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] font-mono capitalize ${
+                        plan.isActive
+                          ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+                          : "border-zinc-700 text-zinc-500 bg-zinc-800/20"
+                      }`}
+                    >
+                      {plan.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                  <CardDescription className="text-xs text-muted-foreground line-clamp-2">
+                    {plan.description || "No description provided."}
+                  </CardDescription>
+                  <div className="flex items-center gap-2 pt-1 text-[11px] font-mono text-muted-foreground flex-wrap">
+                    <span className="px-2 py-0.5 rounded bg-muted/60 border border-border">
+                      code: {plan.planCode}
+                    </span>
+                    {plan.expiryDate && (
+                      <span
+                        className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border ${
+                          isExpired
+                            ? "text-rose-400 bg-rose-500/10 border-rose-500/25 line-through"
+                            : "text-amber-400 bg-amber-500/10 border-amber-500/25"
+                        }`}
+                        title={isExpired ? "Promotional discount has expired" : `Discount ends on ${plan.expiryDate}`}
+                      >
+                        <Calendar className="h-3 w-3" />
+                        {isExpired ? `Discount Ended: ${plan.expiryDate}` : `Discount Ends: ${plan.expiryDate}`}
+                      </span>
                     )}
                   </div>
-                  <Badge
-                    variant="outline"
-                    className={`text-[10px] font-mono capitalize ${
-                      plan.isActive
-                        ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
-                        : "border-zinc-700 text-zinc-500 bg-zinc-800/20"
-                    }`}
-                  >
-                    {plan.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                </div>
-                <CardDescription className="text-xs text-muted-foreground line-clamp-2">
-                  {plan.description || "No description provided."}
-                </CardDescription>
-                <div className="flex items-center gap-2 pt-1 text-[11px] font-mono text-muted-foreground">
-                  <span className="px-2 py-0.5 rounded bg-muted/60 border border-border">
-                    code: {plan.planCode}
-                  </span>
-                  {plan.expiryDate && (
-                    <span className="flex items-center gap-1 text-amber-400/90">
-                      <Calendar className="h-3 w-3" />
-                      Exp: {plan.expiryDate}
-                    </span>
-                  )}
-                </div>
-              </CardHeader>
+                </CardHeader>
 
-              {/* Pricing & Validity Section */}
-              <CardContent className="flex-1 space-y-4 pt-4 text-xs">
-                {/* Price Display */}
-                <div className="p-3 rounded-xl bg-muted/30 border border-border/60 space-y-2">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-muted-foreground">Monthly:</span>
-                    <div className="text-right">
-                      {plan.discountPercent && plan.originalMonthlyPrice ? (
-                        <div className="flex items-center gap-1.5 justify-end">
-                          <span className="line-through text-[11px] text-zinc-500 font-mono">
-                            ₹{plan.originalMonthlyPrice.toLocaleString()}
-                          </span>
+                {/* Pricing & Validity Section */}
+                <CardContent className="flex-1 space-y-4 pt-4 text-xs">
+                  {/* Price Display */}
+                  <div className="p-3 rounded-xl bg-muted/30 border border-border/60 space-y-2">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-muted-foreground">Monthly:</span>
+                      <div className="text-right">
+                        {hasActiveDiscount && plan.originalMonthlyPrice ? (
+                          <div className="flex items-center gap-1.5 justify-end">
+                            <span className="line-through text-[11px] text-zinc-500 font-mono">
+                              ₹{plan.originalMonthlyPrice.toLocaleString()}
+                            </span>
+                            <span className="text-lg font-extrabold font-mono text-foreground">
+                              ₹{plan.monthlyPrice.toLocaleString()}{" "}
+                              <span className="text-[11px] font-normal text-muted-foreground">/mo</span>
+                            </span>
+                          </div>
+                        ) : isExpired && plan.originalMonthlyPrice ? (
+                          <div className="flex items-center gap-1.5 justify-end">
+                            <span className="text-lg font-extrabold font-mono text-foreground">
+                              ₹{plan.originalMonthlyPrice.toLocaleString()}{" "}
+                              <span className="text-[11px] font-normal text-muted-foreground">/mo</span>
+                            </span>
+                          </div>
+                        ) : (
                           <span className="text-lg font-extrabold font-mono text-foreground">
                             ₹{plan.monthlyPrice.toLocaleString()}{" "}
                             <span className="text-[11px] font-normal text-muted-foreground">/mo</span>
                           </span>
-                        </div>
-                      ) : (
-                        <span className="text-lg font-extrabold font-mono text-foreground">
-                          ₹{plan.monthlyPrice.toLocaleString()}{" "}
-                          <span className="text-[11px] font-normal text-muted-foreground">/mo</span>
-                        </span>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-baseline justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-muted-foreground">Yearly:</span>
-                      {plan.discountPercent ? (
-                        <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/25">
-                          {plan.discountPercent}% OFF
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="text-right">
-                      {plan.discountPercent && plan.originalYearlyPrice ? (
-                        <div className="flex items-center gap-1.5 justify-end">
-                          <span className="line-through text-[10px] text-zinc-500 font-mono">
-                            ₹{plan.originalYearlyPrice.toLocaleString()}
+                    <div className="flex items-baseline justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-muted-foreground">Yearly:</span>
+                        {hasActiveDiscount && plan.discountPercent ? (
+                          <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/25">
+                            {plan.discountPercent}% OFF
                           </span>
+                        ) : isExpired && plan.discountPercent ? (
+                          <span className="text-[10px] font-mono text-zinc-500 bg-muted px-1.5 py-0.2 rounded border border-border">
+                            Promo Expired
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="text-right">
+                        {hasActiveDiscount && plan.originalYearlyPrice ? (
+                          <div className="flex items-center gap-1.5 justify-end">
+                            <span className="line-through text-[10px] text-zinc-500 font-mono">
+                              ₹{plan.originalYearlyPrice.toLocaleString()}
+                            </span>
+                            <span className="text-sm font-bold font-mono text-amber-400">
+                              ₹{plan.yearlyPrice.toLocaleString()}{" "}
+                              <span className="text-[10px] font-normal text-muted-foreground">/yr</span>
+                            </span>
+                          </div>
+                        ) : isExpired && plan.originalYearlyPrice ? (
+                          <span className="text-sm font-bold font-mono text-amber-400">
+                            ₹{plan.originalYearlyPrice.toLocaleString()}{" "}
+                            <span className="text-[10px] font-normal text-muted-foreground">/yr</span>
+                          </span>
+                        ) : (
                           <span className="text-sm font-bold font-mono text-amber-400">
                             ₹{plan.yearlyPrice.toLocaleString()}{" "}
                             <span className="text-[10px] font-normal text-muted-foreground">/yr</span>
                           </span>
-                        </div>
-                      ) : (
-                        <span className="text-sm font-bold font-mono text-amber-400">
-                          ₹{plan.yearlyPrice.toLocaleString()}{" "}
-                          <span className="text-[10px] font-normal text-muted-foreground">/yr</span>
-                        </span>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
                 {/* Quotas & Validity */}
                 <div className="grid grid-cols-2 gap-2 text-[11px]">
@@ -618,7 +647,8 @@ export default function AdminPlansPage() {
                 </div>
               </CardFooter>
             </Card>
-          ))}
+          );
+        })}
         </div>
       )}
 
@@ -935,14 +965,26 @@ export default function AdminPlansPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Expiry Sunset Info */}
+                    {formData.expiryDate && (
+                      <div className="text-[11px] font-mono flex items-center gap-1.5 pt-1.5 border-t border-amber-500/20">
+                        <Calendar className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                        <span className={new Date(`${formData.expiryDate}T23:59:59`).getTime() < Date.now() ? "text-rose-400 font-semibold" : "text-amber-300"}>
+                          {new Date(`${formData.expiryDate}T23:59:59`).getTime() < Date.now()
+                            ? `⚠️ Date (${formData.expiryDate}) has already passed — discount will be considered expired.`
+                            : `Promotional discount valid until ${formData.expiryDate}. After this date, discount ends and checkout returns to base price (₹${Number(formData.monthlyPrice).toLocaleString()}/mo & ₹${Number(formData.yearlyPrice).toLocaleString()}/yr).`}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 <div className="sm:col-span-2 lg:col-span-5 space-y-1.5 pt-1 border-t border-border/40">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="expiryDate" className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                      <Calendar className="h-3.5 w-3.5 text-sky-400" />
-                      Fixed Promotional Sunset / Campaign Deadline (Optional)
+                      <Calendar className="h-3.5 w-3.5 text-amber-400" />
+                      Discount End Date / Promotional Sunset (Optional)
                     </Label>
                     {formData.expiryDate && (
                       <button
@@ -961,6 +1003,9 @@ export default function AdminPlansPage() {
                     onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
                     className="text-xs font-mono"
                   />
+                  <p className="text-[11px] text-muted-foreground">
+                    Set a promotional sunset date. Once this date is reached, the discount automatically ends and user checkout reverts to the full base price.
+                  </p>
                 </div>
               </div>
             </div>
