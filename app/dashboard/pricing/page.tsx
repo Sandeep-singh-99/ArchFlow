@@ -27,6 +27,66 @@ import { Id } from "@/convex/_generated/dataModel";
 import { UserDetailContext } from "@/context/UserDetailContext";
 import { loadRazorpayScript, RazorpayCheckoutOptions } from "@/lib/razorpayClient";
 
+// Helper to format promotional sunset dates cleanly (e.g. "Nov 5, 2026")
+function formatExpiryDate(dateStr: string): string {
+  try {
+    const parts = dateStr.split("-");
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const date = new Date(year, month, day);
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    }
+    const d = new Date(dateStr);
+    return isNaN(d.getTime())
+      ? dateStr
+      : d.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+  } catch {
+    return dateStr;
+  }
+}
+
+// Helper to calculate urgency pill label (e.g. "Ends Today", "Ends Tomorrow", "3 days left")
+function getExpiryUrgency(dateStr: string): { label: string; isUrgent: boolean } {
+  try {
+    const target = new Date(`${dateStr}T23:59:59`).getTime();
+    const now = Date.now();
+    const diffMs = target - now;
+    if (diffMs <= 0) return { label: "Expired", isUrgent: false };
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays <= 1) return { label: "Ends Today", isUrgent: true };
+    if (diffDays === 2) return { label: "Ends Tomorrow", isUrgent: true };
+    if (diffDays <= 7) return { label: `${diffDays} days left`, isUrgent: true };
+    return { label: `${diffDays} days left`, isUrgent: false };
+  } catch {
+    return { label: "Limited Time", isUrgent: false };
+  }
+}
+
+// Flexible matcher for comparison features with backward compatibility
+function matchFeature(feature: string, targetLabel: string): boolean {
+  const f = feature.toLowerCase().trim();
+  const t = targetLabel.toLowerCase().trim();
+  if (f.includes(t) || t.includes(f.replace(" (full access)", ""))) return true;
+  if (
+    t.includes("sql") &&
+    t.includes("nosql") &&
+    (f.includes("postgresql") || f.includes("mysql") || (f.includes("sql") && f.includes("nosql")))
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export default function PricingPage() {
   const { user, isLoaded: isUserLoaded } = useUser();
   const { userDetails, setUserDetails } = useContext(UserDetailContext);
@@ -227,7 +287,7 @@ export default function PricingPage() {
   // The 7 canonical features that appear in the Detailed Plan Comparison table
   const COMPARISON_FEATURES: { label: string; ai?: boolean }[] = [
     { label: "React Flow Visual Canvas" },
-    { label: "PostgreSQL & MySQL DDL Export" },
+    { label: "Export SQL & NoSQL DDL" },
     { label: "Multi-Domain Grouping" },
     { label: "CASCADE Drop Simulator" },
     { label: "Prisma ORM & SQLite Export" },
@@ -251,7 +311,7 @@ export default function PricingPage() {
             validityDays: 365,
             features: [
               "React Flow Visual Canvas",
-              "PostgreSQL & MySQL DDL Export",
+              "Export SQL & NoSQL DDL",
             ],
             tokenQuota: 5000,
             projectQuota: 1,
@@ -273,7 +333,7 @@ export default function PricingPage() {
             badge: "POPULAR",
             features: [
               "React Flow Visual Canvas",
-              "PostgreSQL & MySQL DDL Export",
+              "Export SQL & NoSQL DDL",
               "Multi-Domain Grouping",
               "CASCADE Drop Simulator",
               "Prisma ORM & SQLite Export",
@@ -298,7 +358,7 @@ export default function PricingPage() {
             badge: "ULTIMATE",
             features: [
               "React Flow Visual Canvas",
-              "PostgreSQL & MySQL DDL Export",
+              "Export SQL & NoSQL DDL",
               "Multi-Domain Grouping",
               "CASCADE Drop Simulator",
               "Prisma ORM & SQLite Export",
@@ -507,9 +567,7 @@ export default function PricingPage() {
                 <ul className="space-y-2.5 text-xs">
                   {COMPARISON_FEATURES.map(({ label, ai }) => {
                     const included = plan.features.some(
-                      (f) =>
-                        f.toLowerCase().includes(label.toLowerCase()) ||
-                        label.toLowerCase().includes(f.replace(" (Full Access)", "").toLowerCase())
+                      (f) => matchFeature(f, label)
                     );
                     return (
                       <li key={label} className={`flex items-start gap-2.5 ${included ? "text-foreground/90" : "text-zinc-500"}`}>
@@ -697,9 +755,7 @@ export default function PricingPage() {
                   </td>
                   {displayPlans.map((plan) => {
                     const included = plan.features.some(
-                      (f) =>
-                        f.toLowerCase().includes(label.toLowerCase()) ||
-                        label.toLowerCase().includes(f.replace(" (Full Access)", "").toLowerCase())
+                      (f) => matchFeature(f, label)
                     );
                     return (
                       <td

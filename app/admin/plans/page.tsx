@@ -67,13 +67,29 @@ interface PlanFormData {
 /** Canonical 7 features that map 1-to-1 with the Detailed Plan Comparison table */
 const COMPARISON_FEATURES: { label: string; ai?: boolean }[] = [
   { label: "React Flow Visual Canvas" },
-  { label: "PostgreSQL & MySQL DDL Export" },
+  { label: "Export SQL & NoSQL DDL" },
   { label: "Multi-Domain Grouping" },
   { label: "CASCADE Drop Simulator" },
   { label: "Prisma ORM & SQLite Export" },
   { label: "AI Prompt-to-Schema Copilot", ai: true },
   { label: "AI Agent Chat & Tool Execution", ai: true },
 ];
+
+/** Flexible matcher for comparison features, including backward compatibility */
+const matchFeature = (feature: string, targetLabel: string): boolean => {
+  const f = feature.toLowerCase().trim();
+  const t = targetLabel.toLowerCase().trim();
+  if (f.includes(t) || t.includes(f.replace(" (full access)", ""))) return true;
+  // Backward compatibility for DDL Export rename
+  if (
+    t.includes("sql") &&
+    t.includes("nosql") &&
+    (f.includes("postgresql") || f.includes("mysql") || (f.includes("sql") && f.includes("nosql")))
+  ) {
+    return true;
+  }
+  return false;
+};
 
 const DEFAULT_FORM: PlanFormData = {
   name: "",
@@ -89,7 +105,7 @@ const DEFAULT_FORM: PlanFormData = {
   expiryDate: "",
   features: [
     "React Flow Visual Canvas",
-    "PostgreSQL & MySQL DDL Export",
+    "Export SQL & NoSQL DDL",
     "Multi-Domain Grouping",
     "CASCADE Drop Simulator",
     "Prisma ORM & SQLite Export",
@@ -141,13 +157,13 @@ export default function AdminPlansPage() {
       currency: plan.currency || "INR",
       validityDays: plan.validityDays || 30,
       expiryDate: plan.expiryDate || "",
-      features: plan.features.filter((f) =>
-        COMPARISON_FEATURES.some(
-          (c) =>
-            f.toLowerCase().includes(c.label.toLowerCase()) ||
-            c.label.toLowerCase().includes(f.replace(" (Full Access)", "").toLowerCase())
+      features: plan.features
+        .map((f) =>
+          f.toLowerCase().includes("postgresql") && f.toLowerCase().includes("mysql")
+            ? "Export SQL & NoSQL DDL"
+            : f
         )
-      ),
+        .filter((f) => COMPARISON_FEATURES.some((c) => matchFeature(f, c.label))),
       badge: plan.badge || "",
       tokenQuota: plan.tokenQuota || 50000,
       projectQuota: isUnlimited ? 9999 : (plan.projectQuota || 15),
@@ -178,11 +194,7 @@ export default function AdminPlansPage() {
       const finalProjectQuota = formData.isUnlimitedProjects ? 9999 : Math.max(1, Number(formData.projectQuota));
       // Only keep canonical comparison features
       const cleanFeatures = formData.features.filter((f) =>
-        COMPARISON_FEATURES.some(
-          (c) =>
-            f.toLowerCase().includes(c.label.toLowerCase()) ||
-            c.label.toLowerCase().includes(f.replace(" (Full Access)", "").toLowerCase())
-        )
+        COMPARISON_FEATURES.some((c) => matchFeature(f, c.label))
       );
 
       const discount = Math.max(0, Math.min(100, Number(formData.discountPercent || 0)));
@@ -564,7 +576,7 @@ export default function AdminPlansPage() {
                 <div className="space-y-2 pt-1">
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-muted-foreground text-[11px] uppercase tracking-wider font-mono">
-                      Features ({plan.features.filter((f) => COMPARISON_FEATURES.some((c) => f.toLowerCase().includes(c.label.toLowerCase()) || c.label.toLowerCase().includes(f.replace(" (Full Access)", "").toLowerCase()))).length}/7)
+                      Features ({plan.features.filter((f) => COMPARISON_FEATURES.some((c) => matchFeature(f, c.label))).length}/7)
                     </p>
                     <span className="text-[10px] text-zinc-500 font-mono">
                       Plan Comparison
@@ -572,11 +584,7 @@ export default function AdminPlansPage() {
                   </div>
                   <ul className="space-y-1.5 text-xs">
                     {COMPARISON_FEATURES.map(({ label, ai }) => {
-                      const included = plan.features.some(
-                        (f) =>
-                          f.toLowerCase().includes(label.toLowerCase()) ||
-                          label.toLowerCase().includes(f.replace(" (Full Access)", "").toLowerCase())
-                      );
+                      const included = plan.features.some((f) => matchFeature(f, label));
                       return (
                         <li
                           key={label}
@@ -1116,7 +1124,7 @@ export default function AdminPlansPage() {
                       onClick={() =>
                         setFormData((prev) => ({
                           ...prev,
-                          features: ["React Flow Visual Canvas", "PostgreSQL & MySQL DDL Export"],
+                          features: ["React Flow Visual Canvas", "Export SQL & NoSQL DDL"],
                         }))
                       }
                       className="text-[11px] px-3 py-1 rounded-md border border-border bg-muted/40 hover:border-amber-400/50 hover:text-amber-300 transition-colors font-mono cursor-pointer"
@@ -1130,7 +1138,7 @@ export default function AdminPlansPage() {
                           ...prev,
                           features: [
                             "React Flow Visual Canvas",
-                            "PostgreSQL & MySQL DDL Export",
+                            "Export SQL & NoSQL DDL",
                             "Multi-Domain Grouping",
                             "CASCADE Drop Simulator",
                             "Prisma ORM & SQLite Export",
@@ -1148,7 +1156,7 @@ export default function AdminPlansPage() {
                           ...prev,
                           features: [
                             "React Flow Visual Canvas",
-                            "PostgreSQL & MySQL DDL Export",
+                            "Export SQL & NoSQL DDL",
                             "Multi-Domain Grouping",
                             "CASCADE Drop Simulator",
                             "Prisma ORM & SQLite Export",
@@ -1167,11 +1175,7 @@ export default function AdminPlansPage() {
                 {/* Canonical 7 Feature Toggle Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {COMPARISON_FEATURES.map(({ label, ai }) => {
-                    const isChecked = formData.features.some(
-                      (f) =>
-                        f.toLowerCase().includes(label.toLowerCase()) ||
-                        label.toLowerCase().includes(f.replace(" (Full Access)", "").toLowerCase())
-                    );
+                    const isChecked = formData.features.some((f) => matchFeature(f, label));
                     return (
                       <button
                         key={label}
@@ -1181,11 +1185,7 @@ export default function AdminPlansPage() {
                             if (isChecked) {
                               return {
                                 ...prev,
-                                features: prev.features.filter(
-                                  (f) =>
-                                    !f.toLowerCase().includes(label.toLowerCase()) &&
-                                    !label.toLowerCase().includes(f.replace(" (Full Access)", "").toLowerCase())
-                                ),
+                                features: prev.features.filter((f) => !matchFeature(f, label)),
                               };
                             } else {
                               return {

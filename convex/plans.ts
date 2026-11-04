@@ -167,7 +167,7 @@ export const SeedDefaultPlans = mutation({
             projectQuota: 1,
             features: [
               "React Flow Visual Canvas",
-              "PostgreSQL & MySQL DDL Export",
+              "Export SQL & NoSQL DDL",
             ],
             updatedAt: Date.now(),
           });
@@ -177,7 +177,7 @@ export const SeedDefaultPlans = mutation({
             projectQuota: 15,
             features: [
               "React Flow Visual Canvas",
-              "PostgreSQL & MySQL DDL Export",
+              "Export SQL & NoSQL DDL",
               "Multi-Domain Grouping",
               "CASCADE Drop Simulator",
               "Prisma ORM & SQLite Export",
@@ -190,7 +190,7 @@ export const SeedDefaultPlans = mutation({
             projectQuota: 9999,
             features: [
               "React Flow Visual Canvas",
-              "PostgreSQL & MySQL DDL Export",
+              "Export SQL & NoSQL DDL",
               "Multi-Domain Grouping",
               "CASCADE Drop Simulator",
               "Prisma ORM & SQLite Export",
@@ -221,7 +221,7 @@ export const SeedDefaultPlans = mutation({
         validityDays: 365,
         features: [
           "React Flow Visual Canvas",
-          "PostgreSQL & MySQL DDL Export",
+          "Export SQL & NoSQL DDL",
         ],
         tokenQuota: 5000,
         projectQuota: 1,
@@ -239,7 +239,7 @@ export const SeedDefaultPlans = mutation({
         badge: "POPULAR",
         features: [
           "React Flow Visual Canvas",
-          "PostgreSQL & MySQL DDL Export",
+          "Export SQL & NoSQL DDL",
           "Multi-Domain Grouping",
           "CASCADE Drop Simulator",
           "Prisma ORM & SQLite Export",
@@ -260,7 +260,7 @@ export const SeedDefaultPlans = mutation({
         badge: "ULTIMATE",
         features: [
           "React Flow Visual Canvas",
-          "PostgreSQL & MySQL DDL Export",
+          "Export SQL & NoSQL DDL",
           "Multi-Domain Grouping",
           "CASCADE Drop Simulator",
           "Prisma ORM & SQLite Export",
