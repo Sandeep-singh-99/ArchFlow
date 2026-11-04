@@ -245,6 +245,9 @@ export default function PricingPage() {
             tokenQuota: 5000,
             projectQuota: 1,
             isActive: true,
+            discountPercent: undefined as number | undefined,
+            originalMonthlyPrice: undefined as number | undefined,
+            originalYearlyPrice: undefined as number | undefined,
           },
           {
             _id: "default-pro",
@@ -266,6 +269,9 @@ export default function PricingPage() {
             tokenQuota: 50000,
             projectQuota: 15,
             isActive: true,
+            discountPercent: undefined as number | undefined,
+            originalMonthlyPrice: undefined as number | undefined,
+            originalYearlyPrice: undefined as number | undefined,
           },
           {
             _id: "default-ai",
@@ -289,6 +295,9 @@ export default function PricingPage() {
             tokenQuota: 999999,
             projectQuota: 9999,
             isActive: true,
+            discountPercent: undefined as number | undefined,
+            originalMonthlyPrice: undefined as number | undefined,
+            originalYearlyPrice: undefined as number | undefined,
           },
         ];
 
@@ -356,16 +365,13 @@ export default function PricingPage() {
           <button
             type="button"
             onClick={() => setBillingCycle("yearly")}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
+            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
               billingCycle === "yearly"
                 ? "bg-amber-400 text-black font-semibold shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <span>Yearly Billing</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold">
-              Save ~17%
-            </span>
+            Yearly Billing
           </button>
         </div>
       </div>
@@ -419,12 +425,24 @@ export default function PricingPage() {
               <CardContent className="flex-1 space-y-6 pt-6">
                 {/* Price Display */}
                 <div>
-                  <div className="text-3xl font-extrabold font-mono text-foreground flex items-baseline gap-1">
-                    ₹{price.toLocaleString()}
-                    <span className="text-xs font-normal text-muted-foreground font-sans">
-                      /{billingCycle === "yearly" ? "year" : "month"}
-                    </span>
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <div className="text-3xl font-extrabold font-mono text-foreground flex items-baseline gap-1">
+                      ₹{price.toLocaleString()}
+                      <span className="text-xs font-normal text-muted-foreground font-sans">
+                        /{billingCycle === "yearly" ? "year" : "month"}
+                      </span>
+                    </div>
+                    {plan.discountPercent && plan.discountPercent > 0 && (
+                      <Badge className="bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-mono font-bold px-2 py-0.5">
+                        {plan.discountPercent}% OFF
+                      </Badge>
+                    )}
                   </div>
+                  {plan.discountPercent && plan.discountPercent > 0 && (billingCycle === "yearly" ? plan.originalYearlyPrice : plan.originalMonthlyPrice) && (
+                    <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
+                      Original: <span className="line-through">₹{(billingCycle === "yearly" ? plan.originalYearlyPrice : plan.originalMonthlyPrice)?.toLocaleString()}</span>
+                    </p>
+                  )}
                   {billingCycle === "yearly" && price > 0 && (
                     <p className="text-[11px] text-emerald-400 mt-1 font-mono">
                       Equivalent to ₹{Math.round(price / 12).toLocaleString()}/month
@@ -698,7 +716,7 @@ export default function PricingPage() {
               What are the plan validity and renewal terms?
             </h4>
             <p className="text-muted-foreground leading-relaxed">
-              Monthly plans renew every 30 days, while Yearly plans include 365 days of validity with a ~17% discounted rate. You can review your transaction receipts in the billing history table above.
+              Monthly plans renew every 30 days, while Yearly plans include 365 days of validity. You can review your transaction receipts in the billing history table above.
             </p>
           </div>
         </div>

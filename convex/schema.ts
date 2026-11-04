@@ -60,6 +60,9 @@ export default defineSchema({
         description: v.string(),
         monthlyPrice: v.number(),
         yearlyPrice: v.number(),
+        originalMonthlyPrice: v.optional(v.number()),
+        originalYearlyPrice: v.optional(v.number()),
+        discountPercent: v.optional(v.number()),
         currency: v.string(), // "INR", "USD", etc.
         validityDays: v.number(), // e.g. 30 (monthly) / 365 (yearly)
         expiryDate: v.optional(v.string()), // Optional specific campaign expiry date string (YYYY-MM-DD)

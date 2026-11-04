@@ -23,6 +23,7 @@ import {
   Power,
   ShieldCheck,
   Zap,
+  Percent,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,9 @@ interface PlanFormData {
   description: string;
   monthlyPrice: number;
   yearlyPrice: number;
+  originalMonthlyPrice?: number;
+  originalYearlyPrice?: number;
+  discountPercent: number;
   currency: string;
   validityDays: number;
   expiryDate: string;
@@ -77,6 +81,9 @@ const DEFAULT_FORM: PlanFormData = {
   description: "",
   monthlyPrice: 999,
   yearlyPrice: 9999,
+  originalMonthlyPrice: undefined,
+  originalYearlyPrice: undefined,
+  discountPercent: 0,
   currency: "INR",
   validityDays: 30,
   expiryDate: "",
@@ -119,14 +126,18 @@ export default function AdminPlansPage() {
   const handleOpenEditDialog = (plan: (typeof plans extends (infer U)[] | undefined ? U : never)) => {
     if (!plan) return;
     const isUnlimited = (plan.projectQuota ?? 1) >= 999 || (plan.projectQuota ?? 1) === 0 || plan.planCode === "ai";
+    const hasDiscount = (plan.discountPercent ?? 0) > 0;
     setEditingPlanId(plan._id);
     setFormData({
       id: plan._id,
       name: plan.name,
       planCode: plan.planCode,
       description: plan.description,
-      monthlyPrice: plan.monthlyPrice,
-      yearlyPrice: plan.yearlyPrice,
+      monthlyPrice: plan.originalMonthlyPrice && hasDiscount ? plan.originalMonthlyPrice : plan.monthlyPrice,
+      yearlyPrice: plan.originalYearlyPrice && hasDiscount ? plan.originalYearlyPrice : plan.yearlyPrice,
+      originalMonthlyPrice: plan.originalMonthlyPrice,
+      originalYearlyPrice: plan.originalYearlyPrice,
+      discountPercent: plan.discountPercent || 0,
       currency: plan.currency || "INR",
       validityDays: plan.validityDays || 30,
       expiryDate: plan.expiryDate || "",
@@ -174,40 +185,39 @@ export default function AdminPlansPage() {
         )
       );
 
+      const discount = Math.max(0, Math.min(100, Number(formData.discountPercent || 0)));
+      const baseMonthly = Number(formData.monthlyPrice);
+      const baseYearly = Number(formData.yearlyPrice);
+      const finalMonthlyPrice = discount > 0 ? Math.round(baseMonthly * (1 - discount / 100)) : baseMonthly;
+      const finalYearlyPrice = discount > 0 ? Math.round(baseYearly * (1 - discount / 100)) : baseYearly;
+
+      const planData = {
+        name: formData.name,
+        planCode: formData.planCode,
+        description: formData.description,
+        monthlyPrice: finalMonthlyPrice,
+        yearlyPrice: finalYearlyPrice,
+        originalMonthlyPrice: discount > 0 ? baseMonthly : undefined,
+        originalYearlyPrice: discount > 0 ? baseYearly : undefined,
+        discountPercent: discount > 0 ? discount : undefined,
+        currency: formData.currency,
+        validityDays: Number(formData.validityDays),
+        expiryDate: formData.expiryDate.trim() || undefined,
+        features: cleanFeatures,
+        badge: formData.badge.trim() || undefined,
+        tokenQuota: Number(formData.tokenQuota || 999999),
+        projectQuota: finalProjectQuota,
+        isActive: formData.isActive,
+      };
+
       if (editingPlanId) {
         await updatePlan({
           id: editingPlanId,
-          name: formData.name,
-          planCode: formData.planCode,
-          description: formData.description,
-          monthlyPrice: Number(formData.monthlyPrice),
-          yearlyPrice: Number(formData.yearlyPrice),
-          currency: formData.currency,
-          validityDays: Number(formData.validityDays),
-          expiryDate: formData.expiryDate.trim() || undefined,
-          features: cleanFeatures,
-          badge: formData.badge.trim() || undefined,
-          tokenQuota: Number(formData.tokenQuota),
-          projectQuota: finalProjectQuota,
-          isActive: formData.isActive,
+          ...planData,
         });
         toast.success(`Plan "${formData.name}" updated successfully!`);
       } else {
-        await createPlan({
-          name: formData.name,
-          planCode: formData.planCode,
-          description: formData.description,
-          monthlyPrice: Number(formData.monthlyPrice),
-          yearlyPrice: Number(formData.yearlyPrice),
-          currency: formData.currency,
-          validityDays: Number(formData.validityDays),
-          expiryDate: formData.expiryDate.trim() || undefined,
-          features: cleanFeatures,
-          badge: formData.badge.trim() || undefined,
-          tokenQuota: Number(formData.tokenQuota),
-          projectQuota: finalProjectQuota,
-          isActive: formData.isActive,
-        });
+        await createPlan(planData);
         toast.success(`Plan "${formData.name}" created successfully!`);
       }
       setIsDialogOpen(false);
@@ -454,17 +464,52 @@ export default function AdminPlansPage() {
                 <div className="p-3 rounded-xl bg-muted/30 border border-border/60 space-y-2">
                   <div className="flex items-baseline justify-between">
                     <span className="text-muted-foreground">Monthly:</span>
-                    <span className="text-lg font-extrabold font-mono text-foreground">
-                      ₹{plan.monthlyPrice.toLocaleString()}{" "}
-                      <span className="text-[11px] font-normal text-muted-foreground">/mo</span>
-                    </span>
+                    <div className="text-right">
+                      {plan.discountPercent && plan.originalMonthlyPrice ? (
+                        <div className="flex items-center gap-1.5 justify-end">
+                          <span className="line-through text-[11px] text-zinc-500 font-mono">
+                            ₹{plan.originalMonthlyPrice.toLocaleString()}
+                          </span>
+                          <span className="text-lg font-extrabold font-mono text-foreground">
+                            ₹{plan.monthlyPrice.toLocaleString()}{" "}
+                            <span className="text-[11px] font-normal text-muted-foreground">/mo</span>
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-lg font-extrabold font-mono text-foreground">
+                          ₹{plan.monthlyPrice.toLocaleString()}{" "}
+                          <span className="text-[11px] font-normal text-muted-foreground">/mo</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-baseline justify-between">
-                    <span className="text-muted-foreground">Yearly:</span>
-                    <span className="text-sm font-bold font-mono text-amber-400">
-                      ₹{plan.yearlyPrice.toLocaleString()}{" "}
-                      <span className="text-[10px] font-normal text-muted-foreground">/yr</span>
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground">Yearly:</span>
+                      {plan.discountPercent ? (
+                        <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/25">
+                          {plan.discountPercent}% OFF
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="text-right">
+                      {plan.discountPercent && plan.originalYearlyPrice ? (
+                        <div className="flex items-center gap-1.5 justify-end">
+                          <span className="line-through text-[10px] text-zinc-500 font-mono">
+                            ₹{plan.originalYearlyPrice.toLocaleString()}
+                          </span>
+                          <span className="text-sm font-bold font-mono text-amber-400">
+                            ₹{plan.yearlyPrice.toLocaleString()}{" "}
+                            <span className="text-[10px] font-normal text-muted-foreground">/yr</span>
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-sm font-bold font-mono text-amber-400">
+                          ₹{plan.yearlyPrice.toLocaleString()}{" "}
+                          <span className="text-[10px] font-normal text-muted-foreground">/yr</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -709,22 +754,15 @@ export default function AdminPlansPage() {
 
             {/* SECTION 2: Pricing, Currency & Validity */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                  <CreditCard className="h-3.5 w-3.5 text-emerald-400" />
-                  <span>Pricing, Billing & Validity</span>
-                </div>
-                {formData.monthlyPrice > 0 && formData.yearlyPrice > 0 && (
-                  <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                    Yearly discount: ~{Math.max(0, Math.round((1 - formData.yearlyPrice / (formData.monthlyPrice * 12)) * 100))}% off
-                  </span>
-                )}
+              <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                <CreditCard className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Pricing, Billing & Discount</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 sm:p-5 rounded-xl bg-muted/20 border border-border/60">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 p-4 sm:p-5 rounded-xl bg-muted/20 border border-border/60">
                 <div className="space-y-1.5">
                   <Label htmlFor="monthlyPrice" className="text-xs font-medium text-foreground">
-                    Monthly Price (₹) *
+                    Base Monthly Price (₹) *
                   </Label>
                   <div className="relative">
                     <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground">₹</span>
@@ -743,7 +781,7 @@ export default function AdminPlansPage() {
 
                 <div className="space-y-1.5">
                   <Label htmlFor="yearlyPrice" className="text-xs font-medium text-foreground">
-                    Yearly Price (₹) *
+                    Base Yearly Price (₹) *
                   </Label>
                   <div className="relative">
                     <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground">₹</span>
@@ -757,6 +795,50 @@ export default function AdminPlansPage() {
                       className="text-xs font-mono pl-6"
                       required
                     />
+                  </div>
+                </div>
+
+                {/* Discount Percentage Section */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="discountPercent" className="text-xs font-medium text-foreground flex items-center gap-1">
+                      <Percent className="h-3 w-3 text-amber-400" /> Discount (%)
+                    </Label>
+                    <span className="text-[10px] font-mono text-amber-400/80">
+                      {formData.discountPercent > 0 ? `${formData.discountPercent}% OFF` : "None"}
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      id="discountPercent"
+                      type="number"
+                      min="0"
+                      max="100"
+                      placeholder="e.g. 6"
+                      value={formData.discountPercent || ""}
+                      onChange={(e) => {
+                        const val = Math.max(0, Math.min(100, Number(e.target.value)));
+                        setFormData({ ...formData, discountPercent: val });
+                      }}
+                      className="text-xs font-mono pr-7"
+                    />
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground">%</span>
+                  </div>
+                  <div className="flex items-center gap-1 pt-0.5">
+                    {[0, 5, 6, 10, 15, 20].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, discountPercent: pct })}
+                        className={`text-[9px] px-1.5 py-0.5 rounded font-mono border transition-colors cursor-pointer ${
+                          formData.discountPercent === pct
+                            ? "bg-amber-500/20 text-amber-300 border-amber-500/40 font-bold"
+                            : "bg-muted text-muted-foreground border-border hover:text-foreground"
+                        }`}
+                      >
+                        {pct}%
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -789,7 +871,74 @@ export default function AdminPlansPage() {
                   />
                 </div>
 
-                <div className="sm:col-span-2 lg:col-span-4 space-y-1.5 pt-1 border-t border-border/40">
+                {/* Live Discount Calculation Breakdown Card */}
+                {formData.discountPercent > 0 && (
+                  <div className="sm:col-span-2 lg:col-span-5 p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-transparent border border-amber-500/30 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-5 w-5 rounded-full bg-amber-400/20 text-amber-400 items-center justify-center text-xs font-bold font-mono">
+                          %
+                        </span>
+                        <span className="text-xs font-bold text-amber-300">
+                          {formData.discountPercent}% Discount Calculation Preview
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-mono text-emerald-400 font-semibold">
+                        Admin Net Payable Prices
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      {/* Monthly Total */}
+                      <div className="p-3 rounded-lg bg-card/80 border border-border/60">
+                        <div className="text-[11px] text-muted-foreground flex items-center justify-between">
+                          <span>Total Monthly Amount:</span>
+                          {formData.monthlyPrice > 0 && (
+                            <span className="line-through text-zinc-500 text-[10px] font-mono">
+                              ₹{Number(formData.monthlyPrice).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-baseline gap-2 mt-1">
+                          <span className="text-xl font-extrabold font-mono text-emerald-400">
+                            ₹{Math.round(Number(formData.monthlyPrice) * (1 - formData.discountPercent / 100)).toLocaleString()}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground font-mono">/month</span>
+                          {formData.monthlyPrice > 0 && (
+                            <span className="ml-auto text-[10px] font-medium font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                              Save ₹{(Number(formData.monthlyPrice) - Math.round(Number(formData.monthlyPrice) * (1 - formData.discountPercent / 100))).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Yearly Total */}
+                      <div className="p-3 rounded-lg bg-card/80 border border-border/60">
+                        <div className="text-[11px] text-muted-foreground flex items-center justify-between">
+                          <span>Total Yearly Amount:</span>
+                          {formData.yearlyPrice > 0 && (
+                            <span className="line-through text-zinc-500 text-[10px] font-mono">
+                              ₹{Number(formData.yearlyPrice).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-baseline gap-2 mt-1">
+                          <span className="text-xl font-extrabold font-mono text-amber-400">
+                            ₹{Math.round(Number(formData.yearlyPrice) * (1 - formData.discountPercent / 100)).toLocaleString()}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground font-mono">/year</span>
+                          {formData.yearlyPrice > 0 && (
+                            <span className="ml-auto text-[10px] font-medium font-mono text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                              Save ₹{(Number(formData.yearlyPrice) - Math.round(Number(formData.yearlyPrice) * (1 - formData.discountPercent / 100))).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="sm:col-span-2 lg:col-span-5 space-y-1.5 pt-1 border-t border-border/40">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="expiryDate" className="text-xs font-medium text-foreground flex items-center gap-1.5">
                       <Calendar className="h-3.5 w-3.5 text-sky-400" />
