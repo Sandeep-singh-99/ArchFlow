@@ -569,32 +569,27 @@ export default function PricingPage() {
                   </div>
                 </div>
 
-                {/* Features List — mirrors the Detailed Plan Comparison table */}
+                {/* Features List — Only displays included features */}
                 <ul className="space-y-2.5 text-xs">
-                  {COMPARISON_FEATURES.map(({ label, ai }) => {
-                    const included = plan.features.some(
-                      (f) => matchFeature(f, label)
-                    );
-                    return (
-                      <li key={label} className={`flex items-start gap-2.5 ${included ? "text-foreground/90" : "text-zinc-500"}`}>
-                        {included ? (
-                          ai ? (
-                            <Sparkles className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-                          ) : (
-                            <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                          )
-                        ) : (
-                          <X className="h-4 w-4 text-zinc-600 shrink-0 mt-0.5" />
+                  {COMPARISON_FEATURES.filter(({ label }) =>
+                    plan.features.some((f) => matchFeature(f, label))
+                  ).map(({ label, ai }) => (
+                    <li key={label} className="flex items-start gap-2.5 text-foreground/90">
+                      {ai ? (
+                        <Sparkles className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                      ) : (
+                        <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                      )}
+                      <span className={`leading-tight ${ai ? "font-medium text-[#ffee72]" : ""}`}>
+                        {label}
+                        {ai && (
+                          <span className="ml-1.5 text-[10px] font-mono text-amber-400/80 not-italic">
+                            (Full Access)
+                          </span>
                         )}
-                        <span className={`leading-tight ${!included ? "line-through" : ""} ${included && ai ? "font-medium text-[#ffee72]" : ""}`}>
-                          {label}
-                          {included && ai && (
-                            <span className="ml-1.5 text-[10px] font-mono text-amber-400/80 not-italic">(Full Access)</span>
-                          )}
-                        </span>
-                      </li>
-                    );
-                  })}
+                      </span>
+                    </li>
+                  ))}
                 </ul>
               </CardContent>
 
