@@ -13,6 +13,90 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
+/** Canonical 7 features that map 1-to-1 with the Detailed Plan Comparison table */
+const COMPARISON_FEATURES: { label: string; ai?: boolean }[] = [
+  { label: "React Flow Visual Canvas" },
+  { label: "PostgreSQL & MySQL DDL Export" },
+  { label: "Multi-Domain Grouping" },
+  { label: "CASCADE Drop Simulator" },
+  { label: "Prisma ORM & SQLite Export" },
+  { label: "AI Prompt-to-Schema Copilot", ai: true },
+  { label: "AI Agent Chat & Tool Execution", ai: true },
+];
+
+/** Features each plan includes (must be a subset of COMPARISON_FEATURES labels) */
+const FREE_FEATURES = [
+  "React Flow Visual Canvas",
+  "PostgreSQL & MySQL DDL Export",
+];
+
+const PRO_FEATURES = [
+  "React Flow Visual Canvas",
+  "PostgreSQL & MySQL DDL Export",
+  "Multi-Domain Grouping",
+  "CASCADE Drop Simulator",
+  "Prisma ORM & SQLite Export",
+];
+
+const AI_FEATURES = [
+  "React Flow Visual Canvas",
+  "PostgreSQL & MySQL DDL Export",
+  "Multi-Domain Grouping",
+  "CASCADE Drop Simulator",
+  "Prisma ORM & SQLite Export",
+  "AI Prompt-to-Schema Copilot",
+  "AI Agent Chat & Tool Execution",
+];
+
+interface FeatureListProps {
+  included: string[];
+  gold?: boolean;
+}
+
+function FeatureList({ included, gold }: FeatureListProps) {
+  const checkColor = gold ? "text-[#ffdf27]" : "text-emerald-400";
+  const aiHighlight = gold ? "text-[#ffee72]" : "text-amber-400";
+  return (
+    <ul className="space-y-2.5 text-xs">
+      {COMPARISON_FEATURES.map(({ label, ai }) => {
+        const has = included.includes(label);
+        return (
+          <li
+            key={label}
+            className={`flex items-start gap-2.5 ${has ? (gold ? "text-zinc-100" : "text-foreground/90") : "text-zinc-500"}`}
+          >
+            {has ? (
+              ai ? (
+                <Sparkles className={`h-4 w-4 shrink-0 mt-0.5 ${aiHighlight}`} />
+              ) : (
+                <Check className={`h-4 w-4 shrink-0 mt-0.5 ${checkColor}`} />
+              )
+            ) : (
+              <X className="h-4 w-4 text-zinc-600 shrink-0 mt-0.5" />
+            )}
+            <span
+              className={[
+                "leading-tight",
+                !has ? "line-through" : "",
+                has && ai ? `font-semibold ${aiHighlight}` : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              {label}
+              {has && ai && (
+                <span className="ml-1.5 text-[10px] font-mono opacity-70 font-normal">
+                  (Full Access)
+                </span>
+              )}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export default function Pricing() {
   return (
     <section id="pricing" className="py-24 border-t border-white/10 bg-black relative overflow-hidden">
@@ -27,7 +111,7 @@ export default function Pricing() {
       <div className="container mx-auto px-4 md:px-8 relative z-10">
         <div className="text-center space-y-4 mb-16 max-w-3xl mx-auto">
           <Badge variant="outline" className="text-[#ffee72] border-[#ffdf27]/30 bg-[#ffc507]/10 px-3.5 py-1 text-xs font-mono">
-            Pricing & Plans
+            Pricing &amp; Plans
           </Badge>
           <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-foreground">
             Simple, Transparent Plans for Every Team
@@ -38,7 +122,8 @@ export default function Pricing() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
-          {/* TIER 1: Free Starter (1 Project Only) */}
+
+          {/* TIER 1: Hobbyist Free */}
           <Card className="flex flex-col border border-border bg-card/90 backdrop-blur-md shadow-2xs hover:border-foreground/30 transition-all rounded-2xl">
             <CardHeader className="space-y-1.5 pb-6 border-b border-border/40">
               <div className="flex items-center justify-between">
@@ -53,45 +138,13 @@ export default function Pricing() {
             </CardHeader>
             <CardContent className="flex-1 space-y-6 pt-6">
               <div className="text-3xl font-extrabold font-mono">
-                $0{" "}
-                <span className="text-sm font-normal text-muted-foreground font-sans">
-                  /month
-                </span>
+                ₹0{" "}
+                <span className="text-sm font-normal text-muted-foreground font-sans">/month</span>
               </div>
-              <ul className="space-y-3 text-xs text-muted-foreground">
-                <li className="flex items-start gap-2.5 text-foreground font-semibold">
-                  <Check className="h-4 w-4 text-[#ffee72] shrink-0 mt-0.5" />
-                  <span>Strictly 1 Active Database Project</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="h-4 w-4 text-[#ffee72] shrink-0 mt-0.5" />
-                  <span>Interactive React Flow Schema Canvas</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="h-4 w-4 text-[#ffee72] shrink-0 mt-0.5" />
-                  <span>Core SQL Tables & Column Attributes</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="h-4 w-4 text-[#ffee72] shrink-0 mt-0.5" />
-                  <span>PK & FK Column Relationship Wiring</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="h-4 w-4 text-[#ffee72] shrink-0 mt-0.5" />
-                  <span>Export to PostgreSQL & MySQL DDL</span>
-                </li>
-                <li className="flex items-start gap-2.5 text-zinc-600 line-through">
-                  <X className="h-4 w-4 text-zinc-600 shrink-0 mt-0.5" />
-                  <span>Multi-Domain & Multi-Schema Groups</span>
-                </li>
-                <li className="flex items-start gap-2.5 text-zinc-600 line-through">
-                  <X className="h-4 w-4 text-zinc-600 shrink-0 mt-0.5" />
-                  <span>CASCADE Drop Simulator</span>
-                </li>
-                <li className="flex items-start gap-2.5 text-zinc-600 line-through">
-                  <X className="h-4 w-4 text-zinc-600 shrink-0 mt-0.5" />
-                  <span>AI Schema Copilot & Agent Preview</span>
-                </li>
-              </ul>
+              <div className="text-xs font-mono text-muted-foreground px-2 py-1.5 rounded-lg bg-muted/30 border border-border/50">
+                Active Projects: <span className="font-bold text-foreground">1</span>
+              </div>
+              <FeatureList included={FREE_FEATURES} />
             </CardContent>
             <CardFooter className="pt-4 border-t border-border/40">
               <Link href="/dashboard" className="w-full">
@@ -102,7 +155,7 @@ export default function Pricing() {
             </CardFooter>
           </Card>
 
-          {/* TIER 2: Pro Architect (15 Projects, Advanced Modeling, No AI) */}
+          {/* TIER 2: Pro Architect */}
           <Card className="flex flex-col border border-border bg-card/90 backdrop-blur-md shadow-2xs hover:border-foreground/30 transition-all rounded-2xl">
             <CardHeader className="space-y-1.5 pb-6 border-b border-border/40">
               <div className="flex items-center justify-between">
@@ -112,50 +165,18 @@ export default function Pricing() {
                 </Badge>
               </div>
               <CardDescription className="text-xs text-muted-foreground">
-                For professional developers & DBAs managing production models.
+                For professional developers &amp; DBAs managing production models.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 space-y-6 pt-6">
               <div className="text-3xl font-extrabold font-mono text-foreground">
-                $19{" "}
-                <span className="text-sm font-normal text-muted-foreground font-sans">
-                  /month
-                </span>
+                ₹1,499{" "}
+                <span className="text-sm font-normal text-muted-foreground font-sans">/month</span>
               </div>
-              <ul className="space-y-3 text-xs text-foreground">
-                <li className="flex items-start gap-2.5 font-semibold text-[#ffee72]">
-                  <Check className="h-4 w-4 text-[#ffee72] shrink-0 mt-0.5" />
-                  <span>Up to 15 Active Database Projects</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="h-4 w-4 text-[#ffee72] shrink-0 mt-0.5" />
-                  <span>Domain Grouping & Multi-Schema Containers</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="h-4 w-4 text-[#ffee72] shrink-0 mt-0.5" />
-                  <span>All Nodes: Views, Triggers, Enums & Indexes</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="h-4 w-4 text-[#ffee72] shrink-0 mt-0.5" />
-                  <span>Interactive React Flow CASCADE Drop Simulator</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="h-4 w-4 text-[#ffee72] shrink-0 mt-0.5" />
-                  <span>Export to PostgreSQL, MySQL, SQLite & Prisma ORM</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="h-4 w-4 text-[#ffee72] shrink-0 mt-0.5" />
-                  <span>High-Res 4K PNG & SVG Export (Watermark-free)</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="h-4 w-4 text-[#ffee72] shrink-0 mt-0.5" />
-                  <span>SQL DDL Reverse Engineering & Import</span>
-                </li>
-                <li className="flex items-start gap-2.5 text-zinc-600 line-through">
-                  <X className="h-4 w-4 text-zinc-600 shrink-0 mt-0.5" />
-                  <span>AI Copilot & Live Agent Chat (AI Tier Only)</span>
-                </li>
-              </ul>
+              <div className="text-xs font-mono text-muted-foreground px-2 py-1.5 rounded-lg bg-muted/30 border border-border/50">
+                Active Projects: <span className="font-bold text-foreground">15</span>
+              </div>
+              <FeatureList included={PRO_FEATURES} />
             </CardContent>
             <CardFooter className="pt-4 border-t border-border/40">
               <Link href="/dashboard/pricing" className="w-full">
@@ -166,7 +187,7 @@ export default function Pricing() {
             </CardFooter>
           </Card>
 
-          {/* TIER 3: AI Architect Pro (Top Tier - Higher Cost, Full AI Features) */}
+          {/* TIER 3: AI Architect Pro */}
           <Card className="flex flex-col border-2 border-[#ffdf27] bg-[#0c0d12]/95 backdrop-blur-xl shadow-2xl shadow-[#ffc507]/15 relative overflow-hidden rounded-2xl scale-[1.02]">
             {/* Top highlight banner */}
             <div className="absolute top-0 right-0 bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 text-[10px] font-mono px-3.5 py-1 rounded-bl-xl uppercase tracking-wider font-extrabold flex items-center gap-1 shadow-sm">
@@ -182,49 +203,21 @@ export default function Pricing() {
                 </CardTitle>
               </div>
               <CardDescription className="text-xs text-zinc-400">
-                For teams & builders who want generative AI schema design & agent previews.
+                For teams &amp; builders who want generative AI schema design &amp; agent previews.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 space-y-6 pt-6">
               <div className="text-3xl font-extrabold font-mono text-white flex items-baseline gap-1">
-                $49{" "}
-                <span className="text-sm font-normal text-muted-foreground font-sans">
-                  /month
-                </span>
+                ₹3,999{" "}
+                <span className="text-sm font-normal text-muted-foreground font-sans">/month</span>
                 <span className="ml-2 text-[10px] font-mono text-[#ffdf27] bg-[#ffdf27]/10 px-2 py-0.5 rounded-full border border-[#ffdf27]/30">
                   Full AI Access
                 </span>
               </div>
-              <ul className="space-y-3 text-xs text-zinc-100">
-                <li className="flex items-start gap-2.5 font-bold text-[#ffee72]">
-                  <Check className="h-4 w-4 text-[#ffdf27] shrink-0 mt-0.5" />
-                  <span>Unlimited Database Flow Projects</span>
-                </li>
-                <li className="flex items-start gap-2.5 font-bold text-white bg-white/[0.04] p-1.5 rounded-lg border border-white/10">
-                  <Sparkles className="h-4 w-4 text-[#ffdf27] shrink-0 mt-0.5" />
-                  <span>AI Schema Copilot (Text-to-Database Flow Engine)</span>
-                </li>
-                <li className="flex items-start gap-2.5 font-bold text-white bg-white/[0.04] p-1.5 rounded-lg border border-white/10">
-                  <Sparkles className="h-4 w-4 text-[#ffdf27] shrink-0 mt-0.5" />
-                  <span>AI Agent Chat & Tool Execution Preview (Gemini)</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="h-4 w-4 text-[#ffdf27] shrink-0 mt-0.5" />
-                  <span>Automated AI Index & Normalization Audits</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="h-4 w-4 text-[#ffdf27] shrink-0 mt-0.5" />
-                  <span>Natural Language Schema Migration Diffs</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="h-4 w-4 text-[#ffdf27] shrink-0 mt-0.5" />
-                  <span>All Pro Features (Multi-Domain, CASCADE, Prisma DDL)</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="h-4 w-4 text-[#ffdf27] shrink-0 mt-0.5" />
-                  <span>Priority 1-on-1 Architecture & DBA Support</span>
-                </li>
-              </ul>
+              <div className="text-xs font-mono text-amber-300 px-2 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                Active Projects: <span className="font-bold text-[#ffee72]">Unlimited</span>
+              </div>
+              <FeatureList included={AI_FEATURES} gold />
             </CardContent>
             <CardFooter className="pt-4 border-t border-[#23252b]">
               <Link href="/dashboard/pricing" className="w-full">
@@ -234,6 +227,7 @@ export default function Pricing() {
               </Link>
             </CardFooter>
           </Card>
+
         </div>
       </div>
     </section>

@@ -12,7 +12,11 @@ import {
   ArrowUpRight,
   ShieldCheck,
   Zap,
+  Receipt,
+  Layers,
 } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function AdminEarningsPage() {
   const metrics = useQuery(api.admin.GetAdminOverviewMetrics, {});
   const users = useQuery(api.admin.GetAllUsers, {});
+  const payments = useQuery(api.payments.GetAllPayments, {});
 
   if (!metrics || !users) {
     return (
@@ -42,14 +47,22 @@ export default function AdminEarningsPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
-          <DollarSign className="h-5 w-5 text-emerald-400" />
-          <span>Earnings & Subscription Revenue</span>
-        </h1>
-        <p className="text-xs text-muted-foreground">
-          Financial metrics, Monthly Recurring Revenue (MRR), subscription tier conversions, and active subscribers.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-emerald-400" />
+            <span>Earnings & Subscription Revenue</span>
+          </h1>
+          <p className="text-xs text-muted-foreground">
+            Financial metrics, Monthly Recurring Revenue (MRR), subscription tier conversions, and active subscribers.
+          </p>
+        </div>
+        <Link href="/admin/plans">
+          <Button size="sm" variant="outline" className="text-xs font-semibold border-amber-500/30 text-amber-400 hover:bg-amber-500/10">
+            <Layers className="h-3.5 w-3.5 mr-1.5" />
+            Manage Plans & Tiers
+          </Button>
+        </Link>
       </div>
 
       {/* Top 4 Financial Metric Cards */}
@@ -259,6 +272,73 @@ export default function AdminEarningsPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Razorpay Transaction History */}
+      <Card className="border-border bg-card/60">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-amber-400" />
+              <span>Razorpay Payment Transactions ({payments?.length || 0})</span>
+            </CardTitle>
+            <Badge variant="outline" className="text-[10px] font-mono text-sky-400 border-sky-500/30">
+              Gateway: Razorpay
+            </Badge>
+          </div>
+          <CardDescription className="text-xs">
+            Live log of verified subscriber transactions, order IDs, and payment references
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!payments || payments.length === 0 ? (
+            <div className="py-8 text-center text-xs text-muted-foreground">
+              No Razorpay transactions recorded yet. They will automatically appear here when customers complete checkout.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead>
+                  <tr className="border-b border-border/80 text-muted-foreground font-mono">
+                    <th className="py-2.5 px-3">Date</th>
+                    <th className="py-2.5 px-3">Customer</th>
+                    <th className="py-2.5 px-3">Plan</th>
+                    <th className="py-2.5 px-3">Cycle</th>
+                    <th className="py-2.5 px-3">Amount</th>
+                    <th className="py-2.5 px-3">Status</th>
+                    <th className="py-2.5 px-3">Razorpay Payment ID</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40 font-mono">
+                  {payments.map((p) => (
+                    <tr key={String(p._id)}>
+                      <td className="py-2.5 px-3 text-muted-foreground">
+                        {new Date(p.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="py-2.5 px-3 text-foreground font-sans font-medium">{p.userEmail}</td>
+                      <td className="py-2.5 px-3 font-medium text-foreground">{p.planName}</td>
+                      <td className="py-2.5 px-3 capitalize">{p.billingCycle}</td>
+                      <td className="py-2.5 px-3 text-amber-400 font-bold">
+                        ₹{p.amount.toLocaleString()}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] font-mono border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+                        >
+                          {p.status}
+                        </Badge>
+                      </td>
+                      <td className="py-2.5 px-3 text-[11px] text-muted-foreground">
+                        {p.razorpayPaymentId}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>

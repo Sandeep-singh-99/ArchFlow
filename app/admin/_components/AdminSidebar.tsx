@@ -24,6 +24,7 @@ import {
   ShieldAlert,
   Sparkles,
   ExternalLink,
+  Layers,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -48,6 +49,11 @@ const ADMIN_NAVIGATION = [
     title: "Platform Analytics",
     url: "/admin/analytics",
     icon: BarChart3,
+  },
+  {
+    title: "Plans & Pricing",
+    url: "/admin/plans",
+    icon: Layers,
   },
   {
     title: "Earnings & Revenue",
