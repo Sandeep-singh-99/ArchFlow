@@ -84,6 +84,12 @@ function matchFeature(feature: string, targetLabel: string): boolean {
   ) {
     return true;
   }
+  if (
+    t.includes("mermaid") &&
+    (f.includes("mermaid") || f.includes("prisma") || f.includes("sqlite"))
+  ) {
+    return true;
+  }
   return false;
 }
 
@@ -290,7 +296,7 @@ export default function PricingPage() {
     { label: "Export SQL & NoSQL DDL" },
     { label: "Multi-Domain Grouping" },
     { label: "CASCADE Drop Simulator" },
-    { label: "Prisma ORM & SQLite Export" },
+    { label: "Import & Export Mermaid" },
     { label: "AI Prompt-to-Schema Copilot", ai: true },
     { label: "AI Agent Chat & Tool Execution", ai: true },
   ];
@@ -336,7 +342,7 @@ export default function PricingPage() {
               "Export SQL & NoSQL DDL",
               "Multi-Domain Grouping",
               "CASCADE Drop Simulator",
-              "Prisma ORM & SQLite Export",
+              "Import & Export Mermaid",
             ],
             tokenQuota: 50000,
             projectQuota: 15,
@@ -361,7 +367,7 @@ export default function PricingPage() {
               "Export SQL & NoSQL DDL",
               "Multi-Domain Grouping",
               "CASCADE Drop Simulator",
-              "Prisma ORM & SQLite Export",
+              "Import & Export Mermaid",
               "AI Prompt-to-Schema Copilot",
               "AI Agent Chat & Tool Execution",
             ],

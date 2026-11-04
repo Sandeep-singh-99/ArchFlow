@@ -16,10 +16,10 @@ import { Badge } from "@/components/ui/badge";
 /** Canonical 7 features that map 1-to-1 with the Detailed Plan Comparison table */
 const COMPARISON_FEATURES: { label: string; ai?: boolean }[] = [
   { label: "React Flow Visual Canvas" },
-  { label: "PostgreSQL & MySQL DDL Export" },
+  { label: "Export SQL & NoSQL DDL" },
   { label: "Multi-Domain Grouping" },
   { label: "CASCADE Drop Simulator" },
-  { label: "Prisma ORM & SQLite Export" },
+  { label: "Import & Export Mermaid" },
   { label: "AI Prompt-to-Schema Copilot", ai: true },
   { label: "AI Agent Chat & Tool Execution", ai: true },
 ];
@@ -27,23 +27,23 @@ const COMPARISON_FEATURES: { label: string; ai?: boolean }[] = [
 /** Features each plan includes (must be a subset of COMPARISON_FEATURES labels) */
 const FREE_FEATURES = [
   "React Flow Visual Canvas",
-  "PostgreSQL & MySQL DDL Export",
+  "Export SQL & NoSQL DDL",
 ];
 
 const PRO_FEATURES = [
   "React Flow Visual Canvas",
-  "PostgreSQL & MySQL DDL Export",
+  "Export SQL & NoSQL DDL",
   "Multi-Domain Grouping",
   "CASCADE Drop Simulator",
-  "Prisma ORM & SQLite Export",
+  "Import & Export Mermaid",
 ];
 
 const AI_FEATURES = [
   "React Flow Visual Canvas",
-  "PostgreSQL & MySQL DDL Export",
+  "Export SQL & NoSQL DDL",
   "Multi-Domain Grouping",
   "CASCADE Drop Simulator",
-  "Prisma ORM & SQLite Export",
+  "Import & Export Mermaid",
   "AI Prompt-to-Schema Copilot",
   "AI Agent Chat & Tool Execution",
 ];

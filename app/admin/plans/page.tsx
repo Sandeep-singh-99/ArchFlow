@@ -70,7 +70,7 @@ const COMPARISON_FEATURES: { label: string; ai?: boolean }[] = [
   { label: "Export SQL & NoSQL DDL" },
   { label: "Multi-Domain Grouping" },
   { label: "CASCADE Drop Simulator" },
-  { label: "Prisma ORM & SQLite Export" },
+  { label: "Import & Export Mermaid" },
   { label: "AI Prompt-to-Schema Copilot", ai: true },
   { label: "AI Agent Chat & Tool Execution", ai: true },
 ];
@@ -85,6 +85,13 @@ const matchFeature = (feature: string, targetLabel: string): boolean => {
     t.includes("sql") &&
     t.includes("nosql") &&
     (f.includes("postgresql") || f.includes("mysql") || (f.includes("sql") && f.includes("nosql")))
+  ) {
+    return true;
+  }
+  // Backward compatibility for Mermaid / Prisma rename
+  if (
+    t.includes("mermaid") &&
+    (f.includes("mermaid") || f.includes("prisma") || f.includes("sqlite"))
   ) {
     return true;
   }
@@ -108,7 +115,7 @@ const DEFAULT_FORM: PlanFormData = {
     "Export SQL & NoSQL DDL",
     "Multi-Domain Grouping",
     "CASCADE Drop Simulator",
-    "Prisma ORM & SQLite Export",
+    "Import & Export Mermaid",
   ],
   badge: "",
   tokenQuota: 50000,
@@ -1141,7 +1148,7 @@ export default function AdminPlansPage() {
                             "Export SQL & NoSQL DDL",
                             "Multi-Domain Grouping",
                             "CASCADE Drop Simulator",
-                            "Prisma ORM & SQLite Export",
+                            "Import & Export Mermaid",
                           ],
                         }))
                       }
@@ -1159,7 +1166,7 @@ export default function AdminPlansPage() {
                             "Export SQL & NoSQL DDL",
                             "Multi-Domain Grouping",
                             "CASCADE Drop Simulator",
-                            "Prisma ORM & SQLite Export",
+                            "Import & Export Mermaid",
                             "AI Prompt-to-Schema Copilot",
                             "AI Agent Chat & Tool Execution",
                           ],
