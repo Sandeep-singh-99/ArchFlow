@@ -19,6 +19,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { WorkflowContext } from "@/context/WorkflowContext";
+import { UserDetailContext } from "@/context/UserDetailContext";
+import { useAuth } from "@clerk/nextjs";
+import { getUserPlanCode, canAccessFeature, notifyFeatureLocked } from "@/lib/planAccess";
+import Link from "next/link";
+import { Lock } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import MarkdownRenderer from "@/components/chat/MarkdownRenderer";
@@ -60,6 +65,10 @@ export default function AgentStudioChatDrawer({
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>(() => `session_${Date.now()}`);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const { userDetails } = useContext(UserDetailContext);
+  const { has } = useAuth();
+  const userPlan = getUserPlanCode(userDetails, has);
+  const isAllowedAi = canAccessFeature("ai_copilot", userPlan);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -691,6 +700,10 @@ export default function AgentStudioChatDrawer({
   };
 
   const handleSendMessage = async (textToSend?: string) => {
+    if (!isAllowedAi) {
+      notifyFeatureLocked("ai_agent_chat", userPlan);
+      return;
+    }
     const text = (textToSend || inputValue).trim();
     if (!text || loading) return;
 
@@ -774,6 +787,35 @@ export default function AgentStudioChatDrawer({
 
   return (
     <div className="fixed inset-y-0 left-0 z-50 w-[420px] max-w-[90vw] bg-background/95 backdrop-blur-xl border-r border-border shadow-2xl flex flex-col animate-in slide-in-from-left duration-250 ease-out">
+      {!isAllowedAi && (
+        <div className="absolute inset-0 bg-background/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-6 text-center space-y-4">
+          <div className="p-4 rounded-2xl bg-[#ffdf27]/10 border border-[#ffdf27]/30 text-[#ffee72]">
+            <Lock className="h-8 w-8" />
+          </div>
+          <div className="space-y-1.5 max-w-xs">
+            <Badge className="bg-amber-400 text-black font-mono text-[9px] uppercase font-bold">
+              AI ARCHITECT PRO
+            </Badge>
+            <h3 className="font-bold text-base text-foreground">AI Copilot Locked</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Real-time natural language schema generation, canvas auto-actions, and live AI agent chat are exclusive to the AI Architect Pro tier.
+            </p>
+          </div>
+          <Link href="/dashboard/pricing" className="w-full max-w-xs">
+            <Button className="w-full text-xs font-bold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 border-none shadow-md cursor-pointer">
+              Upgrade to AI Architect
+            </Button>
+          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
+            Close Assistant
+          </Button>
+        </div>
+      )}
       {/* Header */}
       <div className="p-3.5 border-b border-border bg-muted/30 flex items-center justify-between">
         <div className="flex items-center gap-2.5">

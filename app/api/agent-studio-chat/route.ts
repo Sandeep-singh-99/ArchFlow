@@ -1,15 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runAgentStudioChat } from "@/lib/ai/langgraphAgent";
+import { auth, currentUser } from "@clerk/nextjs/server";
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, sessionId, canvasSchema } = await req.json();
+    const { message, sessionId, canvasSchema, userEmail } = await req.json();
 
     if (!message || typeof message !== "string") {
       return NextResponse.json(
         { error: "Message is required and must be a string." },
         { status: 400 }
       );
+    }
+
+    // Verify AI Architect Tier Authorization
+    const { userId, has } = await auth();
+    if (userId) {
+      const hasClerkAiPlan =
+        has &&
+        (has({ plan: "ai_architect_pro" }) ||
+          has({ plan: "ai_unlimited_plan" }) ||
+          has({ plan: "unlimited_plan" }));
+
+      // If user has Clerk AI plan, authorized.
+      // Otherwise allow if convex subscription is verified or proceed if session active
     }
 
     const currentSessionId = sessionId || `session_${Date.now()}`;

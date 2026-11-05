@@ -12,6 +12,7 @@ import MermaidImportDialog from "./MermaidImportDialog";
 import MermaidExportDialog from "./MermaidExportDialog";
 import SqlExportDialog from "./SqlExportDialog";
 import ExportImageDialog from "./ExportImageDialog";
+import CascadeSimulatorDialog from "./CascadeSimulatorDialog";
 import UserFeedbackDialog from "@/components/feedback/UserFeedbackDialog";
 import { getSchemaType } from "@/lib/schemaClassifier";
 
@@ -59,17 +60,20 @@ export default function Header({ agentDetail, previewHeader = false }: Props) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-2.5">
-        {/* 1. Real SQL DDL Exporter */}
+        {/* 1. Real SQL & NoSQL DDL Exporter (Free & All tiers) */}
         <SqlExportDialog agentDetail={agentDetail} />
 
-        {/* 2. Export High-Res Image (PNG/SVG) */}
+        {/* 2. Export High-Res Image (PNG/SVG) (Free & All tiers) */}
         <ExportImageDialog architectureName={agentDetail?.name || "database-schema"} />
 
-        {/* 3. Mermaid Import & Export Dialogs */}
+        {/* 3. CASCADE Drop Simulator (Pro & AI tier) */}
+        <CascadeSimulatorDialog agentDetail={agentDetail} />
+
+        {/* 4. Mermaid Import & Export Dialogs (Pro & AI tier) */}
         <MermaidImportDialog agentDetail={agentDetail} />
         <MermaidExportDialog agentDetail={agentDetail} />
 
-        {/* 4. User Feedback Dialog */}
+        {/* 5. User Feedback Dialog */}
         <UserFeedbackDialog />
       </div>
     </div>

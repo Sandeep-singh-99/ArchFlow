@@ -32,6 +32,8 @@ import { UserDetailContext } from "@/context/UserDetailContext";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { getUserPlanCode, getPlanProjectQuota } from "@/lib/planAccess";
+import PlanUpgradeModal from "@/components/plans/PlanUpgradeModal";
 
 export default function CreateAgentSection() {
   const [openDialog, setOpenDialog] = useState(false);
@@ -45,20 +47,11 @@ export default function CreateAgentSection() {
   const router = useRouter();
   const { has } = useAuth();
 
-  // Tier detection (supports both Clerk session plan and Convex subscription)
-  const hasAiPlan = Boolean(
-    (has &&
-      (has({ plan: "ai_architect_pro" }) ||
-        has({ plan: "ai_unlimited_plan" }) ||
-        has({ plan: "unlimited_plan" }))) ||
-      userDetails?.subscription === "ai"
-  );
-  const hasProPlan = Boolean(
-    (has && (has({ plan: "pro_architect" }) || has({ plan: "pro_plan" }))) ||
-      userDetails?.subscription === "active" ||
-      userDetails?.subscription === "pro"
-  );
-  const isFreePlan = !hasAiPlan && !hasProPlan;
+  // Unified tier detection & project quota
+  const userPlan = getUserPlanCode(userDetails, has);
+  const hasAiPlan = userPlan === "ai";
+  const hasProPlan = userPlan === "pro";
+  const isFreePlan = userPlan === "free";
 
   // Project quota check
   const userAgents = useQuery(
@@ -66,9 +59,8 @@ export default function CreateAgentSection() {
     userDetails?._id ? { userId: userDetails._id } : "skip"
   );
   const projectCount = userAgents ? userAgents.length : 0;
-  const isFreeLimitReached = isFreePlan && projectCount >= 1;
-  const isProLimitReached = hasProPlan && !hasAiPlan && projectCount >= 15;
-  const isLimitReached = isFreeLimitReached || isProLimitReached;
+  const quota = getPlanProjectQuota(userPlan);
+  const isLimitReached = projectCount >= quota;
 
   const handleOpenCreate = () => {
     if (isLimitReached) {
@@ -144,7 +136,7 @@ export default function CreateAgentSection() {
                   ? "border-[#ffdf27]/40 text-[#ffee72] bg-[#ffdf27]/10"
                   : hasProPlan
                   ? "border-sky-500/30 text-sky-400 bg-sky-500/10"
-                  : isFreeLimitReached
+                  : isLimitReached
                   ? "border-amber-500/40 text-amber-300 bg-amber-500/15"
                   : "border-border text-muted-foreground bg-muted/30"
               }`}
@@ -325,111 +317,15 @@ export default function CreateAgentSection() {
             </DialogContent>
           </Dialog>
 
-          {/* Limit Reached Upgrade Modal */}
-          <Dialog open={openUpgradeDialog} onOpenChange={setOpenUpgradeDialog}>
-            <DialogContent className="sm:max-w-lg border-2 border-amber-500/40 bg-[#0c0d12]/95 backdrop-blur-xl">
-              <DialogHeader className="space-y-2">
-                <div className="inline-flex items-center gap-2 text-amber-400 text-xs font-mono uppercase tracking-wider">
-                  <AlertCircle className="h-4 w-4" />
-                  <span>
-                    Project Limit Reached ({projectCount} /{" "}
-                    {isFreePlan ? "1" : "15"} Projects)
-                  </span>
-                </div>
-                <DialogTitle className="text-xl font-bold text-white">
-                  {isFreePlan
-                    ? "Free Plan Limit: 1 Project"
-                    : "Pro Plan Limit: 15 Projects"}
-                </DialogTitle>
-                <DialogDescription className="text-xs text-zinc-400 leading-relaxed">
-                  {isFreePlan
-                    ? "The Free plan allows you to design and export 1 database schema project. Upgrade your plan to unlock more project slots, advanced database entities, and generative AI schema copilots."
-                    : "You have reached the maximum 15 project limit on the Pro plan. Upgrade to the AI Architect tier to unlock unlimited projects."}
-                </DialogDescription>
-              </DialogHeader>
-
-              {/* Upgrade Tier Options */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-3">
-                {/* Pro Tier Card */}
-                {isFreePlan && (
-                  <div className="p-4 rounded-xl border border-border bg-card/80 space-y-3 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold font-mono text-sky-400">
-                          Pro Architect
-                        </span>
-                        <span className="text-xs font-mono font-bold text-white">
-                          $19/mo
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-zinc-400 mt-1">
-                        Up to 15 projects, Views, Triggers, CASCADE drops, and
-                        Prisma export.
-                      </p>
-                    </div>
-                    <Link
-                      href="/dashboard/pricing"
-                      onClick={() => setOpenUpgradeDialog(false)}
-                    >
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full text-xs font-semibold h-8 cursor-pointer"
-                      >
-                        Upgrade to Pro
-                      </Button>
-                    </Link>
-                  </div>
-                )}
-
-                {/* AI Architect Tier Card */}
-                <div className="p-4 rounded-xl border-2 border-[#ffdf27] bg-[#0c0d12] space-y-3 flex flex-col justify-between relative overflow-hidden">
-                  <div className="absolute top-0 right-0 bg-[#ffdf27] text-zinc-950 text-[9px] font-mono px-2 py-0.5 rounded-bl font-bold">
-                    RECOMMENDED
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold font-mono text-[#ffdf27] flex items-center gap-1">
-                        <Zap className="h-3 w-3" />
-                        AI Architect
-                      </span>
-                      <span className="text-xs font-mono font-bold text-white">
-                        $49/mo
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-zinc-300 mt-1">
-                      Unlimited projects + AI Prompt-to-Schema generator & Live
-                      Agent Chat.
-                    </p>
-                  </div>
-                  <Link
-                    href="/dashboard/pricing"
-                    onClick={() => setOpenUpgradeDialog(false)}
-                  >
-                    <Button
-                      size="sm"
-                      className="w-full text-xs font-bold h-8 bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 border-none cursor-pointer"
-                    >
-                      <Sparkles className="h-3 w-3 mr-1" />
-                      Get AI Plan
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs text-zinc-400 hover:text-white"
-                  >
-                    Close & Manage Existing Project
-                  </Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          {/* Plan Quota Upgrade Modal */}
+          <PlanUpgradeModal
+            open={openUpgradeDialog}
+            onOpenChange={setOpenUpgradeDialog}
+            isQuotaModal={true}
+            currentPlan={userPlan}
+            projectCount={projectCount}
+            projectQuota={quota}
+          />
         </div>
       </div>
     </div>

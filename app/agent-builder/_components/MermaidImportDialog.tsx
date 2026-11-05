@@ -28,6 +28,10 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { Agent } from "@/types/AgentTypes";
+import { UserDetailContext } from "@/context/UserDetailContext";
+import { useAuth } from "@clerk/nextjs";
+import { getUserPlanCode, canAccessFeature, notifyFeatureLocked } from "@/lib/planAccess";
+import PlanUpgradeModal from "@/components/plans/PlanUpgradeModal";
 
 interface MermaidImportDialogProps {
   agentDetail?: Agent;
@@ -181,6 +185,23 @@ export default function MermaidImportDialog({
   const { fitView } = useReactFlow();
   const updateAgentDetail = useMutation(api.agent.UpdateAgentDetail);
 
+  const { userDetails } = useContext(UserDetailContext);
+  const { has } = useAuth();
+  const userPlan = getUserPlanCode(userDetails, has);
+  const isAllowed = canAccessFeature("mermaid_tools", userPlan);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  const handleOpenClick = (e: React.MouseEvent) => {
+    if (!isAllowed) {
+      e.preventDefault();
+      e.stopPropagation();
+      notifyFeatureLocked("mermaid_tools", userPlan);
+      setShowUpgradeModal(true);
+    } else {
+      setOpen(true);
+    }
+  };
+
   // Live parse preview stats with chosen layout direction
   const previewStats = useMemo(() => {
     try {
@@ -275,20 +296,34 @@ export default function MermaidImportDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
+      <PlanUpgradeModal
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+        featureKey="mermaid_tools"
+        currentPlan={userPlan}
+      />
+      <Dialog open={open} onOpenChange={setOpen}>
       {trigger ? (
-        <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <span onClick={handleOpenClick} className="cursor-pointer inline-flex">
+          {trigger}
+        </span>
       ) : (
-        <DialogTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 gap-1.5 text-xs font-semibold bg-primary/5 hover:bg-primary/10 border-primary/20 text-foreground cursor-pointer shadow-xs"
-          >
-            <GitGraph className="h-3.5 w-3.5 text-primary" />
-            <span>Import Mermaid</span>
-          </Button>
-        </DialogTrigger>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleOpenClick}
+          className="h-8 gap-1.5 text-xs font-semibold bg-primary/5 hover:bg-primary/10 border-primary/20 text-foreground cursor-pointer shadow-xs"
+        >
+          <GitGraph className="h-3.5 w-3.5 text-primary" />
+          <span>Import Mermaid</span>
+          {!isAllowed && (
+            <Badge className="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] px-1 py-0 font-mono font-bold ml-0.5">
+              PRO
+            </Badge>
+          )}
+        </Button>
       )}
 
       <DialogContent className="max-w-2xl sm:max-w-3xl max-h-[92vh] flex flex-col p-6 overflow-hidden">
@@ -457,5 +492,6 @@ export default function MermaidImportDialog({
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

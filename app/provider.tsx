@@ -1,6 +1,6 @@
 "use client";
 import { useUser } from "@clerk/nextjs";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import React, { useEffect, useState } from "react";
 import { api } from "../convex/_generated/api";
 import { UserDetailContext } from "@/context/UserDetailContext";
@@ -15,9 +15,22 @@ export default function Provider({ children }: { children: React.ReactNode }) {
   const [addedNodes, setAddedNodes] = useState<any[]>([]);
   const [nodeEdges, setNodeEdges] = useState<any[]>([]);
 
+  const userEmail = user?.primaryEmailAddress?.emailAddress;
+  const liveDbUser = useQuery(
+    api.user.GetUserByEmail,
+    userEmail ? { email: userEmail } : "skip"
+  );
+
   useEffect(() => {
     CreateAndGetUser();
   }, [user]);
+
+  // Reactive subscription sync: automatically update context whenever Convex DB updates
+  useEffect(() => {
+    if (liveDbUser) {
+      setUserDetails(liveDbUser);
+    }
+  }, [liveDbUser]);
 
   const CreateAndGetUser = async () => {
     if (user) {
@@ -33,6 +46,7 @@ export default function Provider({ children }: { children: React.ReactNode }) {
       }
     }
   };
+
   return (
     <UserDetailContext.Provider value={{ userDetails, setUserDetails }}>
       <ReactFlowProvider>

@@ -28,6 +28,10 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Agent } from "@/types/AgentTypes";
+import { UserDetailContext } from "@/context/UserDetailContext";
+import { useAuth } from "@clerk/nextjs";
+import { getUserPlanCode, canAccessFeature, notifyFeatureLocked } from "@/lib/planAccess";
+import PlanUpgradeModal from "@/components/plans/PlanUpgradeModal";
 
 interface MermaidExportDialogProps {
   agentDetail?: Agent;
@@ -36,6 +40,23 @@ interface MermaidExportDialogProps {
 export default function MermaidExportDialog({ agentDetail }: MermaidExportDialogProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const { userDetails } = useContext(UserDetailContext);
+  const { has } = useAuth();
+  const userPlan = getUserPlanCode(userDetails, has);
+  const isAllowed = canAccessFeature("mermaid_tools", userPlan);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  const handleOpenClick = (e: React.MouseEvent) => {
+    if (!isAllowed) {
+      e.preventDefault();
+      e.stopPropagation();
+      notifyFeatureLocked("mermaid_tools", userPlan);
+      setShowUpgradeModal(true);
+    } else {
+      setOpen(true);
+    }
+  };
 
   // Configuration States
   const [format, setFormat] = useState<"erDiagram" | "flowchart">("erDiagram");
@@ -122,17 +143,29 @@ export default function MermaidExportDialog({ agentDetail }: MermaidExportDialog
   ).length;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
+    <>
+      <PlanUpgradeModal
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+        featureKey="mermaid_tools"
+        currentPlan={userPlan}
+      />
+      <Dialog open={open} onOpenChange={setOpen}>
+      <Button
+          type="button"
           variant="outline"
           size="sm"
+          onClick={handleOpenClick}
           className="h-8 gap-1.5 text-xs font-semibold hidden md:inline-flex cursor-pointer hover:bg-muted/80"
         >
           <FileCode className="h-3.5 w-3.5 text-primary" />
           <span>Export Mermaid</span>
+          {!isAllowed && (
+            <Badge className="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] px-1 py-0 font-mono font-bold ml-0.5">
+              PRO
+            </Badge>
+          )}
         </Button>
-      </DialogTrigger>
 
       <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader className="shrink-0">
@@ -338,5 +371,6 @@ export default function MermaidExportDialog({ agentDetail }: MermaidExportDialog
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

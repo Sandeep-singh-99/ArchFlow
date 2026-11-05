@@ -11,6 +11,35 @@ export const CreateAgent = mutation({
     edges: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    // 1. Enforce Subscription Project Quota
+    const user = await ctx.db.get(args.userId);
+    if (user) {
+      const isSubActive =
+        user.subscriptionExpiresAt === undefined ||
+        user.subscriptionExpiresAt > Date.now();
+      const sub = isSubActive ? (user.subscription || "free").toLowerCase() : "free";
+
+      let maxQuota = 1;
+      if (sub === "ai" || sub === "ai_unlimited" || sub.includes("ai")) {
+        maxQuota = 9999;
+      } else if (sub === "pro" || sub === "active" || sub.includes("pro")) {
+        maxQuota = 15;
+      }
+
+      const existingAgents = await ctx.db
+        .query("AgentTable")
+        .filter((q) => q.eq(q.field("userId"), args.userId))
+        .collect();
+
+      if (existingAgents.length >= maxQuota) {
+        throw new Error(
+          `Project limit reached (${existingAgents.length}/${maxQuota}) for your ${
+            sub === "pro" || sub === "active" ? "Pro" : "Free"
+          } plan. Please upgrade to unlock more database project slots.`
+        );
+      }
+    }
+
     const chosenType = args.schemaType ?? "sql";
     const results = await ctx.db.insert("AgentTable", {
       name: args.name,
@@ -122,6 +151,36 @@ export const DuplicateAgent = mutation({
     if (!existing) {
       throw new Error("Database schema not found");
     }
+
+    // Enforce Subscription Project Quota on duplicate
+    const user = await ctx.db.get(args.userId);
+    if (user) {
+      const isSubActive =
+        user.subscriptionExpiresAt === undefined ||
+        user.subscriptionExpiresAt > Date.now();
+      const sub = isSubActive ? (user.subscription || "free").toLowerCase() : "free";
+
+      let maxQuota = 1;
+      if (sub === "ai" || sub === "ai_unlimited" || sub.includes("ai")) {
+        maxQuota = 9999;
+      } else if (sub === "pro" || sub === "active" || sub.includes("pro")) {
+        maxQuota = 15;
+      }
+
+      const existingAgents = await ctx.db
+        .query("AgentTable")
+        .filter((q) => q.eq(q.field("userId"), args.userId))
+        .collect();
+
+      if (existingAgents.length >= maxQuota) {
+        throw new Error(
+          `Project limit reached (${existingAgents.length}/${maxQuota}) for your ${
+            sub === "pro" || sub === "active" ? "Pro" : "Free"
+          } plan. Please upgrade to unlock more database project slots.`
+        );
+      }
+    }
+
     const newAgentId = crypto.randomUUID();
     return await ctx.db.insert("AgentTable", {
       name: `${existing.name} (Copy)`,

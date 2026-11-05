@@ -30,6 +30,9 @@ import {
 } from "@/lib/domainThemes";
 import { isDomainGroupNode } from "@/lib/autoLayout";
 import { toast } from "sonner";
+import { UserDetailContext } from "@/context/UserDetailContext";
+import { useAuth } from "@clerk/nextjs";
+import { getUserPlanCode, canAccessFeature, notifyFeatureLocked } from "@/lib/planAccess";
 
 export default function SettingPanel({
   onSave,
@@ -46,6 +49,9 @@ export default function SettingPanel({
   } = useContext(WorkflowContext);
 
   const [formData, setFormData] = useState<any>({});
+  const { userDetails } = useContext(UserDetailContext);
+  const { has } = useAuth();
+  const userPlan = getUserPlanCode(userDetails, has);
 
   useEffect(() => {
     if (selectedNode) {

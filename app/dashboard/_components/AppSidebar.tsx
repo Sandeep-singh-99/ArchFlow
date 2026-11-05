@@ -15,6 +15,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { UserDetailContext } from "@/context/UserDetailContext";
+import { getUserPlanCode, getPlanProjectQuota, PLAN_NAMES } from "@/lib/planAccess";
 import { api } from "@/convex/_generated/api";
 import { useAuth } from "@clerk/nextjs";
 import { useConvex } from "convex/react";
@@ -50,17 +51,9 @@ export function AppSidebar() {
   const path = usePathname();
   const { has } = useAuth();
 
-  const isPaidUser = Boolean(
-    (has &&
-      (has({ plan: "ai_architect_pro" }) ||
-        has({ plan: "pro_architect" }) ||
-        has({ plan: "ai_unlimited_plan" }) ||
-        has({ plan: "pro_plan" }) ||
-        has({ plan: "unlimited_plan" }))) ||
-      userDetails?.subscription === "active" ||
-      userDetails?.subscription === "pro" ||
-      userDetails?.subscription === "ai"
-  );
+  const userPlan = getUserPlanCode(userDetails, has);
+  const isPaidUser = userPlan !== "free";
+  const quota = getPlanProjectQuota(userPlan);
   const convex = useConvex();
 
   const [totalProjects, setTotalProjects] = useState(0);
@@ -228,14 +221,14 @@ export function AppSidebar() {
 
       {/* Sidebar Footer: Tier & Quota Status */}
       <SidebarFooter className="border-t border-border/60 p-2 group-data-[collapsible=icon]:p-2">
-        {!isPaidUser ? (
+        {userPlan === "free" ? (
           <div className="w-full">
             {open ? (
               <div className="w-full space-y-2.5 p-2 rounded-xl bg-card border border-border/80 shadow-2xs">
                 <div className="flex items-center justify-between text-xs font-mono">
                   <span className="text-muted-foreground flex items-center gap-1.5">
                     <Zap className="h-3.5 w-3.5 text-[#ffdf27] shrink-0" />
-                    Free Tier
+                    Free Plan
                   </span>
                   <span className="font-semibold text-foreground">
                     {totalProjects} / 1 Slot
@@ -268,7 +261,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     tooltip={{
-                      children: `Free Tier: ${totalProjects} / 1 Slot (Click to Upgrade)`,
+                      children: `Free Plan: ${totalProjects} / 1 Slot (Click to Upgrade)`,
                       className:
                         "bg-zinc-900 border border-zinc-800 text-foreground text-xs font-mono",
                     }}
@@ -285,11 +278,61 @@ export function AppSidebar() {
               </SidebarMenu>
             )}
           </div>
+        ) : userPlan === "pro" ? (
+          open ? (
+            <div className="w-full space-y-2 p-2 rounded-xl bg-sky-500/10 border border-sky-500/25 text-xs font-mono">
+              <div className="flex items-center justify-between text-sky-300">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-sky-400 shrink-0" />
+                  <span className="font-semibold">Pro Architect</span>
+                </div>
+                <span className="text-[11px] font-bold">
+                  {totalProjects} / 15 Slots
+                </span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-sky-950 overflow-hidden">
+                <div
+                  className="h-full bg-sky-400 transition-all duration-300"
+                  style={{ width: `${Math.min(100, (totalProjects / 15) * 100)}%` }}
+                />
+              </div>
+              <Link href="/dashboard/pricing" className="block w-full pt-0.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full text-[10px] font-semibold border-sky-500/30 text-sky-300 hover:bg-sky-500/20 h-6 cursor-pointer"
+                >
+                  Upgrade to AI
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <SidebarMenu>
+              <SidebarMenuItem className="flex justify-center">
+                <SidebarMenuButton
+                  asChild
+                  tooltip={{
+                    children: `Pro Plan: ${totalProjects} / 15 Slots`,
+                    className:
+                      "bg-zinc-900 border border-zinc-800 text-foreground text-xs font-mono",
+                  }}
+                  className="bg-sky-500/10 border border-sky-500/25 hover:bg-sky-500/20 transition-colors group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
+                >
+                  <Link
+                    href="/dashboard/pricing"
+                    className="flex items-center justify-center w-full"
+                  >
+                    <Sparkles className="size-4 text-sky-400 shrink-0" />
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          )
         ) : open ? (
           <div className="w-full p-2.5 rounded-xl bg-[#ffc507]/10 border border-[#ffdf27]/25 text-xs font-mono text-[#ffee72] flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="h-3.5 w-3.5 text-[#ffdf27] shrink-0" />
-              <span className="font-semibold">Pro Plan Active</span>
+              <span className="font-semibold">AI Architect Active</span>
             </div>
             <span className="text-[10px] text-[#ffee72]/70 font-mono">
               Unlimited
@@ -301,7 +344,7 @@ export function AppSidebar() {
               <SidebarMenuButton
                 asChild
                 tooltip={{
-                  children: "Pro Plan Active — Unlimited Studio Access",
+                  children: "AI Architect Active — Unlimited Studio Access",
                   className:
                     "bg-zinc-900 border border-zinc-800 text-foreground text-xs font-mono",
                 }}

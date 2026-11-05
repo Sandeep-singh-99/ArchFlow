@@ -48,10 +48,19 @@ import {
   DOMAIN_THEMES,
 } from "@/lib/domainThemes";
 import { toast } from "sonner";
+import { UserDetailContext } from "@/context/UserDetailContext";
+import { useAuth } from "@clerk/nextjs";
+import { getUserPlanCode, canAccessFeature, notifyFeatureLocked } from "@/lib/planAccess";
+import PlanUpgradeModal from "@/components/plans/PlanUpgradeModal";
 
 export default function AgentToolsPanel() {
   const { setAddedNodes, setNodeEdges } = useContext(WorkflowContext);
   const [open, setOpen] = useState(false);
+  const { userDetails } = useContext(UserDetailContext);
+  const { has } = useAuth();
+  const userPlan = getUserPlanCode(userDetails, has);
+  const isAllowedDomain = canAccessFeature("domain_grouping", userPlan);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const getOffset = () => Math.floor(Math.random() * 60) - 30;
 
@@ -320,6 +329,12 @@ export default function AgentToolsPanel() {
 
   // Domain Containers
   const addDomainNode = (preset?: DomainPreset) => {
+    if (!isAllowedDomain) {
+      setOpen(false);
+      notifyFeatureLocked("domain_grouping", userPlan);
+      setShowUpgradeModal(true);
+      return;
+    }
     const offset = getOffset();
     const id = `domain-${Date.now()}`;
     const name = preset?.name || "Custom Domain";

@@ -50,6 +50,11 @@ import { getAutoLayout, isDomainGroupNode } from "@/lib/autoLayout";
 import { resolveNodeFieldHandle, isFieldHandle } from "@/lib/fieldHandleResolver";
 import { DOMAIN_PRESETS, DomainPreset, DOMAIN_THEMES } from "@/lib/domainThemes";
 import { getSchemaType } from "@/lib/schemaClassifier";
+import { UserDetailContext } from "@/context/UserDetailContext";
+import { useAuth } from "@clerk/nextjs";
+import { getUserPlanCode, canAccessFeature, notifyFeatureLocked, FeatureKey } from "@/lib/planAccess";
+import PlanUpgradeModal from "@/components/plans/PlanUpgradeModal";
+import { Badge } from "@/components/ui/badge";
 
 export default function AgentBuilder() {
   const {
@@ -75,6 +80,13 @@ export default function AgentBuilder() {
   const [showMiniMap, setShowMiniMap] = useState(true);
   const [selectedNodesList, setSelectedNodesList] = useState<any[]>([]);
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
+  const { userDetails } = useContext(UserDetailContext);
+  const { has } = useAuth();
+  const userPlan = getUserPlanCode(userDetails, has);
+  const canAccessDomain = canAccessFeature("domain_grouping", userPlan);
+  const canAccessAi = canAccessFeature("ai_copilot", userPlan);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeFeature, setUpgradeFeature] = useState<FeatureKey>("domain_grouping");
 
   const GetAgentDetail = async () => {
     try {
@@ -513,11 +525,24 @@ export default function AgentBuilder() {
 
                 <Button
                   size="sm"
-                  onClick={() => handleGroupSelection()}
+                  onClick={() => {
+                    if (!canAccessDomain) {
+                      notifyFeatureLocked("domain_grouping", userPlan);
+                      setUpgradeFeature("domain_grouping");
+                      setShowUpgradeModal(true);
+                    } else {
+                      handleGroupSelection();
+                    }
+                  }}
                   className="h-7 text-xs gap-1.5 font-medium bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-xs"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  Group into Custom Domain
+                  <span>Group into Custom Domain</span>
+                  {!canAccessDomain && (
+                    <Badge className="bg-amber-400 text-black text-[9px] px-1 py-0 font-bold ml-1 font-mono">
+                      PRO
+                    </Badge>
+                  )}
                 </Button>
               </div>
             </Panel>
@@ -534,8 +559,16 @@ export default function AgentBuilder() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setIsAiChatOpen((prev) => !prev)}
-                  className={`h-9 w-9 rounded-xl border border-border/80 bg-card/95 backdrop-blur-md shadow-xl transition-all cursor-pointer flex items-center justify-center ${
+                  onClick={() => {
+                    if (!canAccessAi) {
+                      notifyFeatureLocked("ai_copilot", userPlan);
+                      setUpgradeFeature("ai_copilot");
+                      setShowUpgradeModal(true);
+                    } else {
+                      setIsAiChatOpen((prev) => !prev);
+                    }
+                  }}
+                  className={`h-9 w-9 rounded-xl border border-border/80 bg-card/95 backdrop-blur-md shadow-xl transition-all cursor-pointer flex items-center justify-center relative ${
                     isAiChatOpen
                       ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-400 ring-2 ring-emerald-500/20"
                       : "text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/30 active:scale-95"
@@ -543,6 +576,11 @@ export default function AgentBuilder() {
                   aria-label="Open AI Copilot Chat"
                 >
                   <Bot className="h-4 w-4 text-emerald-400" />
+                  {!canAccessAi && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[8px] font-bold text-black shadow-xs font-mono">
+                      AI
+                    </span>
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right" className="text-xs font-medium">
