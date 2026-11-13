@@ -1,4 +1,6 @@
 "use client";
+
+import dynamic from "next/dynamic";
 import { Agent } from "@/types/AgentTypes";
 import {
   ChevronLeft,
@@ -8,20 +10,50 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import MermaidImportDialog from "./MermaidImportDialog";
-import MermaidExportDialog from "./MermaidExportDialog";
-import SqlExportDialog from "./SqlExportDialog";
-import ExportImageDialog from "./ExportImageDialog";
-import CascadeSimulatorDialog from "./CascadeSimulatorDialog";
-import UserFeedbackDialog from "@/components/feedback/UserFeedbackDialog";
 import { getSchemaType } from "@/lib/schemaClassifier";
+
+const SqlExportDialog = dynamic(() => import("./SqlExportDialog"), {
+  ssr: false,
+  loading: () => <div className="h-8 w-28 rounded-md bg-muted/30 animate-pulse" />,
+});
+
+const ExportImageDialog = dynamic(() => import("./ExportImageDialog"), {
+  ssr: false,
+  loading: () => <div className="h-8 w-24 rounded-md bg-muted/30 animate-pulse" />,
+});
+
+const CascadeSimulatorDialog = dynamic(
+  () => import("./CascadeSimulatorDialog"),
+  {
+    ssr: false,
+    loading: () => <div className="h-8 w-24 rounded-md bg-muted/30 animate-pulse" />,
+  }
+);
+
+const MermaidImportDialog = dynamic(() => import("./MermaidImportDialog"), {
+  ssr: false,
+  loading: () => <div className="h-8 w-24 rounded-md bg-muted/30 animate-pulse" />,
+});
+
+const MermaidExportDialog = dynamic(() => import("./MermaidExportDialog"), {
+  ssr: false,
+  loading: () => <div className="h-8 w-24 rounded-md bg-muted/30 animate-pulse" />,
+});
+
+const UserFeedbackDialog = dynamic(
+  () => import("@/components/feedback/UserFeedbackDialog"),
+  {
+    ssr: false,
+    loading: () => <div className="h-8 w-20 rounded-md bg-muted/30 animate-pulse" />,
+  }
+);
 
 type Props = {
   agentDetail: Agent | undefined;
   previewHeader?: boolean;
 };
 
-export default function Header({ agentDetail, previewHeader = false }: Props) {
+export default function Header({ agentDetail }: Props) {
   const schemaType = getSchemaType(agentDetail);
   const isNoSql = schemaType === "nosql";
 

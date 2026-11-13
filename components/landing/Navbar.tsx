@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { ArrowRight, Network, Workflow } from "lucide-react";
+import { LogIn, Network, Workflow } from "lucide-react";
 
 export default function Navbar() {
   const { isSignedIn } = useUser();
@@ -66,20 +66,11 @@ export default function Navbar() {
             <div className="flex items-center gap-1.5 sm:gap-2">
               <Link href="/sign-in">
                 <Button
-                  variant="ghost"
                   size="sm"
-                  className="text-zinc-300 hover:text-white hover:bg-white/10 rounded-full px-3 sm:px-4 text-xs sm:text-sm"
+                  className="group gap-2 font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 hover:shadow-md hover:shadow-[#ffc507]/25 border-none transition-all shadow-xs rounded-full px-4 sm:px-5 text-xs sm:text-sm active:scale-[0.98]"
                 >
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/dashboard">
-                <Button
-                  size="sm"
-                  className="group font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 hover:shadow-md hover:shadow-[#ffc507]/20 border-none transition-all shadow-xs rounded-full px-3.5 sm:px-4 text-xs sm:text-sm"
-                >
-                  <span>Design DB Flow</span>
-                  <ArrowRight className="ml-1 h-3 w-3 sm:h-3.5 sm:w-3.5 transition-transform group-hover:translate-x-0.5 text-zinc-950" />
+                  <LogIn className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-zinc-950 transition-transform group-hover:translate-x-0.5" />
+                  <span>Sign In</span>
                 </Button>
               </Link>
             </div>

@@ -2,6 +2,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   ReactFlow,
+  ReactFlowProvider,
   Handle,
   Position,
   useNodesState,
@@ -25,8 +26,6 @@ import {
   Shield,
   Layers,
   Boxes,
-  Database,
-  ArrowRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -445,7 +444,7 @@ function FloatingCanvasToolbar({ onReset }: { onReset: () => void }) {
       try {
         const z = getZoom();
         setCurrentZoom(Math.round(z * 100));
-      } catch (err) {
+      } catch {
         // ignore
       }
     };
@@ -512,7 +511,7 @@ function FloatingCanvasToolbar({ onReset }: { onReset: () => void }) {
 /* ========================================================
    MAIN COMPONENT
    ======================================================== */
-export default function InteractiveLab() {
+function InteractiveLabInner() {
   const [orderItemsActive, setOrderItemsActive] = useState(true);
 
   // Toggle order_items table state
@@ -786,5 +785,13 @@ export default function InteractiveLab() {
         </div>
       </div>
     </section>
+  );
+}
+
+export default function InteractiveLab() {
+  return (
+    <ReactFlowProvider>
+      <InteractiveLabInner />
+    </ReactFlowProvider>
   );
 }

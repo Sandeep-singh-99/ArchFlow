@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import moment from "moment";
+import { timeAgo } from "@/lib/utils";
 import { Agent } from "@/types/AgentTypes";
 import { Id } from "@/convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
@@ -237,7 +237,7 @@ export default function SchemaTableView({
                   <td className="py-3.5 px-3 text-muted-foreground font-mono text-[11px]">
                     <div className="flex items-center gap-1.5">
                       <Clock className="h-3 w-3 shrink-0" />
-                      <span>{moment(agent._creationTime).fromNow()}</span>
+                      <span>{timeAgo(agent._creationTime)}</span>
                     </div>
                   </td>
 
