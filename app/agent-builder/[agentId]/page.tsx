@@ -100,7 +100,7 @@ export default function AgentBuilder() {
       const results = await convex.query(api.agent.GetAgentById, {
         agentId: agentId as string,
       });
-      setAgentDetail(results);
+      setAgentDetail(results || undefined);
     } catch (e) {
       console.error(e);
     }

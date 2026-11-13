@@ -28,7 +28,7 @@ export const CreateAgent = mutation({
 
       const existingAgents = await ctx.db
         .query("AgentTable")
-        .filter((q) => q.eq(q.field("userId"), args.userId))
+        .withIndex("by_userId", (q) => q.eq("userId", args.userId))
         .collect();
 
       if (existingAgents.length >= maxQuota) {
@@ -62,10 +62,33 @@ export const GetUserAgents = query({
   handler: async (ctx, args) => {
     const results = await ctx.db
       .query("AgentTable")
-      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
       .order("desc")
       .collect();
     return results;
+  },
+});
+
+export const GetUserAgentsList = query({
+  args: {
+    userId: v.id("UserTable"),
+  },
+  handler: async (ctx, args) => {
+    const results = await ctx.db
+      .query("AgentTable")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .collect();
+
+    return results.map((agent) => ({
+      _id: agent._id,
+      _creationTime: agent._creationTime,
+      agentId: agent.agentId,
+      name: agent.name,
+      schemaType: agent.schemaType,
+      published: agent.published,
+      userId: agent.userId,
+    }));
   },
 });
 
@@ -75,13 +98,10 @@ export const GetAgentById = query({
   },
 
   handler: async (ctx, args) => {
-    const results = await ctx.db
+    return await ctx.db
       .query("AgentTable")
-      .filter((q) => q.eq(q.field("agentId"), args.agentId))
-      .order("desc")
-      .collect();
-
-    return results[0];
+      .withIndex("by_agentId", (q) => q.eq("agentId", args.agentId))
+      .first();
   },
 });
 
@@ -169,7 +189,7 @@ export const DuplicateAgent = mutation({
 
       const existingAgents = await ctx.db
         .query("AgentTable")
-        .filter((q) => q.eq(q.field("userId"), args.userId))
+        .withIndex("by_userId", (q) => q.eq("userId", args.userId))
         .collect();
 
       if (existingAgents.length >= maxQuota) {

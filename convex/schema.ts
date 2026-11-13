@@ -27,7 +27,9 @@ export default defineSchema({
         edges: v.optional(v.any()),
         agentToolConfig: v.optional(v.any()),
         userId: v.id("UserTable"),
-    }),
+    })
+        .index("by_userId", ["userId"])
+        .index("by_agentId", ["agentId"]),
 
     ChatTable: defineTable({
         agentId: v.id("AgentTable"),

@@ -39,7 +39,7 @@ export default function PreviewAgent() {
     const results = await convex.query(api.agent.GetAgentById, {
       agentId: agentId as string,
     });
-    setAgentDetail(results);
+    setAgentDetail(results || undefined);
   };
 
   useEffect(() => {

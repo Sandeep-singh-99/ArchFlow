@@ -40,14 +40,6 @@ const MermaidExportDialog = dynamic(() => import("./MermaidExportDialog"), {
   loading: () => <div className="h-8 w-24 rounded-md bg-muted/30 animate-pulse" />,
 });
 
-const UserFeedbackDialog = dynamic(
-  () => import("@/components/feedback/UserFeedbackDialog"),
-  {
-    ssr: false,
-    loading: () => <div className="h-8 w-20 rounded-md bg-muted/30 animate-pulse" />,
-  }
-);
-
 type Props = {
   agentDetail: Agent | undefined;
   previewHeader?: boolean;
@@ -104,9 +96,6 @@ export default function Header({ agentDetail }: Props) {
         {/* 4. Mermaid Import & Export Dialogs (Pro & AI tier) */}
         <MermaidImportDialog agentDetail={agentDetail} />
         <MermaidExportDialog agentDetail={agentDetail} />
-
-        {/* 5. User Feedback Dialog */}
-        <UserFeedbackDialog />
       </div>
     </div>
   );

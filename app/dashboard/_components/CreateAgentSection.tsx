@@ -55,7 +55,7 @@ export default function CreateAgentSection() {
 
   // Project quota check
   const userAgents = useQuery(
-    api.agent.GetUserAgents,
+    api.agent.GetUserAgentsList,
     userDetails?._id ? { userId: userDetails._id } : "skip"
   );
   const projectCount = userAgents ? userAgents.length : 0;

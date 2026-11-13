@@ -62,7 +62,7 @@ export function AppSidebar() {
     let isMounted = true;
     if (userDetails?._id) {
       convex
-        .query(api.agent.GetUserAgents, { userId: userDetails._id })
+        .query(api.agent.GetUserAgentsList, { userId: userDetails._id })
         .then((results) => {
           if (!isMounted) return;
           const count = Number(results?.length || 0);

@@ -76,7 +76,7 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
     if (!userDetails?._id) return;
     try {
       setLoading(true);
-      const results = await convex.query(api.agent.GetUserAgents, {
+      const results = await convex.query(api.agent.GetUserAgentsList, {
         userId: userDetails._id as Id<"UserTable">,
       });
       setAgentList(results || []);
