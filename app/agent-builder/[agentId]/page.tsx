@@ -13,6 +13,8 @@ import {
   Panel,
   useOnSelectionChange,
   OnSelectionChangeParams,
+  Node,
+  NodeChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -66,7 +68,12 @@ export default function AgentBuilder() {
     setSelectedNode,
   } = useContext(WorkflowContext);
 
-  const { deleteElements, fitView } = useReactFlow();
+  const { deleteElements, fitView, getNodes } = useReactFlow();
+  const [nodes, setNodes] = useState<Node[]>(addedNodes || []);
+
+  useEffect(() => {
+    setNodes(addedNodes || []);
+  }, [addedNodes]);
 
   const { agentId } = useParams();
   const convex = useConvex();
@@ -116,10 +123,11 @@ export default function AgentBuilder() {
     if (!agentDetail?._id) return;
     try {
       setIsSaving(true);
+      const nodesToSave = updatedNodes ?? getNodes();
       await updateAgentDetail({
         id: agentDetail._id,
         edges: updatedEdges ?? nodeEdges,
-        nodes: updatedNodes ?? addedNodes,
+        nodes: nodesToSave,
       });
       toast.success("Database schema saved!");
     } catch (e) {
@@ -131,11 +139,30 @@ export default function AgentBuilder() {
   };
 
   const onNodesChange = useCallback(
-    (changes: any) =>
-      setAddedNodes((nodesSnapshot: any) =>
+    (changes: NodeChange[]) => {
+      // 1. Keep active node positions in React Flow's local internal state during drag
+      setNodes((nodesSnapshot: Node[]) =>
         applyNodeChanges(changes, nodesSnapshot || [])
-      ),
+      );
+
+      // 2. Decouple position changes during drags from global WorkflowContext
+      const hasPositionChange = changes.some((c) => c.type === "position");
+      if (!hasPositionChange) {
+        setAddedNodes((nodesSnapshot: Node[]) =>
+          applyNodeChanges(changes, nodesSnapshot || [])
+        );
+      }
+    },
     [setAddedNodes]
+  );
+
+  const onNodeDragStop = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      setSelectedNode(node);
+      const currentNodes = getNodes();
+      setAddedNodes(currentNodes);
+    },
+    [setSelectedNode, getNodes, setAddedNodes]
   );
 
   const onEdgesChange = useCallback(
@@ -186,6 +213,9 @@ export default function AgentBuilder() {
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
+    setNodes((nds: any[]) =>
+      (nds || []).map((n) => (n.selected ? { ...n, selected: false } : n))
+    );
     setAddedNodes((nds: any[]) =>
       (nds || []).map((n) => (n.selected ? { ...n, selected: false } : n))
     );
@@ -195,6 +225,9 @@ export default function AgentBuilder() {
     (event: React.MouseEvent, edge: any) => {
       event?.stopPropagation?.();
       setSelectedNode(null);
+      setNodes((nds: any[]) =>
+        (nds || []).map((n) => (n.selected ? { ...n, selected: false } : n))
+      );
       setAddedNodes((nds: any[]) =>
         (nds || []).map((n) => (n.selected ? { ...n, selected: false } : n))
       );
@@ -245,14 +278,15 @@ export default function AgentBuilder() {
 
   const handleAutoArrange = useCallback(
     (direction: "LR" | "TB" = "LR") => {
-      if (!addedNodes || addedNodes.length === 0) {
+      const currentNodes = nodes.length > 0 ? nodes : addedNodes;
+      if (!currentNodes || currentNodes.length === 0) {
         toast.info("No nodes on the canvas to arrange");
         return;
       }
 
       setIsArranging(true);
       try {
-        const layout = getAutoLayout(addedNodes, nodeEdges, {
+        const layout = getAutoLayout(currentNodes, nodeEdges, {
           direction,
           nodeSep: 80,
           rankSep: 110,
@@ -269,8 +303,8 @@ export default function AgentBuilder() {
           }
 
           // Upgrade generic edges to field-level handles if table/collection nodes exist
-          const srcNode = (addedNodes || []).find((n: any) => n.id === e.source);
-          const tgtNode = (addedNodes || []).find((n: any) => n.id === e.target);
+          const srcNode = (currentNodes || []).find((n: any) => n.id === e.source);
+          const tgtNode = (currentNodes || []).find((n: any) => n.id === e.target);
           if (srcNode && tgtNode) {
             const srcSide = isHorizontal ? "right" : "bottom";
             const tgtSide = isHorizontal ? "left" : "top";
@@ -308,6 +342,7 @@ export default function AgentBuilder() {
           };
         });
 
+        setNodes(layout.nodes);
         setAddedNodes(layout.nodes);
         setNodeEdges(updatedEdges);
         toast.success(
@@ -324,7 +359,7 @@ export default function AgentBuilder() {
         setIsArranging(false);
       }
     },
-    [addedNodes, nodeEdges, setAddedNodes, fitView]
+    [nodes, addedNodes, nodeEdges, setAddedNodes, fitView]
   );
 
   const handleGroupSelection = useCallback(
@@ -336,10 +371,11 @@ export default function AgentBuilder() {
       let maxX = -Infinity;
       let maxY = -Infinity;
 
+      const currentNodes = nodes.length > 0 ? nodes : addedNodes;
       // Calculate bounding box in absolute canvas space
       selectedNodesList.forEach((node: any) => {
         const parent = node.parentId
-          ? (addedNodes || []).find((n: any) => n.id === node.parentId)
+          ? (currentNodes || []).find((n: any) => n.id === node.parentId)
           : null;
         const absX = (parent?.position?.x || 0) + (node.position?.x || 0);
         const absY = (parent?.position?.y || 0) + (node.position?.y || 0);
@@ -384,10 +420,10 @@ export default function AgentBuilder() {
       const selectedIds = new Set(selectedNodesList.map((n) => n.id));
 
       // Update selected child nodes to be relative to the new domain container
-      const updatedNodes = (addedNodes || []).map((node: any) => {
+      const updatedNodes = (currentNodes || []).map((node: any) => {
         if (selectedIds.has(node.id)) {
           const currentParent = node.parentId
-            ? (addedNodes || []).find((n: any) => n.id === node.parentId)
+            ? (currentNodes || []).find((n: any) => n.id === node.parentId)
             : null;
           const absX = (currentParent?.position?.x || 0) + (node.position?.x || 0);
           const absY = (currentParent?.position?.y || 0) + (node.position?.y || 0);
@@ -421,6 +457,7 @@ export default function AgentBuilder() {
         ...childNodes,
       ];
 
+      setNodes(finalNodes);
       setAddedNodes(finalNodes);
       setSelectedNode(newDomainNode);
       SaveNodeAndEdges(finalNodes);
@@ -428,7 +465,7 @@ export default function AgentBuilder() {
         `Grouped ${selectedNodesList.length} tables into Custom Domain`
       );
     },
-    [selectedNodesList, addedNodes, setAddedNodes, setSelectedNode, SaveNodeAndEdges]
+    [selectedNodesList, nodes, addedNodes, setAddedNodes, setSelectedNode, SaveNodeAndEdges]
   );
 
   const handleCanvasWrapperClick = useCallback(
@@ -454,15 +491,16 @@ export default function AgentBuilder() {
       <Header agentDetail={agentDetail} />
       <div className="flex-1 w-full relative" onClick={handleCanvasWrapperClick}>
         <ReactFlow
+          onlyRenderVisibleElements={true}
           colorMode="dark"
           connectionMode={ConnectionMode.Loose}
-          nodes={addedNodes || []}
+          nodes={nodes}
           edges={nodeEdges || []}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={(e, node) => setSelectedNode(node)}
-          onNodeDragStop={(e, node) => setSelectedNode(node)}
+          onNodeDragStop={onNodeDragStop}
           onPaneClick={onPaneClick}
           onEdgeClick={onEdgeClick}
           onEdgeDoubleClick={onEdgeDoubleClick}
@@ -597,7 +635,7 @@ export default function AgentBuilder() {
           )}
 
           {/* Empty Canvas Quick Starter */}
-          {(!addedNodes || addedNodes.length === 0) && (
+          {(!nodes || nodes.length === 0) && (!addedNodes || addedNodes.length === 0) && (
             <Panel position="top-center" className="mt-20 pointer-events-auto">
               <div className="max-w-md p-6 rounded-2xl bg-card/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-border shadow-2xl text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 via-emerald-500/20 to-teal-500/20 border border-indigo-500/30 flex items-center justify-center mx-auto text-indigo-500">
