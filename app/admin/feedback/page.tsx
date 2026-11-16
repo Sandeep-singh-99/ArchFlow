@@ -181,7 +181,7 @@ export default function AdminFeedbackPage() {
                     tierFilter === "ai" ? "bg-card text-primary font-semibold" : "text-muted-foreground"
                   }`}
                 >
-                  AI ($49)
+                  AI (₹3,999)
                 </button>
                 <button
                   type="button"
@@ -190,7 +190,7 @@ export default function AdminFeedbackPage() {
                     tierFilter === "pro" ? "bg-card text-emerald-400 font-semibold" : "text-muted-foreground"
                   }`}
                 >
-                  Pro ($19)
+                  Pro (₹1,499)
                 </button>
                 <button
                   type="button"

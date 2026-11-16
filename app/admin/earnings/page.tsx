@@ -79,7 +79,7 @@ export default function AdminEarningsPage() {
           </CardHeader>
           <CardContent className="space-y-1">
             <div className="text-2xl font-bold font-mono text-emerald-400">
-              ${earnings.mrr.toLocaleString()}
+              ₹{earnings.mrr.toLocaleString()}
             </div>
             <p className="text-[11px] text-muted-foreground">
               Monthly Recurring Revenue
@@ -99,7 +99,7 @@ export default function AdminEarningsPage() {
           </CardHeader>
           <CardContent className="space-y-1">
             <div className="text-2xl font-bold font-mono text-foreground">
-              ${earnings.arr.toLocaleString()}
+              ₹{earnings.arr.toLocaleString()}
             </div>
             <p className="text-[11px] text-muted-foreground">
               Annual projected gross
@@ -139,7 +139,7 @@ export default function AdminEarningsPage() {
           </CardHeader>
           <CardContent className="space-y-1">
             <div className="text-2xl font-bold font-mono text-amber-400">
-              ${userStats.paidCount > 0 ? (earnings.mrr / userStats.paidCount).toFixed(2) : "0.00"}
+              ₹{userStats.paidCount > 0 ? (earnings.mrr / userStats.paidCount).toFixed(2) : "0.00"}
             </div>
             <p className="text-[11px] text-muted-foreground">
               Per active paying customer
@@ -155,9 +155,9 @@ export default function AdminEarningsPage() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 font-mono text-[10px]">
-                $19 / Month
+                ₹1,499 / Month
               </Badge>
-              <span className="text-xs font-mono font-bold text-emerald-400">${earnings.proRevenue}/mo</span>
+              <span className="text-xs font-mono font-bold text-emerald-400">₹{earnings.proRevenue}/mo</span>
             </div>
             <CardTitle className="text-sm font-semibold pt-1">Pro Architect Plan</CardTitle>
             <CardDescription className="text-xs">Unlimited SQL/NoSQL schemas & DDL migrations</CardDescription>
@@ -169,7 +169,7 @@ export default function AdminEarningsPage() {
             </div>
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">Annual Gross</span>
-              <span className="font-mono font-bold">${(earnings.proRevenue * 12).toLocaleString()}</span>
+              <span className="font-mono font-bold">₹{(earnings.proRevenue * 12).toLocaleString()}</span>
             </div>
           </CardContent>
         </Card>
@@ -179,9 +179,9 @@ export default function AdminEarningsPage() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10 font-mono text-[10px]">
-                $49 / Month
+                ₹3,999 / Month
               </Badge>
-              <span className="text-xs font-mono font-bold text-primary">${earnings.aiRevenue}/mo</span>
+              <span className="text-xs font-mono font-bold text-primary">₹{earnings.aiRevenue}/mo</span>
             </div>
             <CardTitle className="text-sm font-semibold pt-1">AI Architect Unlimited</CardTitle>
             <CardDescription className="text-xs">Unlimited Gemini AI canvas generation & tokens</CardDescription>
@@ -193,7 +193,7 @@ export default function AdminEarningsPage() {
             </div>
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">Annual Gross</span>
-              <span className="font-mono font-bold">${(earnings.aiRevenue * 12).toLocaleString()}</span>
+              <span className="font-mono font-bold">₹{(earnings.aiRevenue * 12).toLocaleString()}</span>
             </div>
           </CardContent>
         </Card>
@@ -203,9 +203,9 @@ export default function AdminEarningsPage() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <Badge variant="outline" className="text-muted-foreground font-mono text-[10px]">
-                $0 / Free
+                ₹0 / Free
               </Badge>
-              <span className="text-xs font-mono font-bold text-muted-foreground">$0/mo</span>
+              <span className="text-xs font-mono font-bold text-muted-foreground">₹0/mo</span>
             </div>
             <CardTitle className="text-sm font-semibold pt-1">Free Starter Tier</CardTitle>
             <CardDescription className="text-xs">3 free architecture creations & 5,000 tokens</CardDescription>
@@ -264,7 +264,7 @@ export default function AdminEarningsPage() {
                           : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
                       }`}
                     >
-                      {u.subscription === "ai" ? "AI Unlimited ($49)" : "Pro ($19)"}
+                      {u.subscription === "ai" ? "AI Unlimited (₹3,999)" : "Pro (₹1,499)"}
                     </Badge>
                     <span className="font-mono text-[11px] text-muted-foreground hidden sm:inline">
                       {u.schemaCount} architectures

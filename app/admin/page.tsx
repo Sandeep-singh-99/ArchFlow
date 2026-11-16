@@ -111,10 +111,10 @@ export default function AdminOverviewPage() {
           </CardHeader>
           <CardContent className="space-y-1.5">
             <div className="text-2xl font-bold text-emerald-400 font-mono">
-              ${earnings.mrr.toLocaleString()}
+              ₹{earnings.mrr.toLocaleString()}
             </div>
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>ARR: ${earnings.arr.toLocaleString()}</span>
+              <span>ARR: ₹{earnings.arr.toLocaleString()}</span>
               <span className="text-emerald-400 font-medium">Pro & AI Plans</span>
             </div>
           </CardContent>

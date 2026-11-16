@@ -18,7 +18,6 @@ export const GetAdminOverviewMetrics = query({
     const userCount = totalUsers - adminCount;
 
     // 2. Subscription & Earnings Stats
-    // Plan pricing: Pro = $19/mo, AI Unlimited = $49/mo
     let proCount = 0;
     let aiCount = 0;
     let freeCount = 0;
@@ -34,10 +33,43 @@ export const GetAdminOverviewMetrics = query({
       }
     });
 
-    const mrr = proCount * 19 + aiCount * 49;
-    const arr = mrr * 12;
     const paidUsers = proCount + aiCount;
     const conversionRate = totalUsers > 0 ? ((paidUsers / totalUsers) * 100).toFixed(1) : "0.0";
+
+    // Calculate revenue from actual records in PaymentTable where status === "success"
+    const successfulPayments = await ctx.db
+      .query("PaymentTable")
+      .withIndex("by_status", (q) => q.eq("status", "success"))
+      .collect();
+
+    let proRevenue = 0;
+    let aiRevenue = 0;
+    let otherRevenue = 0;
+
+    if (successfulPayments.length > 0) {
+      successfulPayments.forEach((p) => {
+        const monthly = p.billingCycle === "yearly" ? p.amount / 12 : p.amount;
+        if (p.planCode === "ai") {
+          aiRevenue += monthly;
+        } else if (p.planCode === "pro") {
+          proRevenue += monthly;
+        } else {
+          otherRevenue += monthly;
+        }
+      });
+    } else if (paidUsers > 0) {
+      // Fallback: Use live PlanTable prices or standard INR tier prices if no payment records exist yet
+      const plans = await ctx.db.query("PlanTable").collect();
+      const proPlan = plans.find((pl) => pl.planCode === "pro");
+      const aiPlan = plans.find((pl) => pl.planCode === "ai");
+      const proPrice = proPlan?.monthlyPrice ?? 1499;
+      const aiPrice = aiPlan?.monthlyPrice ?? 3999;
+      proRevenue = proCount * proPrice;
+      aiRevenue = aiCount * aiPrice;
+    }
+
+    const mrr = Math.round(proRevenue + aiRevenue + otherRevenue);
+    const arr = Math.round(mrr * 12);
 
     // 3. Schema Stats
     const totalSchemas = agents.length;
@@ -94,8 +126,8 @@ export const GetAdminOverviewMetrics = query({
       earnings: {
         mrr,
         arr,
-        proRevenue: proCount * 19,
-        aiRevenue: aiCount * 49,
+        proRevenue: Math.round(proRevenue),
+        aiRevenue: Math.round(aiRevenue),
       },
       schemas: {
         total: totalSchemas,
