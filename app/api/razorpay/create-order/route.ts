@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import Razorpay from "razorpay";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@/convex/_generated/api";
+
+const CANONICAL_PLANS: Record<
+  string,
+  { name: string; monthlyPrice: number; yearlyPrice: number; currency: string }
+> = {
+  pro: { name: "Pro Architect", monthlyPrice: 1499, yearlyPrice: 14999, currency: "INR" },
+  ai: { name: "AI Architect Pro", monthlyPrice: 3999, yearlyPrice: 39999, currency: "INR" },
+};
 
 export async function POST(req: Request) {
   try {
@@ -12,10 +22,80 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { planId, planName, planCode, billingCycle, amount, currency = "INR" } = body;
+    const { planId, planCode, billingCycle = "monthly" } = body;
 
-    if (!amount || amount <= 0) {
-      return NextResponse.json({ error: "Invalid plan amount" }, { status: 400 });
+    const normalizedCode = (planCode || "").trim().toLowerCase();
+
+    // Reject free plan purchase
+    if (normalizedCode === "free") {
+      return NextResponse.json(
+        { error: "The Free Starter tier does not require payment." },
+        { status: 400 }
+      );
+    }
+
+    // Fetch authoritative plan from Convex PlanTable
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let dbPlan: any = null;
+    const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (convexUrl) {
+      try {
+        const convex = new ConvexHttpClient(convexUrl);
+        dbPlan = await convex.query(api.plans.GetPlanByIdOrCode, {
+          planId: planId ? String(planId) : undefined,
+          planCode: normalizedCode || undefined,
+        });
+      } catch (err) {
+        console.warn("Could not query Convex PlanTable directly, checking canonical plans:", err);
+      }
+    }
+
+    let serverPrice: number;
+    let finalPlanName: string;
+    let finalPlanCode: string;
+    let finalCurrency: string;
+
+    if (dbPlan) {
+      const isDiscountExpired = Boolean(
+        dbPlan.expiryDate && new Date(`${dbPlan.expiryDate}T23:59:59`).getTime() < Date.now()
+      );
+      const hasActiveDiscount = Boolean(
+        dbPlan.discountPercent && dbPlan.discountPercent > 0 && !isDiscountExpired
+      );
+
+      serverPrice =
+        billingCycle === "yearly"
+          ? (hasActiveDiscount ? dbPlan.yearlyPrice : (dbPlan.originalYearlyPrice ?? dbPlan.yearlyPrice))
+          : (hasActiveDiscount ? dbPlan.monthlyPrice : (dbPlan.originalMonthlyPrice ?? dbPlan.monthlyPrice));
+
+      finalPlanName = dbPlan.name;
+      finalPlanCode = dbPlan.planCode;
+      finalCurrency = dbPlan.currency || "INR";
+    } else if (CANONICAL_PLANS[normalizedCode]) {
+      const canonical = CANONICAL_PLANS[normalizedCode];
+      serverPrice = billingCycle === "yearly" ? canonical.yearlyPrice : canonical.monthlyPrice;
+      finalPlanName = canonical.name;
+      finalPlanCode = normalizedCode;
+      finalCurrency = canonical.currency;
+    } else {
+      return NextResponse.json(
+        { error: `Invalid or unavailable subscription plan: ${planCode || planId}` },
+        { status: 400 }
+      );
+    }
+
+    if (!serverPrice || serverPrice <= 0) {
+      return NextResponse.json({ error: "Invalid plan price on server" }, { status: 400 });
+    }
+
+    // Reject any client-submitted amount that attempts to override the authoritative price
+    if (body.amount !== undefined && Math.abs(Number(body.amount) - serverPrice) > 0.01) {
+      return NextResponse.json(
+        {
+          error: `Client-submitted price (${body.amount}) does not match authorized plan price (${serverPrice} ${finalCurrency}).`,
+        },
+        { status: 400 }
+      );
     }
 
     const keyId =
@@ -40,20 +120,21 @@ export async function POST(req: Request) {
       key_secret: keySecret,
     });
 
-    // Razorpay amounts are in smallest currency sub-units (paise for INR, cents for USD)
-    const amountInSubunits = Math.round(Number(amount) * 100);
+    // Razorpay amounts are in smallest currency sub-units (paise for INR)
+    const amountInSubunits = Math.round(serverPrice * 100);
 
     const options = {
       amount: amountInSubunits,
-      currency: currency.toUpperCase(),
+      currency: finalCurrency.toUpperCase(),
       receipt: `rcpt_${Date.now()}_${userId.slice(-6)}`,
       notes: {
         userId,
         userEmail: user.primaryEmailAddress?.emailAddress || "",
-        planId: planId || "",
-        planName: planName || "",
-        planCode: planCode || "pro",
+        planId: dbPlan?._id ? String(dbPlan._id) : planId || "",
+        planName: finalPlanName,
+        planCode: finalPlanCode,
         billingCycle: billingCycle || "monthly",
+        authorizedPrice: String(serverPrice),
       },
     };
 
@@ -64,6 +145,9 @@ export async function POST(req: Request) {
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
+      planCode: finalPlanCode,
+      planName: finalPlanName,
+      billingCycle,
       keyId,
       user: {
         name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username || "User",

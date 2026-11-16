@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { verifyAdmin } from "./adminAuth";
 
 // =========================================================================
 // Overview & Platform Metrics
@@ -9,7 +10,15 @@ export const GetAdminOverviewMetrics = query({
   args: {},
   handler: async (ctx) => {
     const users = await ctx.db.query("UserTable").collect();
-    const agents = await ctx.db.query("AgentTable").collect();
+    // Map immediately to lightweight metadata without graph payloads to minimize memory consumption
+    const rawAgents = await ctx.db.query("AgentTable").collect();
+    const agents = rawAgents.map((a) => ({
+      _id: a._id,
+      name: a.name,
+      schemaType: a.schemaType || "sql",
+      tableCount: Array.isArray(a.nodes) ? a.nodes.length : 0,
+      published: a.published,
+    }));
     const feedbacks = await ctx.db.query("FeedbackTable").collect();
 
     // 1. User Stats
@@ -108,7 +117,7 @@ export const GetAdminOverviewMetrics = query({
         id: a._id,
         name: a.name,
         schemaType: a.schemaType || "sql",
-        tableCount: Array.isArray(a.nodes) ? a.nodes.length : 0,
+        tableCount: a.tableCount,
         published: a.published,
       }));
 
@@ -155,14 +164,16 @@ export const GetAllUsers = query({
   args: {},
   handler: async (ctx) => {
     const users = await ctx.db.query("UserTable").collect();
-    const agents = await ctx.db.query("AgentTable").collect();
+    // Only map userId references, releasing heavy node/edge graphs from memory immediately
+    const agentRecords = (await ctx.db.query("AgentTable").collect()).map((a) => ({
+      userId: a.userId ? String(a.userId) : null,
+    }));
 
     // Group agents by userId
     const agentCountByUser = new Map<string, number>();
-    agents.forEach((a) => {
+    agentRecords.forEach((a) => {
       if (a.userId) {
-        const idStr = String(a.userId);
-        agentCountByUser.set(idStr, (agentCountByUser.get(idStr) || 0) + 1);
+        agentCountByUser.set(a.userId, (agentCountByUser.get(a.userId) || 0) + 1);
       }
     });
 
@@ -192,8 +203,11 @@ export const UpdateUserRole = mutation({
   args: {
     userId: v.id("UserTable"),
     role: v.string(), // "admin" | "user"
+    adminUserId: v.optional(v.id("UserTable")),
   },
   handler: async (ctx, args) => {
+    await verifyAdmin(ctx, args.adminUserId);
+
     const user = await ctx.db.get(args.userId);
     if (!user) {
       throw new Error("User not found");
@@ -211,8 +225,11 @@ export const AdjustUserTokens = mutation({
   args: {
     userId: v.id("UserTable"),
     tokens: v.number(),
+    adminUserId: v.optional(v.id("UserTable")),
   },
   handler: async (ctx, args) => {
+    await verifyAdmin(ctx, args.adminUserId);
+
     const user = await ctx.db.get(args.userId);
     if (!user) {
       throw new Error("User not found");
@@ -234,35 +251,35 @@ export const GetPlatformAnalytics = query({
   args: {},
   handler: async (ctx) => {
     const users = await ctx.db.query("UserTable").collect();
-    const agents = await ctx.db.query("AgentTable").collect();
+    const rawAgents = await ctx.db.query("AgentTable").collect();
     const feedbacks = await ctx.db.query("FeedbackTable").collect();
 
-    // Analyze nodes and edge density
+    // Analyze nodes and edge density without retaining graphs in memory
     let totalNodes = 0;
     let totalEdges = 0;
     let totalSqlTables = 0;
     let totalNoSqlCollections = 0;
 
-    agents.forEach((a) => {
+    for (const a of rawAgents) {
       const nodes = Array.isArray(a.nodes) ? a.nodes : [];
       const edges = Array.isArray(a.edges) ? a.edges : [];
       totalNodes += nodes.length;
       totalEdges += edges.length;
 
-      nodes.forEach((n: any) => {
-        if (n.type === "SqlTableNode" || n.type === "Table") totalSqlTables++;
-        if (n.type === "NosqlCollectionNode" || n.type === "Collection") totalNoSqlCollections++;
-      });
-    });
+      for (const n of nodes) {
+        if (n?.type === "SqlTableNode" || n?.type === "Table") totalSqlTables++;
+        if (n?.type === "NosqlCollectionNode" || n?.type === "Collection") totalNoSqlCollections++;
+      }
+    }
 
-    const avgNodesPerSchema = agents.length > 0 ? (totalNodes / agents.length).toFixed(1) : "0";
-    const avgEdgesPerSchema = agents.length > 0 ? (totalEdges / agents.length).toFixed(1) : "0";
+    const avgNodesPerSchema = rawAgents.length > 0 ? (totalNodes / rawAgents.length).toFixed(1) : "0";
+    const avgEdgesPerSchema = rawAgents.length > 0 ? (totalEdges / rawAgents.length).toFixed(1) : "0";
 
     return {
       totalUsers: users.length,
-      totalSchemas: agents.length,
-      sqlSchemas: agents.filter((a) => a.schemaType !== "nosql").length,
-      nosqlSchemas: agents.filter((a) => a.schemaType === "nosql").length,
+      totalSchemas: rawAgents.length,
+      sqlSchemas: rawAgents.filter((a) => a.schemaType !== "nosql").length,
+      nosqlSchemas: rawAgents.filter((a) => a.schemaType === "nosql").length,
       totalNodes,
       totalEdges,
       totalSqlTables,
@@ -365,8 +382,10 @@ export const UpdateFeedbackStatus = mutation({
   args: {
     feedbackId: v.id("FeedbackTable"),
     status: v.string(), // "new" | "in_review" | "resolved" | "archived"
+    adminUserId: v.optional(v.id("UserTable")),
   },
   handler: async (ctx, args) => {
+    await verifyAdmin(ctx, args.adminUserId);
     await ctx.db.patch(args.feedbackId, {
       status: args.status,
     });
@@ -377,8 +396,10 @@ export const UpdateFeedbackStatus = mutation({
 export const DeleteFeedback = mutation({
   args: {
     feedbackId: v.id("FeedbackTable"),
+    adminUserId: v.optional(v.id("UserTable")),
   },
   handler: async (ctx, args) => {
+    await verifyAdmin(ctx, args.adminUserId);
     await ctx.db.delete(args.feedbackId);
     return { success: true };
   },

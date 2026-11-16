@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { UserDetailContext } from "@/context/UserDetailContext";
 import {
   Layers,
   Plus,
@@ -131,6 +132,7 @@ export default function AdminPlansPage() {
   const deletePlan = useMutation(api.plans.DeletePlan);
   const togglePlanStatus = useMutation(api.plans.TogglePlanStatus);
   const seedDefaultPlans = useMutation(api.plans.SeedDefaultPlans);
+  const { userDetails } = useContext(UserDetailContext);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPlanId, setEditingPlanId] = useState<Id<"PlanTable"> | null>(null);
@@ -233,10 +235,14 @@ export default function AdminPlansPage() {
         await updatePlan({
           id: editingPlanId,
           ...planData,
+          adminUserId: userDetails?._id,
         });
         toast.success(`Plan "${formData.name}" updated successfully!`);
       } else {
-        await createPlan(planData);
+        await createPlan({
+          ...planData,
+          adminUserId: userDetails?._id,
+        });
         toast.success(`Plan "${formData.name}" created successfully!`);
       }
       setIsDialogOpen(false);
@@ -251,7 +257,7 @@ export default function AdminPlansPage() {
   // Toggle status
   const handleToggleStatus = async (id: Id<"PlanTable">, currentStatus: boolean) => {
     try {
-      await togglePlanStatus({ id });
+      await togglePlanStatus({ id, adminUserId: userDetails?._id });
       toast.success(currentStatus ? "Plan deactivated" : "Plan activated");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to toggle status";
@@ -263,7 +269,7 @@ export default function AdminPlansPage() {
   const handleDeletePlan = async (id: Id<"PlanTable">, name: string) => {
     if (!confirm(`Are you sure you want to delete the plan "${name}"?`)) return;
     try {
-      await deletePlan({ id });
+      await deletePlan({ id, adminUserId: userDetails?._id });
       toast.success(`Plan "${name}" removed`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to delete plan";
@@ -275,7 +281,7 @@ export default function AdminPlansPage() {
   const handleSeedDefaults = async () => {
     try {
       setIsSeeding(true);
-      const res = await seedDefaultPlans({});
+      const res = await seedDefaultPlans({ adminUserId: userDetails?._id });
       if (res.count) {
         toast.success(`Seeded ${res.count} default plans successfully!`);
       } else {

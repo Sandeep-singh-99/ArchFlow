@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useContext } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { UserDetailContext } from "@/context/UserDetailContext";
 import {
   MessageSquareHeart,
   Star,
@@ -13,22 +15,20 @@ import {
   MessageCircle,
   ThumbsUp,
   Search,
-  Filter,
   CheckCircle2,
   Clock,
-  Archive,
   Trash2,
   Mail,
-  User,
+  LucideIcon,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const CATEGORY_MAP: Record<string, { label: string; icon: any; color: string }> = {
+const CATEGORY_MAP: Record<string, { label: string; icon: LucideIcon; color: string }> = {
   bug: { label: "Bug Report", icon: Bug, color: "text-rose-400 border-rose-500/30 bg-rose-500/10" },
   feature_request: { label: "Feature Idea", icon: Lightbulb, color: "text-amber-400 border-amber-500/30 bg-amber-500/10" },
   ui_ux: { label: "UI / UX", icon: Palette, color: "text-purple-400 border-purple-500/30 bg-purple-500/10" },
@@ -51,6 +51,7 @@ export default function AdminFeedbackPage() {
 
   const updateStatus = useMutation(api.admin.UpdateFeedbackStatus);
   const deleteFeedback = useMutation(api.admin.DeleteFeedback);
+  const { userDetails } = useContext(UserDetailContext);
 
   const filteredFeedbacks = useMemo(() => {
     if (!feedbacks) return [];
@@ -66,21 +67,23 @@ export default function AdminFeedbackPage() {
     );
   }, [feedbacks, searchQuery]);
 
-  const handleStatusChange = async (feedbackId: any, nextStatus: string) => {
+  const handleStatusChange = async (feedbackId: Id<"FeedbackTable">, nextStatus: string) => {
     try {
-      await updateStatus({ feedbackId, status: nextStatus });
+      await updateStatus({ feedbackId, status: nextStatus, adminUserId: userDetails?._id });
       toast.success(`Feedback status changed to ${nextStatus.replace("_", " ")}`);
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to update status");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to update status";
+      toast.error(msg);
     }
   };
 
-  const handleDelete = async (feedbackId: any) => {
+  const handleDelete = async (feedbackId: Id<"FeedbackTable">) => {
     try {
-      await deleteFeedback({ feedbackId });
+      await deleteFeedback({ feedbackId, adminUserId: userDetails?._id });
       toast.success("Feedback deleted");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to delete feedback");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to delete feedback";
+      toast.error(msg);
     }
   };
 

@@ -1,5 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { verifyAdmin } from "./adminAuth";
+import { Id } from "./_generated/dataModel";
 
 export const GetAllPlans = query({
   args: {},
@@ -25,6 +27,33 @@ export const GetActivePlans = query({
   },
 });
 
+export const GetPlanByIdOrCode = query({
+  args: {
+    planId: v.optional(v.string()),
+    planCode: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    if (args.planId) {
+      try {
+        const plan = await ctx.db.get(args.planId as Id<"PlanTable">);
+        if (plan && plan.isActive) return plan;
+      } catch {
+        // Not a valid Convex Id string, fall through to planCode
+      }
+    }
+    if (args.planCode) {
+      const code = args.planCode.trim().toLowerCase();
+      const plan = await ctx.db
+        .query("PlanTable")
+        .withIndex("by_planCode", (q) => q.eq("planCode", code))
+        .filter((q) => q.eq(q.field("isActive"), true))
+        .first();
+      if (plan) return plan;
+    }
+    return null;
+  },
+});
+
 export const CreatePlan = mutation({
   args: {
     name: v.string(),
@@ -43,8 +72,11 @@ export const CreatePlan = mutation({
     tokenQuota: v.number(),
     projectQuota: v.number(),
     isActive: v.boolean(),
+    adminUserId: v.optional(v.id("UserTable")),
   },
   handler: async (ctx, args) => {
+    await verifyAdmin(ctx, args.adminUserId);
+
     const planId = await ctx.db.insert("PlanTable", {
       name: args.name.trim(),
       planCode: args.planCode.trim().toLowerCase(),
@@ -88,8 +120,11 @@ export const UpdatePlan = mutation({
     tokenQuota: v.number(),
     projectQuota: v.number(),
     isActive: v.boolean(),
+    adminUserId: v.optional(v.id("UserTable")),
   },
   handler: async (ctx, args) => {
+    await verifyAdmin(ctx, args.adminUserId);
+
     const plan = await ctx.db.get(args.id);
     if (!plan) {
       throw new Error("Plan not found");
@@ -122,8 +157,11 @@ export const UpdatePlan = mutation({
 export const TogglePlanStatus = mutation({
   args: {
     id: v.id("PlanTable"),
+    adminUserId: v.optional(v.id("UserTable")),
   },
   handler: async (ctx, args) => {
+    await verifyAdmin(ctx, args.adminUserId);
+
     const plan = await ctx.db.get(args.id);
     if (!plan) {
       throw new Error("Plan not found");
@@ -141,8 +179,11 @@ export const TogglePlanStatus = mutation({
 export const DeletePlan = mutation({
   args: {
     id: v.id("PlanTable"),
+    adminUserId: v.optional(v.id("UserTable")),
   },
   handler: async (ctx, args) => {
+    await verifyAdmin(ctx, args.adminUserId);
+
     const plan = await ctx.db.get(args.id);
     if (!plan) {
       throw new Error("Plan not found");
@@ -155,8 +196,11 @@ export const DeletePlan = mutation({
 export const SeedDefaultPlans = mutation({
   args: {
     forceReset: v.optional(v.boolean()),
+    adminUserId: v.optional(v.id("UserTable")),
   },
   handler: async (ctx, args) => {
+    await verifyAdmin(ctx, args.adminUserId);
+
     const existing = await ctx.db.query("PlanTable").collect();
     if (existing.length > 0 && !args.forceReset) {
       // Sync existing default plans to canonical comparison-table features only

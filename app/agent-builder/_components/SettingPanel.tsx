@@ -956,7 +956,7 @@ export default function SettingPanel({
               <Input
                 value={formData.shardKey || ""}
                 onChange={(e) => updateNodeData({ shardKey: e.target.value })}
-                placeholder="e.g. _id: hashed"
+                placeholder="e.g. { _id: 'hashed' }"
                 className="h-8 text-xs font-mono"
               />
             </div>

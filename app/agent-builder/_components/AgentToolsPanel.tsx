@@ -200,7 +200,7 @@ export default function AgentToolsPanel() {
         label: "customers",
         name: "customers",
         database: "store_db",
-        shardKey: "_id: hashed",
+        shardKey: '{ _id: "hashed" }',
         fields: [
           { name: "_id", type: "ObjectId", required: true },
           { name: "name", type: "String", required: true },

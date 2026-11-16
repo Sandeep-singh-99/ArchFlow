@@ -15,9 +15,57 @@ export const RecordSuccessfulPayment = mutation({
     razorpaySignature: v.string(),
     validityDays: v.number(),
     tokenQuota: v.optional(v.number()),
+    serverSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // 1. Fetch user by email
+    // 1. Verify caller identity or authorized server-side execution
+    const identity = await ctx.auth.getUserIdentity();
+    const authorizedSecret =
+      process.env.CONVEX_SERVER_SECRET ||
+      process.env.RAZORPAY_KEY_SECRET ||
+      process.env.RAZORPAY_WEBHOOK_SECRET;
+
+    const isAuthorizedServer = Boolean(
+      args.serverSecret &&
+      authorizedSecret &&
+      args.serverSecret === authorizedSecret
+    );
+
+    if (!identity && !isAuthorizedServer) {
+      throw new Error(
+        "Unauthorized: Subscription upgrades require verified server-side authorization or active user identity."
+      );
+    }
+
+    if (identity && !isAuthorizedServer) {
+      const userEmail = (identity.email || "").toLowerCase();
+      if (userEmail && userEmail !== args.userEmail.toLowerCase()) {
+        throw new Error("Forbidden: Cannot record payments for a different user identity.");
+      }
+    }
+
+    // 2. Reject free tier upgrades through payment
+    if (args.planCode.toLowerCase() === "free" || args.amount <= 0) {
+      throw new Error("Invalid payment: Free tier does not require payment processing.");
+    }
+
+    // 3. Idempotency: Prevent duplicate payment recordings
+    const existingPayment = await ctx.db
+      .query("PaymentTable")
+      .withIndex("by_razorpayOrderId", (q) => q.eq("razorpayOrderId", args.razorpayOrderId))
+      .first();
+
+    if (existingPayment && existingPayment.status === "success") {
+      return {
+        success: true,
+        paymentId: existingPayment._id,
+        subscription: existingPayment.planCode,
+        validUntil: existingPayment.validUntil,
+        isDuplicate: true,
+      };
+    }
+
+    // 4. Fetch user by email
     const user = await ctx.db
       .query("UserTable")
       .withIndex("by_email", (q) => q.eq("email", args.userEmail))
@@ -32,7 +80,7 @@ export const RecordSuccessfulPayment = mutation({
       args.billingCycle === "yearly" ? 365 : Math.max(1, args.validityDays || 30);
     const validUntil = validFrom + durationDays * 24 * 60 * 60 * 1000;
 
-    // 2. Insert payment record
+    // 5. Insert payment record
     const paymentId = await ctx.db.insert("PaymentTable", {
       userId: user._id,
       userEmail: args.userEmail,
@@ -51,7 +99,7 @@ export const RecordSuccessfulPayment = mutation({
       createdAt: validFrom,
     });
 
-    // 3. Update User subscription & tokens
+    // 6. Update User subscription & tokens
     const tokens =
       args.tokenQuota !== undefined
         ? args.tokenQuota

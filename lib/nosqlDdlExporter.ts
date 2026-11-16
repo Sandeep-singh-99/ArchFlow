@@ -142,8 +142,15 @@ export function exportNosqlDdl(
     }
 
     if (shardKey) {
+      let formattedKey = String(shardKey).trim();
+      if (!formattedKey.startsWith("{") || !formattedKey.endsWith("}")) {
+        if (formattedKey.includes("hashed") && !formattedKey.includes('"hashed"') && !formattedKey.includes("'hashed'")) {
+          formattedKey = formattedKey.replace(/:\s*hashed/g, ': "hashed"');
+        }
+        formattedKey = `{ ${formattedKey} }`;
+      }
       lines.push(`// Shard Collection: ${collectionName}`);
-      lines.push(`sh.shardCollection("${database}.${collectionName}", ${shardKey});\n`);
+      lines.push(`sh.shardCollection("${database}.${collectionName}", ${formattedKey});\n`);
     }
   });
 

@@ -28,8 +28,9 @@ export const GetMessages = query({
   handler: async (ctx, args) => {
     const messages = await ctx.db
       .query("ChatTable")
-      .filter((q) => q.eq(q.field("agentId"), args.agentId))
-      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .withIndex("by_agentId_sessionId", (q) =>
+        q.eq("agentId", args.agentId).eq("sessionId", args.sessionId)
+      )
       .collect();
 
     return messages.sort((a, b) => a.createdAt - b.createdAt);
@@ -44,8 +45,9 @@ export const ClearChat = mutation({
   handler: async (ctx, args) => {
     const messages = await ctx.db
       .query("ChatTable")
-      .filter((q) => q.eq(q.field("agentId"), args.agentId))
-      .filter((q) => q.eq(q.field("sessionId"), args.sessionId))
+      .withIndex("by_agentId_sessionId", (q) =>
+        q.eq("agentId", args.agentId).eq("sessionId", args.sessionId)
+      )
       .collect();
 
     for (const msg of messages) {

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { verifyAdmin } from "./adminAuth";
 
 export const CreateNewUser = mutation({
   args: {
@@ -52,8 +53,12 @@ export const SetUserRole = mutation({
   args: {
     email: v.string(),
     role: v.string(),
+    adminUserId: v.optional(v.id("UserTable")),
   },
   handler: async (ctx, args) => {
+    // Enforce administrator role check
+    await verifyAdmin(ctx, args.adminUserId);
+
     const user = await ctx.db
       .query("UserTable")
       .withIndex("by_email", (q) => q.eq("email", args.email))
@@ -63,7 +68,7 @@ export const SetUserRole = mutation({
       await ctx.db.patch(user._id, { role: args.role });
       return { success: true, role: args.role };
     }
-    return { success: false };
+    return { success: false, message: "User not found" };
   },
 });
 
@@ -73,6 +78,21 @@ export const UpdateUserSubscription = mutation({
     subscription: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthorized: Identity verification required");
+    }
+
+    // Restrict manual subscription updates to admin accounts only
+    const caller = await ctx.db
+      .query("UserTable")
+      .withIndex("by_email", (q) => q.eq("email", identity.email || ""))
+      .first();
+
+    if (!caller || caller.role !== "admin") {
+      throw new Error("Forbidden: Administrator privileges required to manually set user subscription");
+    }
+
     const users = await ctx.db
       .query("UserTable")
       .withIndex("by_email", (q) => q.eq("email", args.email))
@@ -81,7 +101,7 @@ export const UpdateUserSubscription = mutation({
     if (users && users.length > 0) {
       await ctx.db.patch(users[0]._id, {
         subscription: args.subscription,
-        token: 999999,
+        token: args.subscription === "ai" ? 999999 : args.subscription === "pro" ? 50000 : 5000,
       });
       return { success: true };
     }

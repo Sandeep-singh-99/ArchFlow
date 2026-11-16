@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { UserDetailContext } from "@/context/UserDetailContext";
@@ -112,7 +112,6 @@ export default function PricingPage() {
     api.payments.GetUserPayments,
     userEmail ? { email: userEmail } : "skip"
   );
-  const recordPayment = useMutation(api.payments.RecordSuccessfulPayment);
 
   // User's current subscription tier
   const currentSub = (userDetails?.subscription || "free").toLowerCase();
@@ -219,7 +218,14 @@ export default function PricingPage() {
             const verifyRes = await fetch("/api/razorpay/verify-payment", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(response),
+              body: JSON.stringify({
+                ...response,
+                planId: plan._id ? String(plan._id) : undefined,
+                planName: plan.name,
+                planCode: plan.planCode,
+                billingCycle,
+                userEmail,
+              }),
             });
 
             const verifyData = await verifyRes.json();
@@ -229,35 +235,20 @@ export default function PricingPage() {
               return;
             }
 
-            // 5. Record successful payment in Convex database
-            const convexRes = await recordPayment({
-              userEmail,
-              planId: plan._id && typeof plan._id !== "string" ? plan._id : undefined,
-              planName: plan.name,
-              planCode: plan.planCode,
-              billingCycle,
-              amount: price,
-              currency: plan.currency || "INR",
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-              validityDays: plan.validityDays || (billingCycle === "yearly" ? 365 : 30),
-              tokenQuota: plan.tokenQuota,
-            });
-
-            // 6. Update userDetails React context
+            // 5. Update userDetails React context from server-verified subscription
+            const activeSubscription = verifyData.subscription || plan.planCode;
             if (setUserDetails && userDetails) {
               setUserDetails({
                 ...userDetails,
-                subscription: plan.planCode,
-                token: plan.tokenQuota || 999999,
+                subscription: activeSubscription,
+                token: plan.tokenQuota || (activeSubscription === "ai" ? 999999 : 50000),
               });
             }
 
             setPaymentSuccessData({
               planName: plan.name,
               paymentId: response.razorpay_payment_id,
-              validUntil: convexRes.validUntil,
+              validUntil: verifyData.validUntil,
             });
 
             toast.success(`🎉 ${plan.name} activated successfully with Razorpay!`);

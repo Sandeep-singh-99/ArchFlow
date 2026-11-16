@@ -237,8 +237,12 @@ function generatePostgresDdl(
       const viewName = cleanIdentifier(v.data?.name || v.data?.label || "v_active_view");
       const isMaterialized = !!v.data?.isMaterialized;
       const query = v.data?.query?.trim() || "SELECT 1;";
-      const matKw = isMaterialized ? "MATERIALIZED " : "";
-      lines.push(`CREATE OR REPLACE ${matKw}VIEW ${viewName} AS`);
+      if (isMaterialized) {
+        lines.push(`DROP MATERIALIZED VIEW IF EXISTS ${viewName};`);
+        lines.push(`CREATE MATERIALIZED VIEW ${viewName} AS`);
+      } else {
+        lines.push(`CREATE OR REPLACE VIEW ${viewName} AS`);
+      }
       lines.push(query.endsWith(";") ? query : `${query};`);
       lines.push("");
     });

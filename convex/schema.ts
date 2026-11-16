@@ -37,7 +37,9 @@ export default defineSchema({
         content: v.string(),
         sessionId: v.string(),
         createdAt: v.number()
-    }),
+    })
+        .index("by_agentId_sessionId", ["agentId", "sessionId"])
+        .index("by_agentId", ["agentId"]),
 
     FeedbackTable: defineTable({
         userId: v.optional(v.id("UserTable")),

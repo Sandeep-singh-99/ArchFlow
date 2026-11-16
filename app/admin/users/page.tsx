@@ -1,23 +1,20 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useContext } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { UserDetailContext } from "@/context/UserDetailContext";
 import {
   Users,
   Search,
   Shield,
-  ShieldAlert,
   Sparkles,
   Coins,
   MoreVertical,
-  Check,
-  UserCheck,
   UserX,
-  CreditCard,
-  Filter,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,12 +27,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminUsersPage() {
   const users = useQuery(api.admin.GetAllUsers, {});
   const updateUserRole = useMutation(api.admin.UpdateUserRole);
   const adjustTokens = useMutation(api.admin.AdjustUserTokens);
+  const { userDetails } = useContext(UserDetailContext);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "user">("all");
@@ -63,23 +60,25 @@ export default function AdminUsersPage() {
     });
   }, [users, searchQuery, roleFilter, planFilter]);
 
-  const handleRoleToggle = async (userId: any, currentRole: string) => {
+  const handleRoleToggle = async (userId: Id<"UserTable">, currentRole: string) => {
     const nextRole = currentRole === "admin" ? "user" : "admin";
     try {
-      await updateUserRole({ userId, role: nextRole });
+      await updateUserRole({ userId, role: nextRole, adminUserId: userDetails?._id });
       toast.success(`Role updated to ${nextRole.toUpperCase()}`);
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to update role");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to update role";
+      toast.error(msg);
     }
   };
 
-  const handleGrantTokens = async (userId: any, currentTokens: number, addAmount: number) => {
+  const handleGrantTokens = async (userId: Id<"UserTable">, currentTokens: number, addAmount: number) => {
     try {
       const nextTotal = currentTokens + addAmount;
-      await adjustTokens({ userId, tokens: nextTotal });
+      await adjustTokens({ userId, tokens: nextTotal, adminUserId: userDetails?._id });
       toast.success(`Granted +${addAmount.toLocaleString()} tokens (Total: ${nextTotal.toLocaleString()})`);
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to adjust tokens");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to adjust tokens";
+      toast.error(msg);
     }
   };
 

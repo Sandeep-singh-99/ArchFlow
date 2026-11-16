@@ -222,6 +222,16 @@ export const DeleteAgent = mutation({
   },
 
   handler: async (ctx, args) => {
+    // Delete all associated chat records for this agent to prevent orphaned rows
+    const chatMessages = await ctx.db
+      .query("ChatTable")
+      .withIndex("by_agentId", (q) => q.eq("agentId", args.agentId))
+      .collect();
+
+    for (const msg of chatMessages) {
+      await ctx.db.delete(msg._id);
+    }
+
     await ctx.db.delete(args.agentId);
   },
 });
