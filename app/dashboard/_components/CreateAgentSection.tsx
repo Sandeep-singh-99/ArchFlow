@@ -26,7 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { v4 as uuidv4 } from "uuid";
+
 import { useRouter } from "next/navigation";
 import { UserDetailContext } from "@/context/UserDetailContext";
 import { useAuth } from "@clerk/nextjs";
@@ -90,7 +90,7 @@ export default function CreateAgentSection() {
 
     try {
       setLoading(true);
-      const agentId = uuidv4();
+      const agentId = crypto.randomUUID();
       await CreateAgentMutation({
         agentId: agentId,
         name: finalName,

@@ -42,7 +42,6 @@ const MermaidExportDialog = dynamic(() => import("./MermaidExportDialog"), {
 
 type Props = {
   agentDetail: Agent | undefined;
-  previewHeader?: boolean;
 };
 
 export default function Header({ agentDetail }: Props) {

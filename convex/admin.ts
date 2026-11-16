@@ -282,20 +282,46 @@ export const GetAllFeedback = query({
     tierFilter: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    let list = await ctx.db.query("FeedbackTable").collect();
+    const hasStatus = !!args.statusFilter && args.statusFilter !== "all";
+    const hasType = !!args.typeFilter && args.typeFilter !== "all";
+    const hasTier = !!args.tierFilter && args.tierFilter !== "all";
+
+    let list;
+    if (hasStatus) {
+      list = await ctx.db
+        .query("FeedbackTable")
+        .withIndex("by_status", (q) => q.eq("status", args.statusFilter!))
+        .collect();
+    } else if (hasType) {
+      list = await ctx.db
+        .query("FeedbackTable")
+        .withIndex("by_type", (q) => q.eq("type", args.typeFilter!))
+        .collect();
+    } else if (hasTier) {
+      list = await ctx.db
+        .query("FeedbackTable")
+        .withIndex("by_userTier", (q) => q.eq("userTier", args.tierFilter!))
+        .collect();
+    } else {
+      list = await ctx.db
+        .query("FeedbackTable")
+        .withIndex("by_createdAt")
+        .order("desc")
+        .collect();
+    }
 
     // Sort descending by created time
     list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
-    if (args.statusFilter && args.statusFilter !== "all") {
+    if (hasStatus) {
       list = list.filter((f) => f.status === args.statusFilter);
     }
 
-    if (args.typeFilter && args.typeFilter !== "all") {
+    if (hasType) {
       list = list.filter((f) => f.type === args.typeFilter);
     }
 
-    if (args.tierFilter && args.tierFilter !== "all") {
+    if (hasTier) {
       list = list.filter((f) => f.userTier === args.tierFilter);
     }
 
