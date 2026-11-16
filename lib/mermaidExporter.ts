@@ -167,7 +167,22 @@ function generateErDiagram(
     processedEdges.add(edgeKey);
 
     // Cardinality syntax: e.g. ||--o{ (one to zero or more)
-    let cardinality = edge.data?.cardinality || edge.cardinality;
+    const rawCardinality = String(edge.data?.cardinality || edge.cardinality || "").trim();
+
+    // Map UI cardinality strings to standard Mermaid relationship symbols
+    const CARDINALITY_MAP: Record<string, string> = {
+      "1:1": "||--||",
+      "1:N": "||--o{",
+      "N:1": "}o--||",
+      "N:M": "}o--o{",
+      "M:N": "}o--o{",
+      "crows-one-many": "||--|{",
+      "crows-zero-many": "||--o{",
+      "crows-one-one": "||--||",
+    };
+
+    let cardinality = CARDINALITY_MAP[rawCardinality] || rawCardinality;
+
     if (!cardinality) {
       // Auto-detect based on FK or default to one-to-many
       cardinality = "||--o{";
@@ -184,6 +199,9 @@ function generateErDiagram(
       "}o--|{",
       "}|--|{",
       "||--o|",
+      "}o--||",
+      "|{--||",
+      "}o--|o",
     ];
     if (!validSymbols.includes(cardinality)) {
       cardinality = "||--o{";

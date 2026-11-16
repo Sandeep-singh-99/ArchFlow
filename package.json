@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --loader=./tests/loader.mjs --no-warnings --test tests/*.test.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.34.5",

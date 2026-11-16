@@ -122,17 +122,19 @@ export function parseMermaidToReactFlow(
   };
 
   const formatCardinality = (sym: string): { text: string; srcRel: string; tgtRel: string } => {
+    // Check N:M first so "}o--o{" isn't prematurely matched by "--o{" or "}o--"
+    if (sym.includes("}o--o{") || sym.includes("}o..o{") || sym.includes("}o--|{") || sym.includes("}o..|{") || sym.includes("|{--|{") || sym.includes("|{..|{")) {
+      return { text: "N:M", srcRel: "N", tgtRel: "N" };
+    }
+    // Check 1:1 before single-end matches
+    if (sym.includes("||--||") || sym.includes("||..||") || sym.includes("||--o|") || sym.includes("||..o|") || sym.includes("|o--o|") || sym.includes("|o..o|")) {
+      return { text: "1:1", srcRel: "1", tgtRel: "1" };
+    }
     if (sym.includes("--o{") || sym.includes("..o{") || sym.includes("--|{") || sym.includes("..|{")) {
       return { text: "1:N", srcRel: "1", tgtRel: "N" };
     }
     if (sym.includes("}o--") || sym.includes("}o..") || sym.includes("|{--") || sym.includes("|{..")) {
       return { text: "N:1", srcRel: "N", tgtRel: "1" };
-    }
-    if (sym.includes("}o--o{") || sym.includes("}o..o{") || sym.includes("}o--|{") || sym.includes("}o..|{")) {
-      return { text: "N:M", srcRel: "N", tgtRel: "N" };
-    }
-    if (sym.includes("||--||") || sym.includes("||..||") || sym.includes("||--o|") || sym.includes("||..o|")) {
-      return { text: "1:1", srcRel: "1", tgtRel: "1" };
     }
     return { text: "1:N", srcRel: "1", tgtRel: "N" };
   };

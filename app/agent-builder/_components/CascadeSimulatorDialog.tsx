@@ -36,69 +36,29 @@ import { getUserPlanCode, canAccessFeature, notifyFeatureLocked } from "@/lib/pl
 import PlanUpgradeModal from "@/components/plans/PlanUpgradeModal";
 import { toast } from "sonner";
 import { Agent } from "@/types/AgentTypes";
+import {
+  SchemaColumn,
+  SchemaNodeData,
+  SchemaNode,
+  SchemaEdge,
+  CascadeAnalysisResult,
+  getSafeNodeName,
+  computeCascadeAnalysis,
+} from "@/lib/cascadeSimulator";
 
-interface SchemaColumn {
-  id?: string;
-  name?: string;
-  type?: string;
-  isPk?: boolean;
-  isFk?: boolean;
-  [key: string]: unknown;
-}
-
-interface SchemaNodeData {
-  name?: string;
-  tableName?: string;
-  label?: string;
-  title?: string;
-  query?: string;
-  columns?: SchemaColumn[];
-  [key: string]: unknown;
-}
-
-interface SchemaNode {
-  id: string;
-  type?: string;
-  data?: SchemaNodeData;
-  style?: Record<string, unknown>;
-  selected?: boolean;
-  [key: string]: unknown;
-}
-
-interface SchemaEdge {
-  id?: string;
-  source?: string;
-  target?: string;
-  [key: string]: unknown;
-}
+export type {
+  SchemaColumn,
+  SchemaNodeData,
+  SchemaNode,
+  SchemaEdge,
+  CascadeAnalysisResult,
+};
+export { getSafeNodeName, computeCascadeAnalysis };
 
 interface CascadeSimulatorDialogProps {
   initialTargetNodeId?: string;
   trigger?: React.ReactNode;
   agentDetail?: Agent;
-}
-
-// Bulletproof helper to extract clean string names and avoid React object children crashes
-function getSafeNodeName(node?: SchemaNode | null, fallback = "unnamed_table"): string {
-  if (!node) return fallback;
-  const raw =
-    node.data?.name ??
-    node.data?.tableName ??
-    node.data?.label ??
-    node.id;
-
-  if (typeof raw === "string") {
-    const trimmed = raw.trim();
-    return trimmed.length > 0 ? trimmed : fallback;
-  }
-  if (typeof raw === "number") return String(raw);
-  if (typeof raw === "object" && raw !== null) {
-    const obj = raw as Record<string, unknown>;
-    if (typeof obj.name === "string" && obj.name.trim()) return obj.name.trim();
-    if (typeof obj.label === "string" && obj.label.trim()) return obj.label.trim();
-    if (typeof obj.title === "string" && obj.title.trim()) return obj.title.trim();
-  }
-  return String(node.id || fallback);
 }
 
 export default function CascadeSimulatorDialog({
@@ -179,103 +139,8 @@ export default function CascadeSimulatorDialog({
 
   // Perform CASCADE impact analysis with complete null-safety and cycle protection
   const analysis = useMemo(() => {
-    if (!activeSelectedTableId) return null;
-
-    const targetNode = tableNodes.find((n) => n.id === activeSelectedTableId);
-    if (!targetNode || !targetNode.id) return null;
-
-    const targetName = getSafeNodeName(targetNode, "selected_table");
-    const edges = allEdges || [];
-    const nodes = allNodes || [];
-
-    const tableIdSet = new Set<string>(tableNodes.map((n) => n.id).filter(Boolean));
-
-    // 1. Direct dependencies:
-    // Any table connected to activeSelectedTableId via an edge in either direction
-    const directDependentTableIds = new Set<string>();
-
-    edges.forEach((e) => {
-      if (!e) return;
-      const s = e.source;
-      const t = e.target;
-      if (!s || !t) return;
-
-      // Avoid self-referencing loops
-      if (s === activeSelectedTableId && t === activeSelectedTableId) return;
-
-      if (t === activeSelectedTableId && tableIdSet.has(s)) {
-        directDependentTableIds.add(s);
-      } else if (s === activeSelectedTableId && tableIdSet.has(t)) {
-        directDependentTableIds.add(t);
-      }
-    });
-
-    // 2. Transitive CASCADE dependencies (2nd-level cascade)
-    const transitiveDependentIds = new Set<string>();
-    directDependentTableIds.forEach((childId) => {
-      edges.forEach((e) => {
-        if (!e) return;
-        const s = e.source;
-        const t = e.target;
-        if (!s || !t) return;
-
-        const otherId = s === childId ? t : t === childId ? s : null;
-        if (
-          otherId &&
-          otherId !== activeSelectedTableId &&
-          !directDependentTableIds.has(otherId) &&
-          tableIdSet.has(otherId)
-        ) {
-          transitiveDependentIds.add(otherId);
-        }
-      });
-    });
-
-    // 3. Dependent Views (views whose query mentions targetName)
-    const lowerTargetName = targetName.toLowerCase();
-    const dependentViews = nodes.filter((n) => {
-      if (!n || !n.id) return false;
-      const type = n.type || "";
-      if (type !== "SqlViewNode" && type !== "View") return false;
-      const q = String(n.data?.query || "").toLowerCase();
-      return q.includes(lowerTargetName);
-    });
-
-    // 4. Resolve table objects safely
-    const directTables = nodes.filter(
-      (n) => n && n.id && directDependentTableIds.has(n.id)
-    );
-    const transitiveTables = nodes.filter(
-      (n) => n && n.id && transitiveDependentIds.has(n.id)
-    );
-
-    // 5. Total affected count
-    const totalAffected =
-      directTables.length + transitiveTables.length + dependentViews.length;
-
-    const severity: "HIGH" | "MODERATE" | "SAFE" =
-      totalAffected >= 3 ? "HIGH" : totalAffected >= 1 ? "MODERATE" : "SAFE";
-
-    const columnsCount = Array.isArray(targetNode.data?.columns)
-      ? targetNode.data.columns.length
-      : 0;
-
-    const isNoSql =
-      targetNode.type === "NosqlCollectionNode" ||
-      targetNode.type === "Collection";
-
-    return {
-      targetNode,
-      targetName,
-      directTables,
-      transitiveTables,
-      dependentViews,
-      totalAffected,
-      severity,
-      columnsCount,
-      isNoSql,
-    };
-  }, [activeSelectedTableId, tableNodes, allEdges, allNodes]);
+    return computeCascadeAnalysis(activeSelectedTableId, allNodes, allEdges);
+  }, [activeSelectedTableId, allNodes, allEdges]);
 
   // Generate clean SQL text for simulation & copy
   const generatedSql = useMemo(() => {

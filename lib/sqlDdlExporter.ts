@@ -447,9 +447,22 @@ function extractForeignKeys(
       const parseHandle = (node: any, handleId?: string) => {
         if (!handleId) return null;
         const cols: any[] = node.data?.columns || [];
-        // handle format: col-${col.id}-right or col-${col.name}-right
-        for (const col of cols) {
-          if (handleId.includes(col.id) || handleId.includes(col.name)) {
+        const token = handleId.replace(/^col-/, "").replace(/-(?:left|right|top|bottom)$/, "");
+        // 1. Exact match with token or raw handleId
+        const exact = cols.find((c) => c.id === token || c.name === token || c.id === handleId || c.name === handleId);
+        if (exact) return exact;
+        // 2. Exact segment boundary matches, prioritizing longer column names
+        const sorted = [...cols].sort((a, b) => (b.name?.length || 0) - (a.name?.length || 0));
+        for (const col of sorted) {
+          if (
+            (col.id && (handleId === col.id || handleId.includes(`-${col.id}-`) || handleId.endsWith(`-${col.id}`) || handleId.startsWith(`${col.id}-`))) ||
+            (col.name && (handleId === col.name || handleId.includes(`-${col.name}-`) || handleId.endsWith(`-${col.name}`) || handleId.startsWith(`${col.name}-`)))
+          ) {
+            return col;
+          }
+        }
+        for (const col of sorted) {
+          if ((col.id && handleId.includes(col.id)) || (col.name && handleId.includes(col.name))) {
             return col;
           }
         }
