@@ -7,7 +7,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,7 +15,7 @@ import { WorkflowContext } from "@/context/WorkflowContext";
 import { parseMermaidToReactFlow } from "@/lib/mermaidParser";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useReactFlow } from "@xyflow/react";
+import { useReactFlow, Node, Edge } from "@xyflow/react";
 import { toast } from "sonner";
 import {
   Sparkles,
@@ -25,7 +24,6 @@ import {
   FileCode2,
   ArrowRightLeft,
   ArrowDownUp,
-  LayoutGrid,
 } from "lucide-react";
 import { Agent } from "@/types/AgentTypes";
 import { UserDetailContext } from "@/context/UserDetailContext";
@@ -40,130 +38,6 @@ interface MermaidImportDialogProps {
   trigger?: React.ReactNode;
 }
 
-const TEMPLATES = [
-  {
-    name: "E-Commerce ERD",
-    code: `erDiagram
-    USERS ||--o{ ORDERS : "places"
-    CATEGORIES ||--o{ PRODUCTS : "categorizes"
-    ORDERS ||--|{ ORDER_ITEMS : "contains"
-    PRODUCTS ||--o{ ORDER_ITEMS : "ordered_in"
-    ORDERS ||--o| PAYMENTS : "settles"
-
-    USERS {
-        uuid id PK
-        varchar email UK "Login email"
-        varchar full_name "Customer name"
-        varchar role "admin, customer"
-        timestamp created_at
-    }
-
-    CATEGORIES {
-        uuid id PK
-        varchar name UK
-        varchar slug UK
-    }
-
-    PRODUCTS {
-        uuid id PK
-        uuid category_id FK
-        varchar title
-        varchar sku UK
-        decimal price
-        int stock_quantity
-    }
-
-    ORDERS {
-        uuid id PK
-        uuid user_id FK
-        varchar order_status
-        decimal total_amount
-        timestamp created_at
-    }
-
-    ORDER_ITEMS {
-        uuid id PK
-        uuid order_id FK
-        uuid product_id FK
-        int quantity
-        decimal unit_price
-    }
-
-    PAYMENTS {
-        uuid id PK
-        uuid order_id FK
-        varchar payment_method
-        decimal amount
-        timestamp processed_at
-    }`,
-  },
-  {
-    name: "Domains & Microservices",
-    code: `graph LR
-    subgraph Identity["Identity Domain"]
-        USERS[("USERS<br/>• id (PK)<br/>• email (UK)<br/>• full_name")]
-        SESSIONS[("USER_SESSIONS<br/>• id (PK)<br/>• user_id (FK)<br/>• token")]
-    end
-
-    subgraph Catalog["Catalog Domain"]
-        PRODUCTS[("PRODUCTS<br/>• id (PK)<br/>• title<br/>• price")]
-        CATEGORIES[("CATEGORIES<br/>• id (PK)<br/>• name")]
-    end
-
-    subgraph Billing["Billing Domain"]
-        ORDERS[("ORDERS<br/>• id (PK)<br/>• user_id (FK)<br/>• total")]
-        PAYMENTS[("PAYMENTS<br/>• id (PK)<br/>• order_id (FK)<br/>• amount")]
-    end
-
-    USERS --> SESSIONS
-    CATEGORIES --> PRODUCTS
-    USERS --> ORDERS
-    PRODUCTS --> ORDERS
-    ORDERS --> PAYMENTS`,
-  },
-  {
-    name: "RBAC Roles & Permissions",
-    code: `erDiagram
-    USERS ||--o{ USER_ROLES : "assigned"
-    ROLES ||--o{ USER_ROLES : "granted"
-    ROLES ||--o{ ROLE_PERMISSIONS : "includes"
-    PERMISSIONS ||--o{ ROLE_PERMISSIONS : "belongs_to"
-
-    USERS {
-        uuid id PK
-        varchar email UK
-        varchar username UK
-        boolean is_active
-        timestamp created_at
-    }
-
-    ROLES {
-        uuid id PK
-        varchar name UK "admin, editor, viewer"
-        varchar description
-    }
-
-    PERMISSIONS {
-        uuid id PK
-        varchar code UK "users:read, orders:write"
-        varchar resource
-    }
-
-    USER_ROLES {
-        uuid id PK
-        uuid user_id FK
-        uuid role_id FK
-        timestamp assigned_at
-    }
-
-    ROLE_PERMISSIONS {
-        uuid id PK
-        uuid role_id FK
-        uuid permission_id FK
-    }`,
-  },
-];
-
 export default function MermaidImportDialog({
   agentDetail,
   open: controlledOpen,
@@ -175,7 +49,7 @@ export default function MermaidImportDialog({
   const open = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? setControlledOpen! : setInternalOpen;
 
-  const [mermaidText, setMermaidText] = useState(TEMPLATES[0].code);
+  const [mermaidText, setMermaidText] = useState("");
   const [direction, setDirection] = useState<"LR" | "TB">("LR");
   const [mode, setMode] = useState<"replace" | "append">("replace");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -232,15 +106,15 @@ export default function MermaidImportDialog({
 
       if (mode === "append" && addedNodes && addedNodes.length > 0) {
         // Offset appended nodes to prevent overlapping
-        const maxY = Math.max(...addedNodes.map((n: any) => n.position?.y || 0), 0);
+        const maxY = Math.max(...addedNodes.map((n: Node) => n.position?.y || 0), 0);
         const yOffset = maxY + 240;
 
         const idMap = new Map<string, string>();
-        parsed.nodes.forEach((oldN: any) => {
+        parsed.nodes.forEach((oldN: Node) => {
           idMap.set(oldN.id, `${oldN.id}-${Date.now().toString().slice(-4)}`);
         });
 
-        const offsetNodes = parsed.nodes.map((n: any) => ({
+        const offsetNodes = parsed.nodes.map((n: Node) => ({
           ...n,
           id: idMap.get(n.id) || n.id,
           parentId: n.parentId ? (idMap.get(n.parentId) || n.parentId) : undefined,
@@ -250,7 +124,7 @@ export default function MermaidImportDialog({
           },
         }));
 
-        const offsetEdges = parsed.edges.map((e: any) => ({
+        const offsetEdges = parsed.edges.map((e: Edge) => ({
           ...e,
           id: `edge-${idMap.get(e.source) || e.source}-${idMap.get(e.target) || e.target}-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
           source: idMap.get(e.source) || e.source,
@@ -287,9 +161,10 @@ export default function MermaidImportDialog({
       }, 150);
 
       setOpen(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to generate ReactFlow from Mermaid:", err);
-      toast.error(err?.message || "Failed to parse Mermaid graph");
+      const message = err instanceof Error ? err.message : "Failed to parse Mermaid graph";
+      toast.error(message);
     } finally {
       setIsGenerating(false);
     }
@@ -347,21 +222,6 @@ export default function MermaidImportDialog({
             </div>
           </div>
         </DialogHeader>
-
-        {/* Quick Sample Presets */}
-        <div className="flex items-center gap-2 pt-2 pb-1 overflow-x-auto shrink-0">
-          <span className="text-[11px] font-mono text-muted-foreground shrink-0">Presets:</span>
-          {TEMPLATES.map((tmpl) => (
-            <button
-              key={tmpl.name}
-              type="button"
-              onClick={() => setMermaidText(tmpl.code)}
-              className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-muted/50 hover:bg-muted border border-border/70 text-foreground transition-colors cursor-pointer shrink-0"
-            >
-              {tmpl.name}
-            </button>
-          ))}
-        </div>
 
         {/* Raw Mermaid Editor Area */}
         <div className="flex-1 flex flex-col min-h-[260px] max-h-[380px] relative my-2">

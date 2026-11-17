@@ -69,7 +69,20 @@ export default function AdminFeedbackPage() {
 
   const handleStatusChange = async (feedbackId: Id<"FeedbackTable">, nextStatus: string) => {
     try {
-      await updateStatus({ feedbackId, status: nextStatus, adminUserId: userDetails?._id });
+      try {
+        await updateStatus({ feedbackId, status: nextStatus, adminUserId: userDetails?._id });
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        if (errorMsg.includes("adminUserId")) {
+          // Backward compatibility fallback for Convex deployments where adminUserId is not yet in the validator
+          await (updateStatus as unknown as (args: { feedbackId: Id<"FeedbackTable">; status: string }) => Promise<unknown>)({
+            feedbackId,
+            status: nextStatus,
+          });
+        } else {
+          throw err;
+        }
+      }
       toast.success(`Feedback status changed to ${nextStatus.replace("_", " ")}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to update status";
@@ -79,7 +92,19 @@ export default function AdminFeedbackPage() {
 
   const handleDelete = async (feedbackId: Id<"FeedbackTable">) => {
     try {
-      await deleteFeedback({ feedbackId, adminUserId: userDetails?._id });
+      try {
+        await deleteFeedback({ feedbackId, adminUserId: userDetails?._id });
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        if (errorMsg.includes("adminUserId")) {
+          // Backward compatibility fallback for Convex deployments where adminUserId is not yet in the validator
+          await (deleteFeedback as unknown as (args: { feedbackId: Id<"FeedbackTable"> }) => Promise<unknown>)({
+            feedbackId,
+          });
+        } else {
+          throw err;
+        }
+      }
       toast.success("Feedback deleted");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to delete feedback";
