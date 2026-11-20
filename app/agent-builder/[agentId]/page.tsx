@@ -119,7 +119,11 @@ export default function AgentBuilder() {
     }
   }, [agentDetail]);
 
-  const SaveNodeAndEdges = async (updatedNodes?: any, updatedEdges?: any) => {
+  const SaveNodeAndEdges = async (
+    updatedNodes?: any,
+    updatedEdges?: any,
+    showToast: boolean = false
+  ) => {
     if (!agentDetail?._id) return;
     try {
       setIsSaving(true);
@@ -129,10 +133,14 @@ export default function AgentBuilder() {
         edges: updatedEdges ?? nodeEdges,
         nodes: nodesToSave,
       });
-      toast.success("Database schema saved!");
+      if (showToast) {
+        toast.success("Database schema saved!");
+      }
     } catch (e) {
       console.error(e);
-      toast.error("Failed to save database schema");
+      if (showToast) {
+        toast.error("Failed to save database schema");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -656,7 +664,7 @@ export default function AgentBuilder() {
           {/* Bottom Center: Save Action */}
           <Panel position="bottom-center">
             <Button
-              onClick={() => SaveNodeAndEdges()}
+              onClick={() => SaveNodeAndEdges(undefined, undefined, true)}
               disabled={isSaving}
               className="gap-2 font-semibold bg-zinc-900 hover:bg-zinc-800 text-white border border-border shadow-md cursor-pointer"
             >
