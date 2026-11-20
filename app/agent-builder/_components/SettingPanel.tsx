@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useRef } from "react";
 import { WorkflowContext } from "@/context/WorkflowContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,19 +58,26 @@ export default function SettingPanel({
   const { has } = useAuth();
   const userPlan = getUserPlanCode(userDetails, has);
 
+  const lastSelectedIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (selectedNode) {
-      const nodeData = selectedNode.data || {};
-      const normalizedColumns = (nodeData.columns || []).map((col: any, idx: number) => ({
-        ...col,
-        id: col.id || `col-${idx}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      }));
+      if (selectedNode.id !== lastSelectedIdRef.current) {
+        lastSelectedIdRef.current = selectedNode.id;
+        const nodeData = selectedNode.data || {};
+        const normalizedColumns = (nodeData.columns || []).map((col: any, idx: number) => ({
+          ...col,
+          id: col.id || `col-${idx}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        }));
 
-      setFormData({
-        ...nodeData,
-        columns: normalizedColumns,
-        name: nodeData.name || nodeData.label || "",
-      });
+        setFormData({
+          ...nodeData,
+          columns: normalizedColumns,
+          name: nodeData.name !== undefined ? nodeData.name : (nodeData.label || ""),
+        });
+      }
+    } else {
+      lastSelectedIdRef.current = null;
     }
   }, [selectedNode]);
 
@@ -82,6 +89,7 @@ export default function SettingPanel({
     const newFormData = { ...formData, ...updatedFields };
     setFormData(newFormData);
 
+    const resolvedLabel = newFormData.name !== undefined ? newFormData.name : (newFormData.label ?? "");
     const currentNodes = addedNodes || [];
     const updated = currentNodes.map((n: any) =>
       n.id === selectedNode.id
@@ -90,7 +98,7 @@ export default function SettingPanel({
             data: {
               ...n.data,
               ...newFormData,
-              label: newFormData.name || n.data?.label,
+              label: resolvedLabel,
             },
           }
         : n
@@ -102,7 +110,7 @@ export default function SettingPanel({
       data: {
         ...selectedNode.data,
         ...newFormData,
-        label: newFormData.name || selectedNode.data?.label,
+        label: resolvedLabel,
       },
     });
     onSave(updated);

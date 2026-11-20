@@ -25,11 +25,11 @@ export interface SqlTableNodeData {
   domainId?: string;
   columns?: ColumnDefinition[];
   comment?: string;
-  settings?: any;
+  settings?: Record<string, unknown>;
 }
 
 function SqlTableNode({ data, selected }: { data: SqlTableNodeData; selected?: boolean }) {
-  const tableName = data.name || data.label || "untitled_table";
+  const tableName = data.name !== undefined && data.name !== "" ? data.name : (data.label || "untitled_table");
   const schemaName = data.schema || "public";
   const domainThemeConfig = data.domainName ? getDomainTheme(data.domainTheme) : null;
   const columns: ColumnDefinition[] = data.columns || [

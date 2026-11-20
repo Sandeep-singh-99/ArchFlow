@@ -2,7 +2,7 @@
 
 import React, { memo } from "react";
 import { Handle, Position } from "@xyflow/react";
-import { FolderTree, FileCode, Layers, ShieldCheck, Key } from "lucide-react";
+import { FolderTree, FileCode, Layers, Key } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getDomainTheme } from "@/lib/domainThemes";
 
@@ -26,7 +26,7 @@ export interface NosqlCollectionNodeData {
 }
 
 function NosqlCollectionNode({ data, selected }: { data: NosqlCollectionNodeData; selected?: boolean }) {
-  const collectionName = data.name || data.label || "users_collection";
+  const collectionName = data.name !== undefined && data.name !== "" ? data.name : (data.label || "users_collection");
   const database = data.database || "app_db";
   const shardKey = data.shardKey;
   const domainThemeConfig = data.domainName ? getDomainTheme(data.domainTheme) : null;
