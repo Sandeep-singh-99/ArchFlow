@@ -68,7 +68,7 @@ export default function AgentBuilder() {
     setSelectedNode,
   } = useContext(WorkflowContext);
 
-  const { deleteElements, fitView, getNodes } = useReactFlow();
+  const { deleteElements, fitView, getNodes, getEdges } = useReactFlow();
   const [nodes, setNodes] = useState<Node[]>(addedNodes || []);
 
   useEffect(() => {
@@ -119,32 +119,62 @@ export default function AgentBuilder() {
     }
   }, [agentDetail]);
 
-  const SaveNodeAndEdges = async (
-    updatedNodes?: any,
-    updatedEdges?: any,
-    showToast: boolean = false
-  ) => {
-    if (!agentDetail?._id) return;
-    try {
-      setIsSaving(true);
-      const nodesToSave = updatedNodes ?? getNodes();
-      await updateAgentDetail({
-        id: agentDetail._id,
-        edges: updatedEdges ?? nodeEdges,
-        nodes: nodesToSave,
-      });
-      if (showToast) {
-        toast.success("Database schema saved!");
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const SaveNodeAndEdges = useCallback(
+    async (
+      updatedNodes?: any,
+      updatedEdges?: any,
+      showToast: boolean = false
+    ) => {
+      if (!agentDetail?._id) return;
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
       }
-    } catch (e) {
-      console.error(e);
-      if (showToast) {
-        toast.error("Failed to save database schema");
+      try {
+        setIsSaving(true);
+        const nodesToSave = updatedNodes ?? getNodes();
+        const edgesToSave = updatedEdges ?? getEdges();
+        await updateAgentDetail({
+          id: agentDetail._id,
+          edges: edgesToSave,
+          nodes: nodesToSave,
+        });
+        if (showToast) {
+          toast.success("Database schema saved!");
+        }
+      } catch (e) {
+        console.error(e);
+        if (showToast) {
+          toast.error("Failed to save database schema");
+        }
+      } finally {
+        setIsSaving(false);
       }
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    },
+    [agentDetail?._id, getNodes, getEdges, updateAgentDetail]
+  );
+
+  const debouncedAutoSave = useCallback(
+    (updatedNodes?: any, updatedEdges?: any) => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+      autoSaveTimerRef.current = setTimeout(() => {
+        SaveNodeAndEdges(updatedNodes, updatedEdges, false);
+      }, 1000);
+    },
+    [SaveNodeAndEdges]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, []);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -169,8 +199,9 @@ export default function AgentBuilder() {
       setSelectedNode(node);
       const currentNodes = getNodes();
       setAddedNodes(currentNodes);
+      debouncedAutoSave(currentNodes);
     },
-    [setSelectedNode, getNodes, setAddedNodes]
+    [setSelectedNode, getNodes, setAddedNodes, debouncedAutoSave]
   );
 
   const onEdgesChange = useCallback(
@@ -189,7 +220,7 @@ export default function AgentBuilder() {
         const targetNode = allNodes.find((n: any) => n.id === params.target);
         const isEnumEdge = sourceNode?.type === "SqlEnumNode" || targetNode?.type === "SqlEnumNode";
 
-        return addEdge(
+        const newEdges = addEdge(
           {
             ...params,
             type: "erRelationship",
@@ -205,8 +236,10 @@ export default function AgentBuilder() {
           },
           edgesSnapshot || []
         );
+        debouncedAutoSave(undefined, newEdges);
+        return newEdges;
       }),
-    [setNodeEdges, addedNodes]
+    [setNodeEdges, addedNodes, debouncedAutoSave]
   );
 
   const lastEdgeClickRef = useRef<{ id: string; time: number } | null>(null);
@@ -219,12 +252,16 @@ export default function AgentBuilder() {
       // Delete via React Flow internal engine
       deleteElements({ edges: [{ id: edgeId }] });
 
-      // Filter out from local workflow state
-      setNodeEdges((eds: any) => (eds || []).filter((e: any) => e.id !== edgeId));
+      // Filter out from local workflow state and auto-save
+      setNodeEdges((eds: any) => {
+        const remaining = (eds || []).filter((e: any) => e.id !== edgeId);
+        debouncedAutoSave(undefined, remaining);
+        return remaining;
+      });
 
       toast.info("Connection disconnected");
     },
-    [deleteElements, setNodeEdges]
+    [deleteElements, setNodeEdges, debouncedAutoSave]
   );
 
   const onPaneClick = useCallback(() => {
@@ -361,6 +398,7 @@ export default function AgentBuilder() {
         setNodes(layout.nodes);
         setAddedNodes(layout.nodes);
         setNodeEdges(updatedEdges);
+        SaveNodeAndEdges(layout.nodes, updatedEdges, false);
         toast.success(
           `Schema organized (${direction === "LR" ? "Left-to-Right" : "Top-to-Bottom"} hierarchical layout)`
         );
@@ -375,7 +413,7 @@ export default function AgentBuilder() {
         setIsArranging(false);
       }
     },
-    [nodes, addedNodes, nodeEdges, setAddedNodes, fitView]
+    [nodes, addedNodes, nodeEdges, setAddedNodes, fitView, SaveNodeAndEdges]
   );
 
   const handleGroupSelection = useCallback(
@@ -646,7 +684,7 @@ export default function AgentBuilder() {
           {/* Right Inspector: Node Specifications (only visible when a node is selected) */}
           {selectedNode && (
             <Panel position="top-right">
-              <SettingPanel onSave={(nodes: any) => SaveNodeAndEdges(nodes)} />
+              <SettingPanel onSave={(nodes: any) => debouncedAutoSave(nodes)} />
             </Panel>
           )}
 

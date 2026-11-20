@@ -109,7 +109,7 @@ function getGeminiModel(temperature: number = 0.2) {
   const apiKey = process.env.GOOGLE_API_KEY || "";
   return new ChatGoogleGenerativeAI({
     apiKey,
-    model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+    model: process.env.GEMINI_MODEL || "gemini-3.8-flash",
     temperature,
   });
 }
