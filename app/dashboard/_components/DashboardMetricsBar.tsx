@@ -9,11 +9,15 @@ import {
   Cpu,
 } from "lucide-react";
 
+import { PlanCode } from "@/lib/planAccess";
+
 interface DashboardMetricsBarProps {
   agents: Agent[];
   isPaidUser: boolean;
   hasAiPlan: boolean;
   projectCount: number;
+  userPlan?: PlanCode;
+  quota?: number;
 }
 
 export default function DashboardMetricsBar({
@@ -21,6 +25,8 @@ export default function DashboardMetricsBar({
   isPaidUser,
   hasAiPlan,
   projectCount,
+  userPlan,
+  quota,
 }: DashboardMetricsBarProps) {
   const metrics = useMemo(() => {
     let totalTables = 0;
@@ -48,22 +54,32 @@ export default function DashboardMetricsBar({
       });
     });
 
-    const maxSlots = hasAiPlan ? "Unlimited" : isPaidUser ? "15" : "1";
+    const effectivePlan = userPlan || (hasAiPlan ? "ai" : isPaidUser ? "pro" : "free");
+    const isAi = effectivePlan === "ai" || hasAiPlan;
+    const isPro = effectivePlan === "pro";
+    const resolvedQuota = typeof quota === "number" && quota > 0 ? quota : (isAi ? 25 : isPro ? 15 : 1);
+    const isUnlimited = resolvedQuota >= 999;
+    const maxSlots = isUnlimited ? "Unlimited" : String(resolvedQuota);
+
+    const quotaCaption = isUnlimited
+      ? `Plan Quota: ${projectCount} / Unlimited`
+      : `Plan Quota: ${projectCount} / ${maxSlots}`;
 
     return {
       totalSchemas: agents.length,
       maxSlots,
+      quotaCaption,
       totalTables,
       totalRelations,
       totalViews,
     };
-  }, [agents, isPaidUser, hasAiPlan]);
+  }, [agents, isPaidUser, hasAiPlan, userPlan, projectCount, quota]);
 
   const cards = [
     {
       title: "Active Schemas",
       value: metrics.totalSchemas,
-      caption: `Plan Quota: ${projectCount} / ${metrics.maxSlots}`,
+      caption: metrics.quotaCaption,
       icon: Database,
       accentColor: "text-[#ffee72]",
       bgAccent: "bg-[#ffc507]/10",

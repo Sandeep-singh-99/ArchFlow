@@ -15,10 +15,10 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { UserDetailContext } from "@/context/UserDetailContext";
-import { getUserPlanCode, getPlanProjectQuota, PLAN_NAMES } from "@/lib/planAccess";
+import { getUserPlanCode, getPlanProjectQuota } from "@/lib/planAccess";
 import { api } from "@/convex/_generated/api";
 import { useAuth } from "@clerk/nextjs";
-import { useConvex } from "convex/react";
+import { useConvex, useQuery } from "convex/react";
 import {
   CreditCard,
   Network,
@@ -50,10 +50,12 @@ export function AppSidebar() {
   const { userDetails, setUserDetails } = useContext(UserDetailContext);
   const path = usePathname();
   const { has } = useAuth();
+  const activePlans = useQuery(api.plans.GetActivePlans, {});
 
   const userPlan = getUserPlanCode(userDetails, has);
   const isPaidUser = userPlan !== "free";
-  const quota = getPlanProjectQuota(userPlan);
+  const quota = getPlanProjectQuota(userPlan, activePlans, userDetails?.subscriptionPlanId);
+  const isUnlimited = quota >= 999;
   const convex = useConvex();
 
   const [totalProjects, setTotalProjects] = useState(0);
@@ -312,7 +314,7 @@ export function AppSidebar() {
                 <SidebarMenuButton
                   asChild
                   tooltip={{
-                    children: `Pro Plan: ${totalProjects} / 15 Slots`,
+                    children: `Pro Plan: ${totalProjects} / ${isUnlimited ? "Unlimited" : `${quota} Slots`}`,
                     className:
                       "bg-zinc-900 border border-zinc-800 text-foreground text-xs font-mono",
                   }}
@@ -335,7 +337,7 @@ export function AppSidebar() {
               <span className="font-semibold">AI Architect Active</span>
             </div>
             <span className="text-[10px] text-[#ffee72]/70 font-mono">
-              Unlimited
+              {isUnlimited ? "Unlimited" : `${totalProjects} / ${quota} Slots`}
             </span>
           </div>
         ) : (
@@ -344,7 +346,7 @@ export function AppSidebar() {
               <SidebarMenuButton
                 asChild
                 tooltip={{
-                  children: "AI Architect Active — Unlimited Studio Access",
+                  children: `AI Architect Active — ${isUnlimited ? "Unlimited Studio Access" : `${totalProjects} / ${quota} Slots`}`,
                   className:
                     "bg-zinc-900 border border-zinc-800 text-foreground text-xs font-mono",
                 }}

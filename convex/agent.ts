@@ -1,5 +1,56 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, MutationCtx } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
+
+async function resolveMaxProjectQuota(
+  ctx: { db: MutationCtx["db"] },
+  user: { subscription?: string; subscriptionPlanId?: string; subscriptionExpiresAt?: number }
+): Promise<{ maxQuota: number; planName: string }> {
+  const isSubActive =
+    user.subscriptionExpiresAt === undefined ||
+    user.subscriptionExpiresAt > Date.now();
+  const sub = isSubActive ? (user.subscription || "free").toLowerCase().trim() : "free";
+
+  let maxQuota = 1;
+  let planName = "Free";
+
+  if (user.subscriptionPlanId) {
+    try {
+      const dbPlan = await ctx.db.get(user.subscriptionPlanId as Id<"PlanTable">);
+      if (dbPlan && typeof dbPlan.projectQuota === "number" && dbPlan.projectQuota > 0) {
+        maxQuota = dbPlan.projectQuota;
+        planName = dbPlan.name || planName;
+        return { maxQuota, planName };
+      }
+    } catch {
+      // not a valid direct ID or deleted
+    }
+  }
+
+  if (sub !== "free") {
+    const planByCode = await ctx.db
+      .query("PlanTable")
+      .withIndex("by_planCode", (q) => q.eq("planCode", sub))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .first();
+
+    if (planByCode && typeof planByCode.projectQuota === "number" && planByCode.projectQuota > 0) {
+      maxQuota = planByCode.projectQuota;
+      planName = planByCode.name || planName;
+      return { maxQuota, planName };
+    }
+
+    if (sub === "ai" || sub === "ai_unlimited" || sub.includes("ai")) {
+      maxQuota = 25;
+      planName = "AI Architect";
+    } else if (sub === "pro" || sub === "active" || sub.includes("pro")) {
+      maxQuota = 15;
+      planName = "Pro Architect";
+    }
+  }
+
+  return { maxQuota, planName };
+}
 
 export const CreateAgent = mutation({
   args: {
@@ -14,17 +65,7 @@ export const CreateAgent = mutation({
     // 1. Enforce Subscription Project Quota
     const user = await ctx.db.get(args.userId);
     if (user) {
-      const isSubActive =
-        user.subscriptionExpiresAt === undefined ||
-        user.subscriptionExpiresAt > Date.now();
-      const sub = isSubActive ? (user.subscription || "free").toLowerCase() : "free";
-
-      let maxQuota = 1;
-      if (sub === "ai" || sub === "ai_unlimited" || sub.includes("ai")) {
-        maxQuota = 9999;
-      } else if (sub === "pro" || sub === "active" || sub.includes("pro")) {
-        maxQuota = 15;
-      }
+      const { maxQuota, planName } = await resolveMaxProjectQuota(ctx, user);
 
       const existingAgents = await ctx.db
         .query("AgentTable")
@@ -33,9 +74,7 @@ export const CreateAgent = mutation({
 
       if (existingAgents.length >= maxQuota) {
         throw new Error(
-          `Project limit reached (${existingAgents.length}/${maxQuota}) for your ${
-            sub === "pro" || sub === "active" ? "Pro" : "Free"
-          } plan. Please upgrade to unlock more database project slots.`
+          `Project limit reached (${existingAgents.length}/${maxQuota}) for your ${planName} plan. Please upgrade to unlock more database project slots.`
         );
       }
     }
@@ -175,17 +214,7 @@ export const DuplicateAgent = mutation({
     // Enforce Subscription Project Quota on duplicate
     const user = await ctx.db.get(args.userId);
     if (user) {
-      const isSubActive =
-        user.subscriptionExpiresAt === undefined ||
-        user.subscriptionExpiresAt > Date.now();
-      const sub = isSubActive ? (user.subscription || "free").toLowerCase() : "free";
-
-      let maxQuota = 1;
-      if (sub === "ai" || sub === "ai_unlimited" || sub.includes("ai")) {
-        maxQuota = 9999;
-      } else if (sub === "pro" || sub === "active" || sub.includes("pro")) {
-        maxQuota = 15;
-      }
+      const { maxQuota, planName } = await resolveMaxProjectQuota(ctx, user);
 
       const existingAgents = await ctx.db
         .query("AgentTable")
@@ -194,9 +223,7 @@ export const DuplicateAgent = mutation({
 
       if (existingAgents.length >= maxQuota) {
         throw new Error(
-          `Project limit reached (${existingAgents.length}/${maxQuota}) for your ${
-            sub === "pro" || sub === "active" ? "Pro" : "Free"
-          } plan. Please upgrade to unlock more database project slots.`
+          `Project limit reached (${existingAgents.length}/${maxQuota}) for your ${planName} plan. Please upgrade to unlock more database project slots.`
         );
       }
     }

@@ -3,7 +3,7 @@
 import { UserDetailContext } from "@/context/UserDetailContext";
 import { api } from "@/convex/_generated/api";
 import { Agent } from "@/types/AgentTypes";
-import { useConvex, useMutation } from "convex/react";
+import { useConvex, useMutation, useQuery } from "convex/react";
 import {
   Database,
   Plus,
@@ -35,6 +35,7 @@ import DashboardToolbar, {
 } from "./DashboardToolbar";
 import { useAuth } from "@clerk/nextjs";
 import { getSchemaType } from "@/lib/schemaClassifier";
+import { getUserPlanCode, getPlanProjectQuota } from "@/lib/planAccess";
 
 interface MyAgentsProps {
   onOpenCreateDialog?: () => void;
@@ -57,20 +58,12 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
   const [sortBy, setSortBy] = useState<SortOption>("recent");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
+  const activePlans = useQuery(api.plans.GetActivePlans, {});
   const { has } = useAuth();
-  const hasAiPlan = Boolean(
-    (has &&
-      (has({ plan: "ai_architect_pro" }) ||
-        has({ plan: "ai_unlimited_plan" }) ||
-        has({ plan: "unlimited_plan" }))) ||
-      userDetails?.subscription === "ai"
-  );
-  const hasProPlan = Boolean(
-    (has && (has({ plan: "pro_architect" }) || has({ plan: "pro_plan" }))) ||
-      userDetails?.subscription === "active" ||
-      userDetails?.subscription === "pro"
-  );
-  const isPaidUser = hasAiPlan || hasProPlan;
+  const userPlan = getUserPlanCode(userDetails, has);
+  const quota = getPlanProjectQuota(userPlan, activePlans, userDetails?.subscriptionPlanId);
+  const hasAiPlan = userPlan === "ai";
+  const isPaidUser = userPlan !== "free";
 
   const GetUserAgents = useCallback(async () => {
     if (!userDetails?._id) return;
@@ -222,6 +215,8 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
         agents={agentList}
         isPaidUser={isPaidUser}
         hasAiPlan={hasAiPlan}
+        userPlan={userPlan}
+        quota={quota}
         projectCount={agentList.length}
       />
 

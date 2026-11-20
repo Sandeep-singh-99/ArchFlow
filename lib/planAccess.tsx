@@ -89,7 +89,7 @@ export const CANONICAL_FEATURES: Record<FeatureKey, FeatureMeta> = {
 export const PLAN_PROJECT_QUOTAS: Record<PlanCode, number> = {
   free: 1,
   pro: 15,
-  ai: 9999, // Effectively unlimited
+  ai: 25, // Dynamic fallback matching active AI Architect tier
 };
 
 export const PLAN_NAMES: Record<PlanCode, string> = {
@@ -103,8 +103,13 @@ export const PLAN_NAMES: Record<PlanCode, string> = {
  * Handles subscription expiry timestamp check.
  */
 export function getUserPlanCode(
-  userDetails: any,
-  clerkHas?: any
+  userDetails: {
+    subscription?: string | null;
+    subscriptionExpiresAt?: number | null;
+    [key: string]: unknown;
+  } | null | undefined,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  clerkHas?: ((params: any) => boolean) | null
 ): PlanCode {
   // 1. Check Clerk session plan claims if available
   if (clerkHas) {
@@ -162,8 +167,35 @@ export function canAccessFeature(
 
 /**
  * Returns the maximum allowed project quota for a plan code.
+ * Optionally resolves dynamically from Convex database active plans or user's active plan ID.
  */
-export function getPlanProjectQuota(planCode: PlanCode): number {
+export function getPlanProjectQuota(
+  planCode: PlanCode,
+  plans?: Array<{ planCode: string; projectQuota?: number; _id?: string }>,
+  subscriptionPlanId?: string
+): number {
+  if (subscriptionPlanId && plans) {
+    const matchedById = plans.find((p) => String(p._id) === String(subscriptionPlanId));
+    if (matchedById && typeof matchedById.projectQuota === "number" && matchedById.projectQuota > 0) {
+      return matchedById.projectQuota;
+    }
+  }
+
+  if (plans) {
+    const normalized = planCode.toLowerCase().trim();
+    const matched = plans.find((p) => {
+      const code = p.planCode.toLowerCase().trim();
+      return (
+        code === normalized ||
+        (normalized === "ai" && code.includes("ai")) ||
+        (normalized === "pro" && code.includes("pro"))
+      );
+    });
+    if (matched && typeof matched.projectQuota === "number" && matched.projectQuota > 0) {
+      return matched.projectQuota;
+    }
+  }
+
   return PLAN_PROJECT_QUOTAS[planCode] ?? 1;
 }
 

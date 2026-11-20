@@ -27,7 +27,14 @@ export default function Provider({ children }: { children: React.ReactNode }) {
     })
       .then((result) => {
         if (isMounted && result) {
-          setLocalUserDetails(result as Doc<"UserTable">);
+          setLocalUserDetails((prev) => {
+            if (!prev) return result as Doc<"UserTable">;
+            return {
+              ...(result as Doc<"UserTable">),
+              ...prev,
+              subscription: (result as Doc<"UserTable">).subscription || prev.subscription,
+            };
+          });
         }
       })
       .catch((err) => {
@@ -40,7 +47,16 @@ export default function Provider({ children }: { children: React.ReactNode }) {
   }, [user, createUser]);
 
   const userDetails = useMemo(() => {
-    return localUserDetails ?? (liveDbUser as Doc<"UserTable"> | null) ?? null;
+    if (liveDbUser) {
+      return {
+        ...liveDbUser,
+        ...(localUserDetails || {}),
+        subscription: liveDbUser.subscription || localUserDetails?.subscription,
+        subscriptionExpiresAt: liveDbUser.subscriptionExpiresAt || localUserDetails?.subscriptionExpiresAt,
+        subscriptionBillingCycle: liveDbUser.subscriptionBillingCycle || localUserDetails?.subscriptionBillingCycle,
+      };
+    }
+    return localUserDetails ?? null;
   }, [localUserDetails, liveDbUser]);
 
   const setUserDetails = useCallback(

@@ -5,10 +5,7 @@ import {
   Loader,
   Plus,
   Workflow,
-  Sparkles,
-  Zap,
   Lock,
-  AlertCircle,
   Database,
   Boxes,
 } from "lucide-react";
@@ -16,7 +13,6 @@ import React, { useContext, useState } from "react";
 import Link from "next/link";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -48,6 +44,7 @@ export default function CreateAgentSection() {
   const { has } = useAuth();
 
   // Unified tier detection & project quota
+  const activePlans = useQuery(api.plans.GetActivePlans, {});
   const userPlan = getUserPlanCode(userDetails, has);
   const hasAiPlan = userPlan === "ai";
   const hasProPlan = userPlan === "pro";
@@ -59,7 +56,8 @@ export default function CreateAgentSection() {
     userDetails?._id ? { userId: userDetails._id } : "skip"
   );
   const projectCount = userAgents ? userAgents.length : 0;
-  const quota = getPlanProjectQuota(userPlan);
+  const quota = getPlanProjectQuota(userPlan, activePlans, userDetails?.subscriptionPlanId);
+  const isUnlimited = quota >= 999;
   const isLimitReached = projectCount >= quota;
 
   const handleOpenCreate = () => {
@@ -82,8 +80,8 @@ export default function CreateAgentSection() {
       setOpenUpgradeDialog(true);
       toast.error(
         isFreePlan
-          ? "Free plan is limited to 1 database project. Please upgrade to create more."
-          : "Pro plan limit (15 projects) reached. Upgrade to AI Architect for unlimited projects."
+          ? `Free plan is limited to ${quota} database project. Please upgrade to create more.`
+          : `Plan limit (${quota} projects) reached. Please upgrade to unlock more database project slots.`
       );
       return;
     }
@@ -142,10 +140,14 @@ export default function CreateAgentSection() {
               }`}
             >
               {hasAiPlan
-                ? "AI Architect (Unlimited)"
+                ? isUnlimited
+                  ? "AI Architect (Unlimited)"
+                  : `AI Architect (${projectCount} / ${quota} Schemas)`
                 : hasProPlan
-                ? `Pro Plan (${projectCount} / 15 Schemas)`
-                : `Free Plan (${projectCount} / 1 Schema)`}
+                ? isUnlimited
+                  ? "Pro Plan (Unlimited)"
+                  : `Pro Plan (${projectCount} / ${quota} Schemas)`
+                : `Free Plan (${projectCount} / ${quota} Schema)`}
             </Badge>
 
             {isFreePlan && (
