@@ -40,6 +40,11 @@ const MermaidExportDialog = dynamic(() => import("./MermaidExportDialog"), {
   loading: () => <div className="h-8 w-24 rounded-md bg-muted/30 animate-pulse" />,
 });
 
+const ShareProjectDialog = dynamic(() => import("./ShareProjectDialog"), {
+  ssr: false,
+  loading: () => <div className="h-8 w-20 rounded-md bg-muted/30 animate-pulse" />,
+});
+
 type Props = {
   agentDetail: Agent | undefined;
 };
@@ -83,16 +88,19 @@ export default function Header({ agentDetail }: Props) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-2.5">
-        {/* 1. Real SQL & NoSQL DDL Exporter (Free & All tiers) */}
+        {/* 1. Share Preview Link & Live Analytics */}
+        <ShareProjectDialog agentDetail={agentDetail} />
+
+        {/* 2. Real SQL & NoSQL DDL Exporter (Free & All tiers) */}
         <SqlExportDialog agentDetail={agentDetail} />
 
-        {/* 2. Export High-Res Image (PNG/SVG) (Free & All tiers) */}
+        {/* 3. Export High-Res Image (PNG/SVG) (Free & All tiers) */}
         <ExportImageDialog architectureName={agentDetail?.name || "database-schema"} />
 
-        {/* 3. CASCADE Drop Simulator (Pro & AI tier) */}
+        {/* 4. CASCADE Drop Simulator (Pro & AI tier) */}
         <CascadeSimulatorDialog agentDetail={agentDetail} />
 
-        {/* 4. Mermaid Import & Export Dialogs (Pro & AI tier) */}
+        {/* 5. Mermaid Import & Export Dialogs (Pro & AI tier) */}
         <MermaidImportDialog agentDetail={agentDetail} />
         <MermaidExportDialog agentDetail={agentDetail} />
       </div>

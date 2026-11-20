@@ -104,4 +104,22 @@ export default defineSchema({
         .index("by_razorpayOrderId", ["razorpayOrderId"])
         .index("by_status", ["status"])
         .index("by_createdAt", ["createdAt"]),
+
+    LinkAnalyticsTable: defineTable({
+        agentId: v.string(),
+        ownerUserId: v.id("UserTable"),
+        architectureName: v.string(),
+        visitorSessionId: v.string(),
+        referrer: v.optional(v.string()),
+        device: v.optional(v.string()), // "Desktop" | "Mobile" | "Tablet"
+        browser: v.optional(v.string()),
+        os: v.optional(v.string()),
+        durationSeconds: v.number(),
+        timestamp: v.number(),
+    })
+        .index("by_agentId", ["agentId"])
+        .index("by_ownerUserId", ["ownerUserId"])
+        .index("by_ownerUserId_timestamp", ["ownerUserId", "timestamp"])
+        .index("by_visitorSessionId", ["visitorSessionId"])
+        .index("by_timestamp", ["timestamp"]),
 })

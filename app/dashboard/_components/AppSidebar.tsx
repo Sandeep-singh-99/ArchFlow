@@ -25,6 +25,7 @@ import {
   Sparkles,
   Zap,
   MessageSquareHeart,
+  BarChart3,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -37,6 +38,12 @@ const NavigationOptions = [
     url: "/dashboard",
     icon: Network,
     badge: "Studio",
+  },
+  {
+    title: "Share Analytics",
+    url: "/dashboard/analytics",
+    icon: BarChart3,
+    badge: "Live",
   },
   {
     title: "Pricing & Plans",
