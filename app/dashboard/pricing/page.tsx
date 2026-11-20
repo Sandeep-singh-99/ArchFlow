@@ -23,9 +23,11 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
 import { UserDetailContext } from "@/context/UserDetailContext";
+import { getActiveSubscription } from "@/lib/subscription";
 import { loadRazorpayScript, RazorpayCheckoutOptions } from "@/lib/razorpayClient";
+
+type PaymentResponse = Parameters<RazorpayCheckoutOptions["handler"]>[0];
 
 // Helper to format promotional sunset dates cleanly (e.g. "Nov 5, 2026")
 function formatExpiryDate(dateStr: string): string {
@@ -94,10 +96,13 @@ function matchFeature(feature: string, targetLabel: string): boolean {
 }
 
 export default function PricingPage() {
-  const { user, isLoaded: isUserLoaded } = useUser();
+  const { user } = useUser();
   const { userDetails, setUserDetails } = useContext(UserDetailContext);
 
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const [selectedPlanCode, setSelectedPlanCode] = useState<string | null>(null);
+  const [pendingPayment, setPendingPayment] = useState<{ response: PaymentResponse; planName: string } | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
   const [paymentSuccessData, setPaymentSuccessData] = useState<{
     planName: string;
@@ -113,46 +118,72 @@ export default function PricingPage() {
     userEmail ? { email: userEmail } : "skip"
   );
 
-  // User's current subscription tier
-  const currentSub = (userDetails?.subscription || "free").toLowerCase();
+  const savedUser = useQuery(api.user.GetUserByEmail, userEmail ? { email: userEmail } : "skip");
+  const subscription = savedUser && paymentSuccessData &&
+    savedUser.lastPaymentId !== paymentSuccessData.paymentId && userDetails?.lastPaymentId === paymentSuccessData.paymentId
+    ? userDetails
+    : savedUser ?? userDetails;
+  const currentSub = getActiveSubscription(subscription);
+  const hasPaidPlan = currentSub !== "free";
+  const checkoutDisabled = hasPaidPlan || processingPlanId !== null || !!pendingPayment || !savedUser || !activePlans;
 
-  // Handle Razorpay checkout
-  const handleSubscribe = async (plan: {
-    _id?: Id<"PlanTable"> | string;
-    name: string;
-    planCode: string;
-    description: string;
-    monthlyPrice: number;
-    yearlyPrice: number;
-    originalMonthlyPrice?: number;
-    originalYearlyPrice?: number;
-    discountPercent?: number;
-    expiryDate?: string;
-    currency?: string;
-    validityDays?: number;
-    tokenQuota?: number;
-  }) => {
+  const verifyPayment = async (response: PaymentResponse, planName: string) => {
+    setIsVerifying(true);
+    try {
+      // 4. Verify payment signature on backend
+      const verifyRes = await fetch("/api/razorpay/verify-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(response),
+      });
+
+      const verifyData = await verifyRes.json();
+
+      if (!verifyRes.ok || !verifyData.verified) {
+        toast.error(verifyData.error || "Payment verification failed!");
+        return;
+      }
+
+      // 5. Update userDetails React context from server-verified subscription
+      const activeSubscription = verifyData.subscription;
+      if (setUserDetails && userDetails) {
+        setUserDetails({
+          ...userDetails,
+          subscription: activeSubscription,
+          lastPaymentId: response.razorpay_payment_id,
+          subscriptionBillingCycle: verifyData.billingCycle,
+          subscriptionExpiresAt: verifyData.validUntil,
+          token: verifyData.token,
+        });
+      }
+
+      setPendingPayment(null);
+      setPaymentSuccessData({
+        planName: planName,
+        paymentId: response.razorpay_payment_id,
+        validUntil: verifyData.validUntil,
+      });
+
+      toast.success(`${planName} is active.`);
+    } catch (err: unknown) {
+      console.error("Payment confirmation error:", err);
+      toast.error("Could not confirm the payment. Check payment status to try again.");
+    } finally {
+      setIsVerifying(false);
+      setProcessingPlanId(null);
+    }
+  };
+
+  const handleSubscribe = async (plan: { planCode: string; name: string }, price: number) => {
+    if (checkoutDisabled || selectedPlanCode !== plan.planCode) return;
+
     if (!user) {
       toast.error("Please sign in to subscribe to a plan");
       return;
     }
 
-    const isDiscountExpired = Boolean(
-      plan.expiryDate && new Date(`${plan.expiryDate}T23:59:59`).getTime() < Date.now()
-    );
-    const hasActiveDiscount = Boolean(plan.discountPercent && plan.discountPercent > 0 && !isDiscountExpired);
-
-    const price = billingCycle === "yearly"
-      ? (hasActiveDiscount ? plan.yearlyPrice : (plan.originalYearlyPrice ?? plan.yearlyPrice))
-      : (hasActiveDiscount ? plan.monthlyPrice : (plan.originalMonthlyPrice ?? plan.monthlyPrice));
-
-    if (price === 0) {
-      toast.info("You already have access to the Free Starter plan");
-      return;
-    }
-
     try {
-      setProcessingPlanId(String(plan._id || plan.planCode));
+      setProcessingPlanId(plan.planCode);
 
       // 1. Ensure Razorpay client SDK is loaded
       const scriptLoaded = await loadRazorpayScript();
@@ -167,12 +198,9 @@ export default function PricingPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          planId: plan._id ? String(plan._id) : undefined,
-          planName: plan.name,
           planCode: plan.planCode,
           billingCycle,
           amount: price,
-          currency: plan.currency || "INR",
         }),
       });
 
@@ -191,6 +219,7 @@ export default function PricingPage() {
       }
 
       // 3. Open Razorpay Checkout modal
+      let paymentSubmitted = false;
       const options: RazorpayCheckoutOptions = {
         key: orderData.keyId,
         amount: orderData.amount,
@@ -212,55 +241,14 @@ export default function PricingPage() {
           color: "#ffc507",
           backdrop_color: "rgba(0,0,0,0.85)",
         },
-        handler: async (response) => {
-          try {
-            // 4. Verify payment signature on backend
-            const verifyRes = await fetch("/api/razorpay/verify-payment", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                ...response,
-                planId: plan._id ? String(plan._id) : undefined,
-                planName: plan.name,
-                planCode: plan.planCode,
-                billingCycle,
-                userEmail,
-              }),
-            });
-
-            const verifyData = await verifyRes.json();
-
-            if (!verifyRes.ok || !verifyData.verified) {
-              toast.error(verifyData.error || "Payment verification failed!");
-              return;
-            }
-
-            // 5. Update userDetails React context from server-verified subscription
-            const activeSubscription = verifyData.subscription || plan.planCode;
-            if (setUserDetails && userDetails) {
-              setUserDetails({
-                ...userDetails,
-                subscription: activeSubscription,
-                token: plan.tokenQuota || (activeSubscription === "ai" ? 999999 : 50000),
-              });
-            }
-
-            setPaymentSuccessData({
-              planName: plan.name,
-              paymentId: response.razorpay_payment_id,
-              validUntil: verifyData.validUntil,
-            });
-
-            toast.success(`🎉 ${plan.name} activated successfully with Razorpay!`);
-          } catch (err: unknown) {
-            console.error("Payment confirmation error:", err);
-            toast.error("Failed to complete subscription activation");
-          } finally {
-            setProcessingPlanId(null);
-          }
+        handler: (response) => {
+          paymentSubmitted = true;
+          setPendingPayment({ response, planName: orderData.planName });
+          void verifyPayment(response, orderData.planName);
         },
         modal: {
           ondismiss: () => {
+            if (paymentSubmitted) return;
             setProcessingPlanId(null);
             toast.info("Payment cancelled");
           },
@@ -376,7 +364,7 @@ export default function PricingPage() {
     <div className="max-w-6xl mx-auto px-4 py-12 space-y-12">
       {/* Payment Success Celebration Banner */}
       {paymentSuccessData && (
-        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono text-emerald-300 shadow-[0_0_25px_rgba(16,185,129,0.15)] animate-in fade-in slide-in-from-top-4 duration-500">
+        <div role="status" className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono text-emerald-300 shadow-[0_0_25px_rgba(16,185,129,0.15)] animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="flex items-center gap-2.5">
             <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
             <div>
@@ -414,18 +402,23 @@ export default function PricingPage() {
           Subscription Plans & Pricing
         </Badge>
         <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-foreground">
-          Upgrade Your Schema Studio
+          Subscription plans
         </h1>
         <p className="text-sm md:text-base text-muted-foreground">
-          Choose a plan to unlock higher project quotas, CASCADE simulators, full AI copilot access, and direct Razorpay checkout.
+          {hasPaidPlan
+            ? "Your paid plan is active. You can choose a different plan when it expires."
+            : "Select a plan and billing period, then pay with Razorpay."}
         </p>
 
         {/* Monthly / Yearly Billing Toggle */}
-        <div className="inline-flex items-center gap-3 p-1 rounded-full bg-card/80 border border-border mt-4 shadow-inner">
+        {!hasPaidPlan && (
+        <div role="group" aria-label="Billing period" className="inline-flex items-center gap-3 p-1 rounded-full bg-card/80 border border-border mt-4 shadow-inner">
           <button
             type="button"
+            aria-pressed={billingCycle === "monthly"}
+            disabled={processingPlanId !== null || !!pendingPayment}
             onClick={() => setBillingCycle("monthly")}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+            className={`min-h-11 px-4 rounded-full text-xs font-medium transition-all ${
               billingCycle === "monthly"
                 ? "bg-amber-400 text-black font-semibold shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -435,8 +428,10 @@ export default function PricingPage() {
           </button>
           <button
             type="button"
+            aria-pressed={billingCycle === "yearly"}
+            disabled={processingPlanId !== null || !!pendingPayment}
             onClick={() => setBillingCycle("yearly")}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+            className={`min-h-11 px-4 rounded-full text-xs font-medium transition-all ${
               billingCycle === "yearly"
                 ? "bg-amber-400 text-black font-semibold shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -445,33 +440,42 @@ export default function PricingPage() {
             Yearly Billing
           </button>
         </div>
+        )}
+        <p role="status" className="text-sm text-muted-foreground">
+          {isVerifying ? "Verifying your payment…" : processingPlanId ? "Razorpay checkout in progress…" : ""}
+        </p>
       </div>
 
       {/* Razorpay Plans Grid */}
       <div className={`grid grid-cols-1 md:grid-cols-2 ${displayPlans.length >= 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-8 max-w-6xl mx-auto items-stretch`}>
         {displayPlans.map((plan) => {
-          const isCurrent =
-            currentSub === plan.planCode ||
-            (currentSub === "active" && plan.planCode === "pro") ||
-            (currentSub === "ai_unlimited" && plan.planCode === "ai");
+          const isCurrent = currentSub === plan.planCode;
+          const isSelected = !hasPaidPlan && selectedPlanCode === plan.planCode;
+          const shownCycle = hasPaidPlan
+            ? subscription?.subscriptionBillingCycle ?? "monthly"
+            : billingCycle;
 
           const isDiscountExpired = Boolean(
             plan.expiryDate && new Date(`${plan.expiryDate}T23:59:59`).getTime() < Date.now()
           );
           const hasActiveDiscount = Boolean(plan.discountPercent && plan.discountPercent > 0 && !isDiscountExpired);
 
-          const price = billingCycle === "yearly"
+          const price = shownCycle === "yearly"
             ? (hasActiveDiscount ? plan.yearlyPrice : (plan.originalYearlyPrice ?? plan.yearlyPrice))
             : (hasActiveDiscount ? plan.monthlyPrice : (plan.originalMonthlyPrice ?? plan.monthlyPrice));
 
-          const originalPrice = billingCycle === "yearly" ? plan.originalYearlyPrice : plan.originalMonthlyPrice;
-          const isProcessing = processingPlanId === String(plan._id || plan.planCode);
+          const originalPrice = shownCycle === "yearly" ? plan.originalYearlyPrice : plan.originalMonthlyPrice;
+          const isProcessing = processingPlanId === plan.planCode;
 
           return (
             <Card
               key={String(plan._id || plan.planCode)}
               className={`flex flex-col border transition-all duration-300 rounded-2xl relative ${
-                plan.badge
+                isCurrent
+                  ? "border-emerald-500/70 bg-card"
+                  : isSelected
+                  ? "border-primary ring-1 ring-primary bg-card"
+                  : plan.badge
                   ? "border-amber-400/50 bg-card/95 shadow-lg shadow-amber-500/5"
                   : "border-border bg-card/80 shadow-sm hover:border-border/80"
               }`}
@@ -486,7 +490,7 @@ export default function PricingPage() {
               )}
 
               <CardHeader className="space-y-1.5 pb-6 border-b border-border/40">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <CardTitle className="text-xl font-bold">{plan.name}</CardTitle>
                   {isCurrent && (
                     <Badge
@@ -509,7 +513,7 @@ export default function PricingPage() {
                     <div className="text-3xl font-extrabold font-mono text-foreground flex items-baseline gap-1">
                       ₹{price.toLocaleString()}
                       <span className="text-xs font-normal text-muted-foreground font-sans">
-                        /{billingCycle === "yearly" ? "year" : "month"}
+                        /{shownCycle === "yearly" ? "year" : "month"}
                       </span>
                     </div>
                     {hasActiveDiscount && plan.discountPercent && (
@@ -533,7 +537,7 @@ export default function PricingPage() {
                       Promotional discount ended on {plan.expiryDate}
                     </p>
                   )}
-                  {billingCycle === "yearly" && price > 0 && (
+                  {shownCycle === "yearly" && price > 0 && (
                     <p className="text-[11px] text-emerald-400 mt-1 font-mono">
                       Equivalent to ₹{Math.round(price / 12).toLocaleString()}/month
                     </p>
@@ -584,40 +588,32 @@ export default function PricingPage() {
                 </ul>
               </CardContent>
 
-              <CardFooter className="pt-4 border-t border-border/40">
-                {price === 0 ? (
-                  <Link href="/dashboard" className="w-full">
-                    <Button
-                      variant="outline"
-                      className="w-full text-xs font-semibold h-10 rounded-xl cursor-pointer"
-                    >
-                      {isCurrent ? "Current Free Plan" : "Continue Free"}
-                    </Button>
-                  </Link>
-                ) : (
+              <CardFooter className="flex flex-col gap-2 pt-4 border-t border-border/40">
+                <Button
+                  type="button"
+                  variant={isSelected ? "default" : "outline"}
+                  className="w-full min-h-11"
+                  aria-pressed={plan.planCode === "free" || hasPaidPlan ? undefined : isSelected}
+                  disabled={checkoutDisabled || plan.planCode === "free" || price <= 0}
+                  onClick={() => setSelectedPlanCode(plan.planCode)}
+                >
+                  {isCurrent ? "Current plan" : hasPaidPlan ? "Unavailable while subscribed" : isSelected ? "Selected" : "Select plan"}
+                </Button>
+                {isSelected && (
                   <Button
-                    onClick={() => handleSubscribe(plan)}
-                    disabled={isProcessing}
-                    className={`w-full text-xs font-semibold h-10 rounded-xl cursor-pointer shadow-sm ${
-                      plan.badge
-                        ? "bg-amber-400 hover:bg-amber-300 text-black font-bold"
-                        : "bg-primary hover:bg-primary/90 text-primary-foreground"
-                    }`}
+                    type="button"
+                    className="w-full min-h-11"
+                    disabled={pendingPayment ? isVerifying : checkoutDisabled || price <= 0}
+                    onClick={() => pendingPayment
+                      ? verifyPayment(pendingPayment.response, pendingPayment.planName)
+                      : handleSubscribe(plan, price)}
                   >
-                    {isProcessing ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Opening Razorpay...
-                      </span>
-                    ) : isCurrent ? (
-                      <span className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-4 w-4" /> Renew / Manage with Razorpay
-                      </span>
+                    {(isProcessing || isVerifying) ? (
+                      <Loader2 aria-hidden="true" className="h-4 w-4 motion-safe:animate-spin" />
                     ) : (
-                      <span className="flex items-center gap-1.5">
-                        <CreditCard className="h-4 w-4" /> Upgrade with Razorpay
-                      </span>
+                      <CreditCard aria-hidden="true" className="h-4 w-4" />
                     )}
+                    {isVerifying ? "Verifying payment…" : isProcessing ? "Checkout in progress…" : pendingPayment ? "Check payment status" : "Pay with Razorpay"}
                   </Button>
                 )}
               </CardFooter>
@@ -788,7 +784,7 @@ export default function PricingPage() {
               How does Razorpay checkout work?
             </h4>
             <p className="text-muted-foreground leading-relaxed">
-              When you click Upgrade, Razorpay&apos;s encrypted checkout modal opens directly supporting UPI, Credit/Debit Cards, NetBanking, and Wallets. Once verified, your subscription is activated immediately.
+              When you click Pay with Razorpay, Razorpay&apos;s encrypted checkout modal opens directly supporting UPI, Credit/Debit Cards, NetBanking, and Wallets. Once verified, your subscription is activated immediately.
             </p>
           </div>
           <div className="p-4 rounded-xl border border-border bg-card/40 space-y-1.5">
@@ -797,7 +793,7 @@ export default function PricingPage() {
               What are the plan validity and renewal terms?
             </h4>
             <p className="text-muted-foreground leading-relaxed">
-              Monthly plans renew every 30 days, while Yearly plans include 365 days of validity. You can review your transaction receipts in the billing history table above.
+              Monthly plans last 30 days and yearly plans last 365 days. Each term is paid for once. You can review your transaction receipts in the billing history table above.
             </p>
           </div>
         </div>

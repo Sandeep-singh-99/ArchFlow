@@ -1,3 +1,4 @@
+import { getActiveSubscription } from "@/lib/subscription";
 import { NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import Razorpay from "razorpay";
@@ -23,8 +24,24 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const { planId, planCode, billingCycle = "monthly" } = body;
+    const userEmail = user.primaryEmailAddress?.emailAddress;
+    const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (!convexUrl || !userEmail) {
+      return NextResponse.json({ error: "Billing is unavailable for this account." }, { status: 503 });
+    }
+    const convex = new ConvexHttpClient(convexUrl);
+    const account = await convex.query(api.user.GetUserByEmail, { email: userEmail });
+    if (!account) {
+      return NextResponse.json({ error: "Your account is still being set up." }, { status: 409 });
+    }
+    if (getActiveSubscription(account) !== "free") {
+      return NextResponse.json({ error: "Your paid plan is already active." }, { status: 409 });
+    }
+    if (billingCycle !== "monthly" && billingCycle !== "yearly") {
+      return NextResponse.json({ error: "Invalid billing period." }, { status: 400 });
+    }
 
-    const normalizedCode = (planCode || "").trim().toLowerCase();
+    const normalizedCode = typeof planCode === "string" ? planCode.trim().toLowerCase() : "";
 
     // Reject free plan purchase
     if (normalizedCode === "free") {
@@ -35,20 +52,10 @@ export async function POST(req: Request) {
     }
 
     // Fetch authoritative plan from Convex PlanTable
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let dbPlan: any = null;
-    const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-    if (convexUrl) {
-      try {
-        const convex = new ConvexHttpClient(convexUrl);
-        dbPlan = await convex.query(api.plans.GetPlanByIdOrCode, {
-          planId: planId ? String(planId) : undefined,
-          planCode: normalizedCode || undefined,
-        });
-      } catch (err) {
-        console.warn("Could not query Convex PlanTable directly, checking canonical plans:", err);
-      }
-    }
+    const dbPlan = await convex.query(api.plans.GetPlanByIdOrCode, {
+      planId: typeof planId === "string" ? planId : undefined,
+      planCode: normalizedCode || undefined,
+    });
 
     let serverPrice: number;
     let finalPlanName: string;
@@ -84,7 +91,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!serverPrice || serverPrice <= 0) {
+    if (finalPlanCode === "free" || !Number.isFinite(serverPrice) || serverPrice <= 0) {
       return NextResponse.json({ error: "Invalid plan price on server" }, { status: 400 });
     }
 
@@ -130,7 +137,7 @@ export async function POST(req: Request) {
       notes: {
         userId,
         userEmail: user.primaryEmailAddress?.emailAddress || "",
-        planId: dbPlan?._id ? String(dbPlan._id) : planId || "",
+        planId: dbPlan?._id ? String(dbPlan._id) : "",
         planName: finalPlanName,
         planCode: finalPlanCode,
         billingCycle: billingCycle || "monthly",

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import Razorpay from "razorpay";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -49,45 +50,45 @@ export async function POST(req: Request) {
     // Process payment completion events
     if (event === "order.paid" || event === "payment.captured") {
       const paymentEntity = payload.payload?.payment?.entity;
-      const orderEntity = payload.payload?.order?.entity;
-      const notes = orderEntity?.notes || paymentEntity?.notes || {};
+      const orderId = payload.payload?.order?.entity?.id || paymentEntity?.order_id;
+      if (typeof orderId !== "string" || typeof paymentEntity?.id !== "string") {
+        return NextResponse.json({ error: "Missing webhook order or payment." }, { status: 400 });
+      }
 
-      const userEmail = notes.userEmail;
-      const planCode = String(notes.planCode || "pro").toLowerCase();
-      const planName = String(notes.planName || "Pro Architect");
-      const planId = notes.planId;
-      const billingCycle = String(notes.billingCycle || "monthly");
-      const amount =
-        (paymentEntity?.amount
-          ? Number(paymentEntity.amount) / 100
-          : Number(orderEntity?.amount) / 100) || 0;
-      const currency = paymentEntity?.currency || orderEntity?.currency || "INR";
-      const razorpayOrderId = orderEntity?.id || paymentEntity?.order_id || "";
-      const razorpayPaymentId = paymentEntity?.id || "";
-
-      if (userEmail && planCode && razorpayOrderId) {
+      const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      const keySecret = process.env.RAZORPAY_KEY_SECRET;
+      if (!keyId || !keySecret) {
+        return NextResponse.json({ error: "Payment confirmation is unavailable." }, { status: 503 });
+      }
+      const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
+      const order = await razorpay.orders.fetch(orderId);
+      const { userEmail, planCode, planName, planId, billingCycle } = order.notes || {};
+      if (typeof userEmail === "string" && typeof planCode === "string" &&
+          typeof planName === "string" && (billingCycle === "monthly" || billingCycle === "yearly") &&
+          paymentEntity.order_id === order.id && paymentEntity.status === "captured" &&
+          Number(paymentEntity.amount) === Number(order.amount) && paymentEntity.currency === order.currency) {
         const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-        if (convexUrl) {
-          const convex = new ConvexHttpClient(convexUrl);
-          await convex.mutation(api.payments.RecordSuccessfulPayment, {
-            userEmail,
-            planId:
-              planId && typeof planId === "string" && planId.length > 10
-                ? (planId as Id<"PlanTable">)
-                : undefined,
-            planName,
-            planCode,
-            billingCycle,
-            amount,
-            currency,
-            razorpayOrderId,
-            razorpayPaymentId,
-            razorpaySignature: signature,
-            validityDays: billingCycle === "yearly" ? 365 : 30,
-            tokenQuota: planCode === "ai" ? 999999 : 50000,
-            serverSecret: webhookSecret,
-          });
+        if (!convexUrl) {
+          return NextResponse.json({ error: "Billing storage is unavailable." }, { status: 503 });
         }
+        const convex = new ConvexHttpClient(convexUrl);
+        await convex.mutation(api.payments.RecordSuccessfulPayment, {
+          userEmail,
+          planId:
+            planId && typeof planId === "string"
+              ? (planId as Id<"PlanTable">)
+              : undefined,
+          planName,
+          planCode,
+          billingCycle,
+          amount: Number(order.amount) / 100,
+          currency: order.currency,
+          razorpayOrderId: order.id,
+          razorpayPaymentId: paymentEntity.id,
+          razorpaySignature: signature,
+          validityDays: billingCycle === "yearly" ? 365 : 30,
+          serverSecret: process.env.CONVEX_SERVER_SECRET || keySecret,
+        });
       }
     }
 

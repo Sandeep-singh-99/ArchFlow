@@ -1,3 +1,4 @@
+import { getActiveSubscription } from "../lib/subscription";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
@@ -18,35 +19,46 @@ export const RecordSuccessfulPayment = mutation({
     serverSecret: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // 1. Verify caller identity or authorized server-side execution
-    const identity = await ctx.auth.getUserIdentity();
-    const authorizedSecret =
-      process.env.CONVEX_SERVER_SECRET ||
-      process.env.RAZORPAY_KEY_SECRET ||
-      process.env.RAZORPAY_WEBHOOK_SECRET;
+    // 1. Require server-side payment verification.
+    const validSecrets = [
+      process.env.CONVEX_SERVER_SECRET,
+      process.env.RAZORPAY_KEY_SECRET,
+      process.env.RAZORPAY_WEBHOOK_SECRET,
+    ].filter(Boolean) as string[];
 
-    const isAuthorizedServer = Boolean(
-      args.serverSecret &&
-      authorizedSecret &&
-      args.serverSecret === authorizedSecret
-    );
-
-    if (!identity && !isAuthorizedServer) {
-      throw new Error(
-        "Unauthorized: Subscription upgrades require verified server-side authorization or active user identity."
+    if (validSecrets.length > 0) {
+      const isAuthorizedServer = Boolean(
+        args.serverSecret && validSecrets.includes(args.serverSecret)
       );
-    }
 
-    if (identity && !isAuthorizedServer) {
-      const userEmail = (identity.email || "").toLowerCase();
-      if (userEmail && userEmail !== args.userEmail.toLowerCase()) {
-        throw new Error("Forbidden: Cannot record payments for a different user identity.");
+      if (!isAuthorizedServer) {
+        throw new Error("Unauthorized: Subscription upgrades require verified server-side authorization.");
       }
+    } else {
+      // Fallback if secrets are not yet configured in the Convex deployment environment:
+      // Require that the caller supplied a non-empty serverSecret from the server-side API route.
+      if (!args.serverSecret || args.serverSecret.trim().length === 0) {
+        throw new Error("Unauthorized: Subscription upgrades require verified server-side authorization.");
+      }
+      console.warn(
+        "CONVEX_SERVER_SECRET is not configured in Convex deployment environment variables. " +
+        "Run 'npx convex env set CONVEX_SERVER_SECRET <secret>' to enforce strict server authorization."
+      );
     }
 
     // 2. Reject free tier upgrades through payment
     if (args.planCode.toLowerCase() === "free" || args.amount <= 0) {
       throw new Error("Invalid payment: Free tier does not require payment processing.");
+    }
+
+    // 4. Fetch user by email
+    const user = await ctx.db
+      .query("UserTable")
+      .withIndex("by_email", (q) => q.eq("email", args.userEmail))
+      .first();
+
+    if (!user) {
+      throw new Error(`User with email ${args.userEmail} not found`);
     }
 
     // 3. Idempotency: Prevent duplicate payment recordings
@@ -59,20 +71,13 @@ export const RecordSuccessfulPayment = mutation({
       return {
         success: true,
         paymentId: existingPayment._id,
-        subscription: existingPayment.planCode,
-        validUntil: existingPayment.validUntil,
+        subscription: user.subscription,
+        billingCycle: user.subscriptionBillingCycle,
+        validUntil: user.subscriptionExpiresAt,
+        token: user.token,
+        activated: user.lastPaymentId === existingPayment.razorpayPaymentId,
         isDuplicate: true,
       };
-    }
-
-    // 4. Fetch user by email
-    const user = await ctx.db
-      .query("UserTable")
-      .withIndex("by_email", (q) => q.eq("email", args.userEmail))
-      .first();
-
-    if (!user) {
-      throw new Error(`User with email ${args.userEmail} not found`);
     }
 
     const validFrom = Date.now();
@@ -99,6 +104,11 @@ export const RecordSuccessfulPayment = mutation({
       createdAt: validFrom,
     });
 
+    // Keep the active plan if a previously opened checkout is paid later.
+    if (getActiveSubscription(user, validFrom) !== "free") {
+      return { success: true, paymentId, activated: false };
+    }
+
     // 6. Update User subscription & tokens
     const tokens =
       args.tokenQuota !== undefined
@@ -122,6 +132,9 @@ export const RecordSuccessfulPayment = mutation({
       success: true,
       paymentId,
       subscription: args.planCode,
+      billingCycle: args.billingCycle,
+      token: tokens,
+      activated: true,
       validUntil,
     };
   },
