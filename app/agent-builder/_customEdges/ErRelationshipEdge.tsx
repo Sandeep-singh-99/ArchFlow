@@ -7,13 +7,14 @@ import {
   getSmoothStepPath,
   Position,
   type EdgeProps,
+  type Node,
+  type Edge,
 } from "@xyflow/react";
 import { WorkflowContext } from "@/context/WorkflowContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -24,6 +25,8 @@ export type CardinalityType =
   | "1:1"
   | "N:M"
   | "N:1"
+  | "enum"
+  | "type"
   | "crows-one-many"
   | "crows-zero-many"
   | "crows-one-one";
@@ -59,6 +62,20 @@ const CARDINALITY_CONFIG: Record<
     target: "1",
     desc: "Many-to-One",
     badgeColor: "bg-amber-500/15 text-amber-500 dark:text-amber-400 border-amber-500/30",
+  },
+  "enum": {
+    label: "ENUM",
+    source: "",
+    target: "",
+    desc: "Enum Type Reference (Table ➔ Enum)",
+    badgeColor: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
+  },
+  "type": {
+    label: "TYPE",
+    source: "",
+    target: "",
+    desc: "Custom Type Reference (Table ➔ Type)",
+    badgeColor: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
   },
   "crows-one-many": {
     label: "||—|{",
@@ -125,7 +142,12 @@ export default function ErRelationshipEdge({
   selected,
   animated = true,
 }: EdgeProps) {
-  const { setNodeEdges } = useContext(WorkflowContext);
+  const { addedNodes, setNodeEdges } = useContext(WorkflowContext);
+
+  // Check if either connected node is an Enum node
+  const sourceNode = (addedNodes || []).find((n: Node) => n.id === source);
+  const targetNode = (addedNodes || []).find((n: Node) => n.id === target);
+  const isEnumConnection = sourceNode?.type === "SqlEnumNode" || targetNode?.type === "SqlEnumNode";
 
   // Guard against unmounted or unpositioned handles
   if (
@@ -150,7 +172,6 @@ export default function ErRelationshipEdge({
   if (isSelf) {
     // Self-referencing relationship (connecting columns on its own node)
     const loopOffset = 55;
-    const dy = targetY - sourceY;
 
     if (sourcePosition === Position.Right && targetPosition === Position.Right) {
       // Loop out to the right of the node
@@ -201,31 +222,36 @@ export default function ErRelationshipEdge({
   const targetPoint = getHandleOutwardPoint(targetX, targetY, targetPosition, 22);
 
   // Determine active cardinality
-  let rawCardinality = (data as any)?.cardinality;
+  let rawCardinality = (data as Record<string, unknown> | undefined)?.cardinality as string | undefined;
   if (!rawCardinality && label) {
-    if (String(label).includes("1:N")) rawCardinality = "1:N";
-    else if (String(label).includes("1:1")) rawCardinality = "1:1";
-    else if (String(label).includes("N:M")) rawCardinality = "N:M";
-    else if (String(label).includes("N:1")) rawCardinality = "N:1";
+    const strLabel = String(label).toUpperCase();
+    if (strLabel.includes("1:N")) rawCardinality = "1:N";
+    else if (strLabel.includes("1:1")) rawCardinality = "1:1";
+    else if (strLabel.includes("N:M")) rawCardinality = "N:M";
+    else if (strLabel.includes("N:1")) rawCardinality = "N:1";
+    else if (strLabel.includes("ENUM")) rawCardinality = "enum";
+    else if (strLabel.includes("TYPE")) rawCardinality = "type";
   }
-  const activeCardinality = rawCardinality && CARDINALITY_CONFIG[rawCardinality] ? rawCardinality : "1:N";
-  const config = CARDINALITY_CONFIG[activeCardinality];
+  const defaultCardinality = isEnumConnection ? "enum" : "1:N";
+  const activeCardinality = rawCardinality && CARDINALITY_CONFIG[rawCardinality] ? rawCardinality : defaultCardinality;
+  const config = CARDINALITY_CONFIG[activeCardinality] || CARDINALITY_CONFIG[defaultCardinality];
 
   const handleSelectCardinality = (newType: string) => {
-    setNodeEdges((eds: any[]) =>
-      (eds || []).map((e: any) => {
+    setNodeEdges((eds: Edge[]) =>
+      (eds || []).map((e: Edge) => {
         if (e.id === id) {
           const baseLabel = typeof e.label === "string"
-            ? e.label.replace(/^(1:1|1:N|N:M|N:1|\|\|—\|\{|\|\|—o\{|\|\|—\|\|)\s*/, "").trim()
+            ? e.label.replace(/^(1:1|1:N|N:M|N:1|ENUM|TYPE|\|\|—\|\{|\|\|—o\{|\|\|—\|\|)\s*/i, "").trim()
             : "";
+          const newConfig = CARDINALITY_CONFIG[newType];
           const newLabel = baseLabel
-            ? `${CARDINALITY_CONFIG[newType].label} ${baseLabel}`
-            : CARDINALITY_CONFIG[newType].label;
+            ? `${newConfig.label} ${baseLabel}`
+            : newConfig.label;
           return {
             ...e,
             label: newLabel,
             data: {
-              ...(e.data || {}),
+              ...((e.data as Record<string, unknown>) || {}),
               cardinality: newType,
             },
           };
@@ -235,7 +261,12 @@ export default function ErRelationshipEdge({
     );
   };
 
-  const relationshipTitle = typeof label === "string" ? label : (data as any)?.title || config.desc;
+  const relationshipTitle = typeof label === "string" ? label : ((data as Record<string, unknown> | undefined)?.title as string | undefined) || config.desc;
+
+  const isEnumEdge = isEnumConnection || activeCardinality === "enum" || activeCardinality === "type";
+  const strokeColor = selected
+    ? (isEnumEdge ? "#f59e0b" : "#10b981")
+    : (isEnumEdge ? "#d97706" : "#059669");
 
   return (
     <>
@@ -246,7 +277,7 @@ export default function ErRelationshipEdge({
         className={animated ? "react-flow__edge-path animated" : "react-flow__edge-path"}
         style={{
           strokeWidth: selected ? 2.5 : 2,
-          stroke: selected ? "#10b981" : "#059669",
+          stroke: strokeColor,
           strokeDasharray: animated ? "5 5" : undefined,
           animation: animated ? "react-flow__dash 0.5s linear infinite" : undefined,
           ...style,
@@ -256,33 +287,37 @@ export default function ErRelationshipEdge({
 
       {/* Edge Labels & Interactive Cardinality Pill */}
       <EdgeLabelRenderer>
-        {/* Source Cardinality Marker (1 / ||) - Always outside handle with high z-index */}
-        <div
-          style={{
-            position: "absolute",
-            transform: `translate(-50%, -50%) translate(${sourcePoint.x}px,${sourcePoint.y}px)`,
-            zIndex: 1000,
-          }}
-          className="pointer-events-none select-none transition-transform"
-        >
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-background text-foreground border border-border shadow-md">
-            {config.source}
-          </span>
-        </div>
+        {/* Source Cardinality Marker (1 / ||) - Never show on enum connections */}
+        {config.source && !isEnumConnection && (
+          <div
+            style={{
+              position: "absolute",
+              transform: `translate(-50%, -50%) translate(${sourcePoint.x}px,${sourcePoint.y}px)`,
+              zIndex: 1000,
+            }}
+            className="pointer-events-none select-none transition-transform"
+          >
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-background text-foreground border border-border shadow-md">
+              {config.source}
+            </span>
+          </div>
+        )}
 
-        {/* Target Cardinality Marker (N / M / |{) - Always outside handle with high z-index */}
-        <div
-          style={{
-            position: "absolute",
-            transform: `translate(-50%, -50%) translate(${targetPoint.x}px,${targetPoint.y}px)`,
-            zIndex: 1000,
-          }}
-          className="pointer-events-none select-none transition-transform"
-        >
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-background text-foreground border border-border shadow-md">
-            {config.target}
-          </span>
-        </div>
+        {/* Target Cardinality Marker (N / M / |{) - Never show on enum connections */}
+        {config.target && !isEnumConnection && (
+          <div
+            style={{
+              position: "absolute",
+              transform: `translate(-50%, -50%) translate(${targetPoint.x}px,${targetPoint.y}px)`,
+              zIndex: 1000,
+            }}
+            className="pointer-events-none select-none transition-transform"
+          >
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-background text-foreground border border-border shadow-md">
+              {config.target}
+            </span>
+          </div>
+        )}
 
         {/* Center Interactive Cardinality Pill */}
         <div
@@ -311,10 +346,17 @@ export default function ErRelationshipEdge({
               </button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="center" className="w-64 p-1.5 text-xs font-mono z-[1100]">
-              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 py-1">
-                Relationship Cardinality
-              </DropdownMenuLabel>
+            <DropdownMenuContent align="center" className="w-72 p-1.5 text-xs font-mono z-[1100]">
+              <div className="flex items-center justify-between px-2 py-1">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  Relationship Cardinality
+                </span>
+                {isEnumConnection && (
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/30">
+                    ENUM CONNECTED
+                  </span>
+                )}
+              </div>
               <DropdownMenuSeparator />
 
               {Object.entries(CARDINALITY_CONFIG).map(([key, item]) => (
@@ -326,7 +368,7 @@ export default function ErRelationshipEdge({
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-bold border border-border">
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${item.badgeColor}`}>
                       {item.label}
                     </span>
                     <span className="font-sans text-[11px] text-muted-foreground">
@@ -335,6 +377,29 @@ export default function ErRelationshipEdge({
                   </div>
                 </DropdownMenuItem>
               ))}
+
+              <DropdownMenuSeparator />
+
+              {/* Custom Edge Text input */}
+              <div className="p-2 space-y-1">
+                <div className="text-[10px] text-muted-foreground font-sans">Custom Edge Text:</div>
+                <input
+                  type="text"
+                  placeholder="Type custom text (e.g. role, status)..."
+                  value={typeof label === "string" ? label : ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNodeEdges((eds: Edge[]) =>
+                      (eds || []).map((edge: Edge) =>
+                        edge.id === id ? { ...edge, label: val } : edge
+                      )
+                    );
+                  }}
+                  className="w-full h-7 px-2 text-xs font-mono bg-background border border-border rounded text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                />
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

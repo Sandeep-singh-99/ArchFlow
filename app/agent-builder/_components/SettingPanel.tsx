@@ -1385,9 +1385,16 @@ export default function SettingPanel({
                     className="p-2.5 rounded-lg bg-zinc-950/60 border border-white/10 space-y-1.5"
                   >
                     <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                      <span className="font-medium text-zinc-300 truncate max-w-[170px]">
-                        {isSource ? `→ To: ${otherNodeName}` : `← From: ${otherNodeName}`}
-                      </span>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-medium text-zinc-300 truncate max-w-[150px]">
+                          {isSource ? `→ To: ${otherNodeName}` : `← From: ${otherNodeName}`}
+                        </span>
+                        {otherNode?.type === "SqlEnumNode" && (
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-amber-500/30 text-amber-500 bg-amber-500/10 font-mono shrink-0">
+                            ENUM
+                          </Badge>
+                        )}
+                      </div>
                       <button
                         onClick={() => removeEdge(edge.id)}
                         className="text-zinc-500 hover:text-red-400 p-0.5 rounded cursor-pointer transition-colors"
@@ -1398,7 +1405,7 @@ export default function SettingPanel({
                     </div>
 
                     <Input
-                      placeholder="Type text (e.g. 1:N, Sends Token, API...)"
+                      placeholder={otherNode?.type === "SqlEnumNode" ? "ENUM (or custom type text)..." : "Type text (e.g. 1:N, ENUM, Sends Token...)"}
                       value={edge.label || ""}
                       onChange={(e) => updateEdgeLabel(edge.id, e.target.value)}
                       className="h-7 text-xs bg-black/60 border-white/15 focus:border-emerald-500 font-mono text-white placeholder:text-zinc-600"

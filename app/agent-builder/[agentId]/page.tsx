@@ -183,22 +183,30 @@ export default function AgentBuilder() {
 
   const onConnect = useCallback(
     (params: any) =>
-      setNodeEdges((edgesSnapshot: any) =>
-        addEdge(
+      setNodeEdges((edgesSnapshot: any) => {
+        const allNodes = addedNodes || [];
+        const sourceNode = allNodes.find((n: any) => n.id === params.source);
+        const targetNode = allNodes.find((n: any) => n.id === params.target);
+        const isEnumEdge = sourceNode?.type === "SqlEnumNode" || targetNode?.type === "SqlEnumNode";
+
+        return addEdge(
           {
             ...params,
             type: "erRelationship",
             data: {
-              cardinality: "1:N",
+              cardinality: isEnumEdge ? "enum" : "1:N",
             },
             animated: true,
-            style: { stroke: "#10b981", strokeWidth: 2 },
-            label: "1:N",
+            style: {
+              stroke: isEnumEdge ? "#f59e0b" : "#10b981",
+              strokeWidth: 2,
+            },
+            label: isEnumEdge ? "ENUM" : "1:N",
           },
           edgesSnapshot || []
-        )
-      ),
-    [setNodeEdges]
+        );
+      }),
+    [setNodeEdges, addedNodes]
   );
 
   const lastEdgeClickRef = useRef<{ id: string; time: number } | null>(null);
