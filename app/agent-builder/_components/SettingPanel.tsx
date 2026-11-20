@@ -33,6 +33,11 @@ import { toast } from "sonner";
 import { UserDetailContext } from "@/context/UserDetailContext";
 import { useAuth } from "@clerk/nextjs";
 import { getUserPlanCode, canAccessFeature, notifyFeatureLocked } from "@/lib/planAccess";
+import {
+  DataTypeSelector,
+  SQL_COLUMN_TYPE_PRESETS,
+  NOSQL_FIELD_TYPE_PRESETS,
+} from "./DataTypeSelector";
 
 export default function SettingPanel({
   onSave,
@@ -631,17 +636,18 @@ export default function SettingPanel({
                           value={col.name || ""}
                           onChange={(e) => updateTableColumn(col.id, idx, { name: e.target.value })}
                           placeholder="Column name"
-                          className="h-7 text-xs font-mono flex-1"
+                          className="h-7 text-xs font-mono flex-1 min-w-0"
                         />
-                        <Input
+                        <DataTypeSelector
                           value={col.type || ""}
-                          onChange={(e) => updateTableColumn(col.id, idx, { type: e.target.value })}
+                          onChange={(newType) => updateTableColumn(col.id, idx, { type: newType })}
+                          presets={SQL_COLUMN_TYPE_PRESETS}
                           placeholder="Type (e.g. UUID)"
-                          className="h-7 text-xs font-mono w-28"
+                          className="w-32 shrink-0"
                         />
                         <button
                           onClick={() => removeTableColumn(col.id, idx)}
-                          className="text-muted-foreground hover:text-rose-500 p-1 rounded cursor-pointer"
+                          className="text-muted-foreground hover:text-rose-500 p-1 rounded cursor-pointer shrink-0"
                           title="Delete column"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -981,17 +987,18 @@ export default function SettingPanel({
                       value={f.name}
                       onChange={(e) => updateCollectionField(idx, { name: e.target.value })}
                       placeholder="Field name"
-                      className="h-7 text-xs font-mono flex-1"
+                      className="h-7 text-xs font-mono flex-1 min-w-0"
                     />
-                    <Input
-                      value={f.type}
-                      onChange={(e) => updateCollectionField(idx, { type: e.target.value })}
+                    <DataTypeSelector
+                      value={f.type || ""}
+                      onChange={(newType) => updateCollectionField(idx, { type: newType })}
+                      presets={NOSQL_FIELD_TYPE_PRESETS}
                       placeholder="Type"
-                      className="h-7 text-xs font-mono w-24"
+                      className="w-28 shrink-0"
                     />
                     <button
                       onClick={() => removeCollectionField(idx)}
-                      className="text-muted-foreground hover:text-rose-500 p-1 cursor-pointer"
+                      className="text-muted-foreground hover:text-rose-500 p-1 cursor-pointer shrink-0"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
