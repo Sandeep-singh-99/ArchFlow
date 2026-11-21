@@ -65,15 +65,14 @@ interface PlanFormData {
   isActive: boolean;
 }
 
-/** Canonical 7 features that map 1-to-1 with the Detailed Plan Comparison table */
+/** Canonical comparison features that map 1-to-1 with the Detailed Plan Comparison table */
 const COMPARISON_FEATURES: { label: string; ai?: boolean }[] = [
   { label: "React Flow Visual Canvas" },
   { label: "Export SQL & NoSQL DDL" },
   { label: "Multi-Domain Grouping" },
   { label: "CASCADE Drop Simulator" },
   { label: "Import & Export Mermaid" },
-  { label: "AI Prompt-to-Schema Copilot", ai: true },
-  { label: "AI Agent Chat & Tool Execution", ai: true },
+  { label: "Share Architecture Preview" },
 ];
 
 /** Flexible matcher for comparison features, including backward compatibility */
@@ -94,6 +93,10 @@ const matchFeature = (feature: string, targetLabel: string): boolean => {
     t.includes("mermaid") &&
     (f.includes("mermaid") || f.includes("prisma") || f.includes("sqlite"))
   ) {
+    return true;
+  }
+  // Backward compatibility for Share feature
+  if (t.includes("share") && f.includes("share")) {
     return true;
   }
   return false;
@@ -1121,7 +1124,7 @@ export default function AdminPlansPage() {
                   <span>Detailed Plan Comparison Features</span>
                 </div>
                 <Badge variant="outline" className="text-[10px] font-mono text-amber-300 border-amber-500/30 bg-amber-500/10">
-                  {formData.features.length} of 7 Included
+                  {formData.features.length} of {COMPARISON_FEATURES.length} Included
                 </Badge>
               </div>
 
@@ -1155,12 +1158,13 @@ export default function AdminPlansPage() {
                             "Multi-Domain Grouping",
                             "CASCADE Drop Simulator",
                             "Import & Export Mermaid",
+                            "Share Architecture Preview",
                           ],
                         }))
                       }
                       className="text-[11px] px-3 py-1 rounded-md border border-border bg-muted/40 hover:border-sky-400/50 hover:text-sky-300 transition-colors font-mono cursor-pointer"
                     >
-                      Pro Tier (5)
+                      Pro Tier (6)
                     </button>
                     <button
                       type="button"
@@ -1173,14 +1177,13 @@ export default function AdminPlansPage() {
                             "Multi-Domain Grouping",
                             "CASCADE Drop Simulator",
                             "Import & Export Mermaid",
-                            "AI Prompt-to-Schema Copilot",
-                            "AI Agent Chat & Tool Execution",
+                            "Share Architecture Preview",
                           ],
                         }))
                       }
                       className="text-[11px] px-3 py-1 rounded-md border border-amber-500/40 bg-gradient-to-r from-amber-500/20 to-amber-400/10 text-amber-300 hover:brightness-110 transition-colors font-mono cursor-pointer font-bold"
                     >
-                      AI Architect Tier (All 7)
+                      Full Access Tier (All 6)
                     </button>
                   </div>
                 </div>

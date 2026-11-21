@@ -17,6 +17,7 @@ export type FeatureKey =
   | "domain_grouping"
   | "cascade_simulator"
   | "mermaid_tools"
+  | "share_project"
   | "ai_copilot"
   | "ai_agent_chat";
 
@@ -65,6 +66,14 @@ export const CANONICAL_FEATURES: Record<FeatureKey, FeatureMeta> = {
     label: "Import & Export Mermaid",
     shortName: "Mermaid ER",
     description: "Bi-directional Mermaid ER diagram import and live syntax export.",
+    requiredPlan: "pro",
+    badge: "PRO",
+  },
+  share_project: {
+    key: "share_project",
+    label: "Share Architecture Preview",
+    shortName: "Share Architecture",
+    description: "Generate public read-only preview links to share architecture schemas with your team.",
     requiredPlan: "pro",
     badge: "PRO",
   },

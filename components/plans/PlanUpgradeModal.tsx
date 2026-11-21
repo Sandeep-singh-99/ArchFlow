@@ -214,7 +214,7 @@ export default function PlanUpgradeModal({
                 </span>
               </div>
               <p className="text-[11px] text-zinc-300 leading-snug">
-                Full AI natural language prompt-to-schema copilot, live agent execution, and unlimited schemas.
+                Unlimited schema projects, team collaboration, and architecture sharing.
               </p>
               <ul className="text-[10px] space-y-1 text-zinc-300 pt-1">
                 <li className="flex items-center gap-1.5">
@@ -223,11 +223,7 @@ export default function PlanUpgradeModal({
                 </li>
                 <li className="flex items-center gap-1.5">
                   <Check className="h-3 w-3 text-[#ffee72]" />
-                  <span>AI Prompt-to-Schema Copilot</span>
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <Check className="h-3 w-3 text-[#ffee72]" />
-                  <span>AI Agent Chat & Tool Execution</span>
+                  <span>Share Architecture Preview</span>
                 </li>
                 <li className="flex items-center gap-1.5">
                   <Check className="h-3 w-3 text-[#ffee72]" />

@@ -92,6 +92,9 @@ function matchFeature(feature: string, targetLabel: string): boolean {
   ) {
     return true;
   }
+  if (t.includes("share") && f.includes("share")) {
+    return true;
+  }
   return false;
 }
 
@@ -269,15 +272,14 @@ export default function PricingPage() {
     }
   };
 
-  // The 7 canonical features that appear in the Detailed Plan Comparison table
+  // Canonical features that appear in the Detailed Plan Comparison table
   const COMPARISON_FEATURES: { label: string; ai?: boolean }[] = [
     { label: "React Flow Visual Canvas" },
     { label: "Export SQL & NoSQL DDL" },
     { label: "Multi-Domain Grouping" },
     { label: "CASCADE Drop Simulator" },
     { label: "Import & Export Mermaid" },
-    { label: "AI Prompt-to-Schema Copilot", ai: true },
-    { label: "AI Agent Chat & Tool Execution", ai: true },
+    { label: "Share Architecture Preview" },
   ];
 
   // Fallback plans if none seeded in database yet
@@ -322,6 +324,7 @@ export default function PricingPage() {
               "Multi-Domain Grouping",
               "CASCADE Drop Simulator",
               "Import & Export Mermaid",
+              "Share Architecture Preview",
             ],
             tokenQuota: 50000,
             projectQuota: 15,
@@ -335,7 +338,7 @@ export default function PricingPage() {
             _id: "default-ai",
             name: "AI Architect Pro",
             planCode: "ai",
-            description: "Full AI schema co-piloting with natural language generation & optimization.",
+            description: "Unlimited schema projects, multi-domain containers, and architecture sharing.",
             monthlyPrice: 3999,
             yearlyPrice: 39999,
             currency: "INR",
@@ -347,8 +350,7 @@ export default function PricingPage() {
               "Multi-Domain Grouping",
               "CASCADE Drop Simulator",
               "Import & Export Mermaid",
-              "AI Prompt-to-Schema Copilot",
-              "AI Agent Chat & Tool Execution",
+              "Share Architecture Preview",
             ],
             tokenQuota: 999999,
             projectQuota: 9999,

@@ -34,18 +34,20 @@ function matchFeature(feature: string, targetLabel: string): boolean {
   ) {
     return true;
   }
+  if (t.includes("share") && f.includes("share")) {
+    return true;
+  }
   return false;
 }
 
-// Canonical 7 features that map 1-to-1 with schema studio permissions
+// Canonical features that map 1-to-1 with schema studio permissions
 const COMPARISON_FEATURES: { label: string; ai?: boolean }[] = [
   { label: "React Flow Visual Canvas" },
   { label: "Export SQL & NoSQL DDL" },
   { label: "Multi-Domain Grouping" },
   { label: "CASCADE Drop Simulator" },
   { label: "Import & Export Mermaid" },
-  { label: "AI Prompt-to-Schema Copilot", ai: true },
-  { label: "AI Agent Chat & Tool Execution", ai: true },
+  { label: "Share Architecture Preview" },
 ];
 
 export default function Pricing() {
@@ -90,6 +92,7 @@ export default function Pricing() {
               "Multi-Domain Grouping",
               "CASCADE Drop Simulator",
               "Import & Export Mermaid",
+              "Share Architecture Preview",
             ],
             projectQuota: 15,
             isActive: true,
@@ -98,7 +101,7 @@ export default function Pricing() {
             _id: "default-ai",
             name: "AI Architect Pro",
             planCode: "ai",
-            description: "Full AI schema co-piloting with natural language generation & optimization.",
+            description: "Unlimited schema projects, multi-domain containers, and architecture sharing.",
             monthlyPrice: 3999,
             yearlyPrice: 39999,
             currency: "INR",
@@ -109,8 +112,7 @@ export default function Pricing() {
               "Multi-Domain Grouping",
               "CASCADE Drop Simulator",
               "Import & Export Mermaid",
-              "AI Prompt-to-Schema Copilot",
-              "AI Agent Chat & Tool Execution",
+              "Share Architecture Preview",
             ],
             projectQuota: 9999,
             isActive: true,

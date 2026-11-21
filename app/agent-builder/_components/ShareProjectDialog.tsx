@@ -1,7 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Agent } from "@/types/AgentTypes";
+import { UserDetailContext } from "@/context/UserDetailContext";
+import { useAuth } from "@clerk/nextjs";
+import { getUserPlanCode, canAccessFeature, notifyFeatureLocked } from "@/lib/planAccess";
+import PlanUpgradeModal from "@/components/plans/PlanUpgradeModal";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +55,21 @@ function formatDuration(totalSeconds: number): string {
 export default function ShareProjectDialog({ agentDetail }: ShareProjectDialogProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  const { userDetails } = useContext(UserDetailContext);
+  const { has } = useAuth();
+  const userPlan = getUserPlanCode(userDetails, has);
+  const isAllowed = canAccessFeature("share_project", userPlan);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen && !isAllowed) {
+      notifyFeatureLocked("share_project", userPlan);
+      setShowUpgradeModal(true);
+      return;
+    }
+    setOpen(nextOpen);
+  };
 
   const agentId = agentDetail?.agentId || "";
   const previewUrl =
@@ -89,18 +108,24 @@ export default function ShareProjectDialog({ agentDetail }: ShareProjectDialogPr
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 px-2.5 sm:px-3 text-xs font-medium border-border/80 hover:bg-muted/70 text-foreground flex items-center gap-1.5 transition-all shadow-2xs"
-          title="Share Architecture Preview"
-        >
-          <Share2 className="h-3.5 w-3.5 text-[#ffee72]" />
-          <span className="hidden sm:inline">Share</span>
-        </Button>
-      </DialogTrigger>
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-2.5 sm:px-3 text-xs font-medium border-border/80 hover:bg-muted/70 text-foreground flex items-center gap-1.5 transition-all shadow-2xs"
+            title="Share Architecture Preview"
+          >
+            <Share2 className="h-3.5 w-3.5 text-[#ffee72]" />
+            <span className="hidden sm:inline">Share</span>
+            {!isAllowed && (
+              <Badge className="bg-amber-400 text-black text-[9px] px-1 py-0 font-bold font-mono">
+                PRO
+              </Badge>
+            )}
+          </Button>
+        </DialogTrigger>
 
       <DialogContent className="sm:max-w-md bg-card border-border/80 shadow-2xl">
         <DialogHeader className="space-y-1.5">
@@ -233,5 +258,13 @@ export default function ShareProjectDialog({ agentDetail }: ShareProjectDialogPr
         </div>
       </DialogContent>
     </Dialog>
-  );
+
+    <PlanUpgradeModal
+      open={showUpgradeModal}
+      onOpenChange={setShowUpgradeModal}
+      featureKey="share_project"
+      currentPlan={userPlan}
+    />
+  </>
+);
 }
