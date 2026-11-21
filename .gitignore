@@ -40,4 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-tests/
+tests/*
+!tests/loader.mjs
+!tests/studioChat.test.ts

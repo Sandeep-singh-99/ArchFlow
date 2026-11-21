@@ -89,7 +89,7 @@ export const CANONICAL_FEATURES: Record<FeatureKey, FeatureMeta> = {
 export const PLAN_PROJECT_QUOTAS: Record<PlanCode, number> = {
   free: 1,
   pro: 15,
-  ai: 25, // Dynamic fallback matching active AI Architect tier
+  ai: 9999,
 };
 
 export const PLAN_NAMES: Record<PlanCode, string> = {

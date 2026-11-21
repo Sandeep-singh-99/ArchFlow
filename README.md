@@ -127,6 +127,8 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ---
 
+Configure the Clerk `convex` JWT template with audience `convex` and verified primary-email claims (`email` and `email_verified`). Set `CLERK_JWT_ISSUER_DOMAIN` to the Clerk Frontend API URL in each Convex deployment. Deploy the Convex schema and auth configuration before releasing the Next.js app. Canvas saves and Studio Chat require this connection. [Convex and Clerk setup](https://docs.convex.dev/auth/clerk)
+
 ## 📦 Getting Started
 
 ### Prerequisites

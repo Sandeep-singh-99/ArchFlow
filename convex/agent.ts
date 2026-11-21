@@ -152,6 +152,12 @@ export const UpdateAgentDetail = mutation({
   },
 
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const project = identity?.email && identity.emailVerified === true ? await ctx.db.get(args.id) : null;
+    const owner = project ? await ctx.db.get(project.userId) : null;
+    if (!owner || owner.email.toLowerCase() !== identity?.email?.toLowerCase()) {
+      throw new Error("Forbidden: project write access required.");
+    }
     await ctx.db.patch(args.id, {
       edges: args.edges,
       nodes: args.nodes,

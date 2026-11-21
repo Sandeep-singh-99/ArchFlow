@@ -14,6 +14,9 @@ import {
   useOnSelectionChange,
   OnSelectionChangeParams,
   Node,
+  type Edge,
+  type EdgeChange,
+  type Connection,
   NodeChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -36,26 +39,14 @@ import { useParams } from "next/navigation";
 import { api } from "@/convex/_generated/api";
 import { Agent } from "@/types/AgentTypes";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Save, Loader, Layers, Plus, Sparkles, Bot } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import AgentStudioChatDrawer from "../_components/AgentStudioChatDrawer";
+import { Save, Loader, Layers, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { getAutoLayout, isDomainGroupNode } from "@/lib/autoLayout";
 import { resolveNodeFieldHandle, isFieldHandle } from "@/lib/fieldHandleResolver";
-import { DOMAIN_PRESETS, DomainPreset, DOMAIN_THEMES } from "@/lib/domainThemes";
-import { getSchemaType } from "@/lib/schemaClassifier";
+import { DomainPreset } from "@/lib/domainThemes";
 import { UserDetailContext } from "@/context/UserDetailContext";
 import { useAuth } from "@clerk/nextjs";
 import { getUserPlanCode, canAccessFeature, notifyFeatureLocked, FeatureKey } from "@/lib/planAccess";
-import PlanUpgradeModal from "@/components/plans/PlanUpgradeModal";
 import { Badge } from "@/components/ui/badge";
 
 export default function AgentBuilder() {
@@ -85,13 +76,11 @@ export default function AgentBuilder() {
   const [isLocked, setIsLocked] = useState(false);
   const [bgVariant, setBgVariant] = useState<BackgroundVariantType>("dots");
   const [showMiniMap, setShowMiniMap] = useState(true);
-  const [selectedNodesList, setSelectedNodesList] = useState<any[]>([]);
-  const [isAiChatOpen, setIsAiChatOpen] = useState(false);
+  const [selectedNodesList, setSelectedNodesList] = useState<Node[]>([]);
   const { userDetails } = useContext(UserDetailContext);
   const { has } = useAuth();
   const userPlan = getUserPlanCode(userDetails, has);
   const canAccessDomain = canAccessFeature("domain_grouping", userPlan);
-  const canAccessAi = canAccessFeature("ai_copilot", userPlan);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState<FeatureKey>("domain_grouping");
 
@@ -123,8 +112,8 @@ export default function AgentBuilder() {
 
   const SaveNodeAndEdges = useCallback(
     async (
-      updatedNodes?: any,
-      updatedEdges?: any,
+      updatedNodes?: Node[],
+      updatedEdges?: Edge[],
       showToast: boolean = false
     ) => {
       if (!agentDetail?._id) return;
@@ -144,11 +133,11 @@ export default function AgentBuilder() {
         if (showToast) {
           toast.success("Database schema saved!");
         }
+        return true;
       } catch (e) {
         console.error(e);
-        if (showToast) {
-          toast.error("Failed to save database schema");
-        }
+        toast.error("Failed to save database schema");
+        return false;
       } finally {
         setIsSaving(false);
       }
@@ -157,7 +146,7 @@ export default function AgentBuilder() {
   );
 
   const debouncedAutoSave = useCallback(
-    (updatedNodes?: any, updatedEdges?: any) => {
+    (updatedNodes?: Node[], updatedEdges?: Edge[]) => {
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
       }
@@ -205,19 +194,19 @@ export default function AgentBuilder() {
   );
 
   const onEdgesChange = useCallback(
-    (changes: any) =>
-      setNodeEdges((edgesSnapshot: any) =>
+    (changes: EdgeChange[]) =>
+      setNodeEdges((edgesSnapshot: Edge[]) =>
         applyEdgeChanges(changes, edgesSnapshot || [])
       ),
     [setNodeEdges]
   );
 
   const onConnect = useCallback(
-    (params: any) =>
-      setNodeEdges((edgesSnapshot: any) => {
+    (params: Connection) =>
+      setNodeEdges((edgesSnapshot: Edge[]) => {
         const allNodes = addedNodes || [];
-        const sourceNode = allNodes.find((n: any) => n.id === params.source);
-        const targetNode = allNodes.find((n: any) => n.id === params.target);
+        const sourceNode = allNodes.find((n: Node) => n.id === params.source);
+        const targetNode = allNodes.find((n: Node) => n.id === params.target);
         const isEnumEdge = sourceNode?.type === "SqlEnumNode" || targetNode?.type === "SqlEnumNode";
 
         const newEdges = addEdge(
@@ -245,7 +234,7 @@ export default function AgentBuilder() {
   const lastEdgeClickRef = useRef<{ id: string; time: number } | null>(null);
 
   const disconnectEdge = useCallback(
-    (edge: any) => {
+    (edge: Edge | string) => {
       const edgeId = typeof edge === "string" ? edge : edge?.id;
       if (!edgeId) return;
 
@@ -253,8 +242,8 @@ export default function AgentBuilder() {
       deleteElements({ edges: [{ id: edgeId }] });
 
       // Filter out from local workflow state and auto-save
-      setNodeEdges((eds: any) => {
-        const remaining = (eds || []).filter((e: any) => e.id !== edgeId);
+      setNodeEdges((eds: Edge[]) => {
+        const remaining = (eds || []).filter((e: Edge) => e.id !== edgeId);
         debouncedAutoSave(undefined, remaining);
         return remaining;
       });
@@ -266,22 +255,22 @@ export default function AgentBuilder() {
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
-    setNodes((nds: any[]) =>
+    setNodes((nds: Node[]) =>
       (nds || []).map((n) => (n.selected ? { ...n, selected: false } : n))
     );
-    setAddedNodes((nds: any[]) =>
+    setAddedNodes((nds: Node[]) =>
       (nds || []).map((n) => (n.selected ? { ...n, selected: false } : n))
     );
   }, [setSelectedNode, setAddedNodes]);
 
   const onEdgeClick = useCallback(
-    (event: React.MouseEvent, edge: any) => {
+    (event: React.MouseEvent, edge: Edge) => {
       event?.stopPropagation?.();
       setSelectedNode(null);
-      setNodes((nds: any[]) =>
+      setNodes((nds: Node[]) =>
         (nds || []).map((n) => (n.selected ? { ...n, selected: false } : n))
       );
-      setAddedNodes((nds: any[]) =>
+      setAddedNodes((nds: Node[]) =>
         (nds || []).map((n) => (n.selected ? { ...n, selected: false } : n))
       );
 
@@ -304,7 +293,7 @@ export default function AgentBuilder() {
   );
 
   const onEdgeDoubleClick = useCallback(
-    (event: React.MouseEvent, edge: any) => {
+    (event: React.MouseEvent, edge: Edge) => {
       event?.stopPropagation?.();
       setSelectedNode(null);
       disconnectEdge(edge);
@@ -346,7 +335,7 @@ export default function AgentBuilder() {
         });
 
         const isHorizontal = direction === "LR";
-        const updatedEdges = (nodeEdges || []).map((e: any) => {
+        const updatedEdges = (nodeEdges || []).map((e: Edge) => {
           const hasSourceFieldHandle = isFieldHandle(e.sourceHandle);
           const hasTargetFieldHandle = isFieldHandle(e.targetHandle);
 
@@ -356,30 +345,30 @@ export default function AgentBuilder() {
           }
 
           // Upgrade generic edges to field-level handles if table/collection nodes exist
-          const srcNode = (currentNodes || []).find((n: any) => n.id === e.source);
-          const tgtNode = (currentNodes || []).find((n: any) => n.id === e.target);
+          const srcNode = (currentNodes || []).find((n: Node) => n.id === e.source);
+          const tgtNode = (currentNodes || []).find((n: Node) => n.id === e.target);
           if (srcNode && tgtNode) {
             const srcSide = isHorizontal ? "right" : "bottom";
             const tgtSide = isHorizontal ? "left" : "top";
             const srcH = resolveNodeFieldHandle(
               srcNode,
-              e.data?.sourceColumn,
+              typeof e.data?.sourceColumn === "string" ? e.data.sourceColumn : undefined,
               "parent",
-              srcSide as any,
+              "right",
               tgtNode
             );
             const tgtH = resolveNodeFieldHandle(
               tgtNode,
-              e.data?.targetColumn,
+              typeof e.data?.targetColumn === "string" ? e.data.targetColumn : undefined,
               "child",
-              tgtSide as any,
+              "left",
               srcNode
             );
 
             return {
               ...e,
-              sourceHandle: srcH.handleId,
-              targetHandle: tgtH.handleId,
+              sourceHandle: srcH.isFieldConnection ? srcH.handleId : srcSide,
+              targetHandle: tgtH.isFieldConnection ? tgtH.handleId : tgtSide,
               data: {
                 ...(e.data || {}),
                 sourceColumn: srcH.colName || e.data?.sourceColumn,
@@ -427,9 +416,9 @@ export default function AgentBuilder() {
 
       const currentNodes = nodes.length > 0 ? nodes : addedNodes;
       // Calculate bounding box in absolute canvas space
-      selectedNodesList.forEach((node: any) => {
+      selectedNodesList.forEach((node: Node) => {
         const parent = node.parentId
-          ? (currentNodes || []).find((n: any) => n.id === node.parentId)
+          ? (currentNodes || []).find((n: Node) => n.id === node.parentId)
           : null;
         const absX = (parent?.position?.x || 0) + (node.position?.x || 0);
         const absY = (parent?.position?.y || 0) + (node.position?.y || 0);
@@ -474,10 +463,10 @@ export default function AgentBuilder() {
       const selectedIds = new Set(selectedNodesList.map((n) => n.id));
 
       // Update selected child nodes to be relative to the new domain container
-      const updatedNodes = (currentNodes || []).map((node: any) => {
+      const updatedNodes = (currentNodes || []).map((node: Node) => {
         if (selectedIds.has(node.id)) {
           const currentParent = node.parentId
-            ? (currentNodes || []).find((n: any) => n.id === node.parentId)
+            ? (currentNodes || []).find((n: Node) => n.id === node.parentId)
             : null;
           const absX = (currentParent?.position?.x || 0) + (node.position?.x || 0);
           const absY = (currentParent?.position?.y || 0) + (node.position?.y || 0);
@@ -501,13 +490,13 @@ export default function AgentBuilder() {
       });
 
       // Group nodes must come before child nodes in the React Flow array
-      const nonChildNodes = updatedNodes.filter((n: any) => !selectedIds.has(n.id));
-      const childNodes = updatedNodes.filter((n: any) => selectedIds.has(n.id));
+      const nonChildNodes = updatedNodes.filter((n: Node) => !selectedIds.has(n.id));
+      const childNodes = updatedNodes.filter((n: Node) => selectedIds.has(n.id));
 
       const finalNodes = [
         newDomainNode,
-        ...nonChildNodes.filter((n: any) => isDomainGroupNode(n)),
-        ...nonChildNodes.filter((n: any) => !isDomainGroupNode(n)),
+        ...nonChildNodes.filter((n: Node) => isDomainGroupNode(n)),
+        ...nonChildNodes.filter((n: Node) => !isDomainGroupNode(n)),
         ...childNodes,
       ];
 
@@ -532,7 +521,7 @@ export default function AgentBuilder() {
         target.closest("[role='menu']");
       if (!isNode && !isPanel) {
         setSelectedNode(null);
-        setAddedNodes((nds: any[]) =>
+        setAddedNodes((nds: Node[]) =>
           (nds || []).map((n) => (n.selected ? { ...n, selected: false } : n))
         );
       }
@@ -643,48 +632,15 @@ export default function AgentBuilder() {
           {/* Radar MiniMap */}
           {showMiniMap && <FlowMiniMap />}
 
-          {/* Left Palette: System Components & AI Copilot Trigger */}
+          {/* Left Palette: System Components */}
           <Panel position="top-left" className="flex flex-col gap-2 z-30">
             <AgentToolsPanel />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    if (!canAccessAi) {
-                      notifyFeatureLocked("ai_copilot", userPlan);
-                      setUpgradeFeature("ai_copilot");
-                      setShowUpgradeModal(true);
-                    } else {
-                      setIsAiChatOpen((prev) => !prev);
-                    }
-                  }}
-                  className={`h-9 w-9 rounded-xl border border-border/80 bg-card/95 backdrop-blur-md shadow-xl transition-all cursor-pointer flex items-center justify-center relative ${
-                    isAiChatOpen
-                      ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-400 ring-2 ring-emerald-500/20"
-                      : "text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/30 active:scale-95"
-                  }`}
-                  aria-label="Open AI Copilot Chat"
-                >
-                  <Bot className="h-4 w-4 text-emerald-400" />
-                  {!canAccessAi && (
-                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[8px] font-bold text-black shadow-xs font-mono">
-                      AI
-                    </span>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs font-medium">
-                AI Studio Copilot (LangGraph + RAG)
-              </TooltipContent>
-            </Tooltip>
           </Panel>
 
           {/* Right Inspector: Node Specifications (only visible when a node is selected) */}
           {selectedNode && (
             <Panel position="top-right">
-              <SettingPanel onSave={(nodes: any) => debouncedAutoSave(nodes)} />
+              <SettingPanel onSave={(nodes: Node[]) => debouncedAutoSave(nodes)} />
             </Panel>
           )}
 
@@ -729,14 +685,6 @@ export default function AgentBuilder() {
           </Panel>
         </ReactFlow>
       </div>
-
-      {/* Left-Side AI Chat Drawer (Short-term memory, LangGraph, Gemini Copilot) */}
-      <AgentStudioChatDrawer
-        isOpen={isAiChatOpen}
-        onClose={() => setIsAiChatOpen(false)}
-        agentName={agentDetail?.name}
-        schemaType={getSchemaType({ ...agentDetail, nodes: addedNodes })}
-      />
     </div>
   );
 }

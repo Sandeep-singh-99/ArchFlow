@@ -12,7 +12,6 @@
 - **Backend & Cloud Database:** Convex v1.28.2 (Real-time reactive serverless backend)
 - **Authentication:** Clerk (`@clerk/nextjs` v6.34.5) with server middleware / route protection in `proxy.ts`
 - **Payments & Subscriptions:** Razorpay client SDK (`lib/razorpayClient.ts`) with Next.js API order creation & webhook verification
-- **AI & Agentic Workflows:** `@google/generative-ai` (Gemini), `@langchain/google-genai`, `@langchain/langgraph`, `@pinecone-database/pinecone`
 - **Code Export & Syntax:** Shiki v3.15.0, custom DDL generators for PostgreSQL, MySQL, SQLite, Prisma, and MongoDB
 - **Security & Inspection:** Arcjet (`@arcjet/next`, `@arcjet/inspect`)
 
@@ -93,10 +92,10 @@ Plan permissions, quotas, and feature flags are centralized in `lib/planAccess.t
 │   ├── admin/                     # Admin dashboards (analytics, earnings, feedback, plans, users)
 │   ├── agent-builder/             # Visual schema canvas workspace
 │   │   ├── [agentId]/             # Dynamic route per workspace project
-│   │   ├── _components/           # Studio tools, header, chat drawer, CascadeSimulatorDialog, export dialogs
+│   │   ├── _components/           # Studio tools, header, CascadeSimulatorDialog, export dialogs
 │   │   ├── _customNodes/          # React Flow custom SQL & NoSQL table nodes
 │   │   └── _customEdges/          # ER relationship edges & cardinality markers
-│   ├── api/                       # Next.js API route handlers (AI chat, Razorpay orders, agent tool config)
+│   ├── api/                       # Next.js API route handlers (Razorpay orders)
 │   ├── dashboard/                 # Projects dashboard & template picker
 │   │   └── pricing/               # In-app subscription management & Razorpay checkout
 │   ├── globals.css                # Tailwind CSS 4 setup & theme variables
@@ -111,7 +110,6 @@ Plan permissions, quotas, and feature flags are centralized in `lib/planAccess.t
 ├── convex/                        # Convex backend mutations, queries, actions, schema.ts
 ├── hooks/                         # Client hooks (e.g. use-mobile.ts)
 ├── lib/                           # Core utilities, autoLayout, exporters (SQL, NoSQL, Mermaid)
-│   ├── ai/                        # AI & LangGraph agent definitions (langgraphAgent.ts)
 │   ├── planAccess.tsx             # Centralized plan codes, permissions, canonical features & toast helper
 │   ├── razorpayClient.ts          # Razorpay checkout SDK loader & types
 │   ├── schemaClassifier.ts        # SQL vs NoSQL schema detector
@@ -126,7 +124,7 @@ Plan permissions, quotas, and feature flags are centralized in `lib/planAccess.t
 
 ### Component & File Naming Conventions
 - **UI Primitives (`components/ui/`):** kebab-case (e.g., `alert-dialog.tsx`, `dropdown-menu.tsx`).
-- **Feature & Composite Components:** PascalCase (e.g., `CascadeSimulatorDialog.tsx`, `AgentStudioChatDrawer.tsx`, `Header.tsx`, `Pricing.tsx`).
+- **Feature & Composite Components:** PascalCase (e.g., `CascadeSimulatorDialog.tsx`, `Header.tsx`, `Pricing.tsx`).
 - **Utility / Exporter Modules (`lib/`):** camelCase (e.g., `sqlDdlExporter.ts`, `planAccess.tsx`, `fieldHandleResolver.ts`).
 - **Route Files (`app/**`):** Next.js App Router standards (`page.tsx`, `layout.tsx`, `route.ts`).
 - **Private Folders:** Prefix sub-folders inside routes with `_` to exclude them from routing (e.g., `_components/`, `_customNodes/`).
