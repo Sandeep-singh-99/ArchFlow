@@ -37,6 +37,9 @@ function matchFeature(feature: string, targetLabel: string): boolean {
   if (t.includes("share") && f.includes("share")) {
     return true;
   }
+  if (t.includes("auto-connect") && (f.includes("auto-connect") || f.includes("copilot") || f.includes("cardinality"))) {
+    return true;
+  }
   return false;
 }
 
@@ -48,6 +51,7 @@ const COMPARISON_FEATURES: { label: string; ai?: boolean }[] = [
   { label: "CASCADE Drop Simulator" },
   { label: "Import & Export Mermaid" },
   { label: "Share Architecture Preview" },
+  { label: "AI Auto-Connect & Cardinality", ai: true },
 ];
 
 export default function Pricing() {
@@ -113,6 +117,7 @@ export default function Pricing() {
               "CASCADE Drop Simulator",
               "Import & Export Mermaid",
               "Share Architecture Preview",
+              "AI Auto-Connect & Cardinality",
             ],
             projectQuota: 9999,
             isActive: true,

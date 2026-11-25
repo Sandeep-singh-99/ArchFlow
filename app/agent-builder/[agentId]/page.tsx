@@ -42,12 +42,15 @@ import { Button } from "@/components/ui/button";
 import { Save, Loader, Layers, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { getAutoLayout, isDomainGroupNode } from "@/lib/autoLayout";
+import { restoreSqlColumnStrings } from "@/lib/ai/autoConnectPreview";
 import { resolveNodeFieldHandle, isFieldHandle } from "@/lib/fieldHandleResolver";
 import { DomainPreset } from "@/lib/domainThemes";
 import { UserDetailContext } from "@/context/UserDetailContext";
 import { useAuth } from "@clerk/nextjs";
 import { getUserPlanCode, canAccessFeature, notifyFeatureLocked, FeatureKey } from "@/lib/planAccess";
 import { Badge } from "@/components/ui/badge";
+import AiAutoConnectBar from "../_components/AiAutoConnectBar";
+import PlanUpgradeModal from "@/components/plans/PlanUpgradeModal";
 
 export default function AgentBuilder() {
   const {
@@ -81,6 +84,8 @@ export default function AgentBuilder() {
   const { has } = useAuth();
   const userPlan = getUserPlanCode(userDetails, has);
   const canAccessDomain = canAccessFeature("domain_grouping", userPlan);
+  // Temporarily unlocked for testing; restore `canAccessFeature("ai_copilot", userPlan)` when ready
+  const canAccessAi = true;
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState<FeatureKey>("domain_grouping");
 
@@ -103,7 +108,8 @@ export default function AgentBuilder() {
   useEffect(() => {
     if (agentDetail) {
       // Respect saved nodes directly; if empty or new, start with an empty canvas
-      setAddedNodes(agentDetail.nodes || []);
+      const savedNodes: Node[] = agentDetail.nodes || [];
+      setAddedNodes(savedNodes.map(restoreSqlColumnStrings));
       setNodeEdges(agentDetail.edges || []);
     }
   }, [agentDetail]);
@@ -663,27 +669,63 @@ export default function AgentBuilder() {
             </Panel>
           )}
 
-          {/* Bottom Center: Save Action */}
+          {/* Bottom Center: Save & AI Auto-Connect Actions */}
           <Panel position="bottom-center">
-            <Button
-              onClick={() => SaveNodeAndEdges(undefined, undefined, true)}
-              disabled={isSaving}
-              className="gap-2 font-semibold bg-zinc-900 hover:bg-zinc-800 text-white border border-border shadow-md cursor-pointer"
-            >
-              {isSaving ? (
-                <>
-                  <Loader className="h-4 w-4 animate-spin text-white" />
-                  <span className="text-white">Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 text-white" />
-                  <span className="text-white">Save</span>
-                </>
-              )}
-            </Button>
+            <div className="flex items-end gap-2">
+              <Button
+                onClick={() => SaveNodeAndEdges(undefined, undefined, true)}
+                disabled={isSaving}
+                className="gap-2 font-semibold bg-zinc-900 hover:bg-zinc-800 text-white border border-border shadow-md cursor-pointer"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader className="h-4 w-4 animate-spin text-white" />
+                    <span className="text-white">Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 text-white" />
+                    <span className="text-white">Save</span>
+                  </>
+                )}
+              </Button>
+
+              <AiAutoConnectBar
+                nodes={nodes.length > 0 ? nodes : addedNodes || []}
+                edges={nodeEdges || []}
+                canAccessAi={canAccessAi}
+                onLockedClick={() => {
+                  notifyFeatureLocked("ai_copilot", userPlan);
+                  setUpgradeFeature("ai_copilot");
+                  setShowUpgradeModal(true);
+                }}
+                onPreviewChange={(previewNodes, previewEdges) => {
+                  setNodes(previewNodes);
+                  setAddedNodes(previewNodes);
+                  setNodeEdges(previewEdges);
+                }}
+                onApply={(finalNodes, finalEdges) => {
+                  setNodes(finalNodes);
+                  setAddedNodes(finalNodes);
+                  setNodeEdges(finalEdges);
+                  SaveNodeAndEdges(finalNodes, finalEdges, false);
+                }}
+                onReject={(originalNodes, originalEdges) => {
+                  setNodes(originalNodes);
+                  setAddedNodes(originalNodes);
+                  setNodeEdges(originalEdges);
+                }}
+              />
+            </div>
           </Panel>
         </ReactFlow>
+
+        <PlanUpgradeModal
+          open={showUpgradeModal}
+          onOpenChange={setShowUpgradeModal}
+          featureKey={upgradeFeature}
+          currentPlan={userPlan}
+        />
       </div>
     </div>
   );

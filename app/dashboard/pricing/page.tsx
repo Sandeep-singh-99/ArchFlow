@@ -95,6 +95,9 @@ function matchFeature(feature: string, targetLabel: string): boolean {
   if (t.includes("share") && f.includes("share")) {
     return true;
   }
+  if (t.includes("auto-connect") && (f.includes("auto-connect") || f.includes("copilot") || f.includes("cardinality"))) {
+    return true;
+  }
   return false;
 }
 
@@ -280,6 +283,7 @@ export default function PricingPage() {
     { label: "CASCADE Drop Simulator" },
     { label: "Import & Export Mermaid" },
     { label: "Share Architecture Preview" },
+    { label: "AI Auto-Connect & Cardinality", ai: true },
   ];
 
   // Fallback plans if none seeded in database yet

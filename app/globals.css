@@ -296,6 +296,16 @@ html {
   filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.75));
 }
 
+/* AI-proposed diff edges: sky-blue animated dot line */
+.react-flow__edge.animated path.react-flow__edge-path.ai-proposed-edge,
+.react-flow__edge.animated .react-flow__edge-path.ai-proposed-edge {
+  stroke: #38bdf8 !important;
+  stroke-dasharray: 4 6 !important;
+  stroke-linecap: round !important;
+  stroke-width: 2.5px !important;
+  filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.55));
+}
+
 /* Edge interaction hit area for fast, reliable double-click & disconnect */
 .react-flow__edge {
   pointer-events: all !important;
@@ -322,6 +332,13 @@ html {
   stroke: #34d399 !important;
   stroke-width: 2.8px !important;
   filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.8)) !important;
+}
+
+.react-flow__edge:hover path.react-flow__edge-path.ai-proposed-edge,
+.react-flow__edge:hover .react-flow__edge-path.ai-proposed-edge {
+  stroke: #7dd3fc !important;
+  stroke-width: 3px !important;
+  filter: drop-shadow(0 0 7px rgba(125, 211, 252, 0.8)) !important;
 }
 
 /* Real-time dragging connection line */

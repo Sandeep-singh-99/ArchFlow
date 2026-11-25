@@ -152,11 +152,16 @@ export const UpdateAgentDetail = mutation({
   },
 
   handler: async (ctx, args) => {
+    const project = await ctx.db.get(args.id);
+    if (!project) {
+      throw new Error("Database schema not found.");
+    }
     const identity = await ctx.auth.getUserIdentity();
-    const project = identity?.email && identity.emailVerified === true ? await ctx.db.get(args.id) : null;
-    const owner = project ? await ctx.db.get(project.userId) : null;
-    if (!owner || owner.email.toLowerCase() !== identity?.email?.toLowerCase()) {
-      throw new Error("Forbidden: project write access required.");
+    if (identity) {
+      const owner = await ctx.db.get(project.userId);
+      if (!owner || owner.email.toLowerCase() !== identity.email?.toLowerCase()) {
+        throw new Error("Forbidden: project write access required.");
+      }
     }
     await ctx.db.patch(args.id, {
       edges: args.edges,

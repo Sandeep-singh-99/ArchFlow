@@ -73,6 +73,7 @@ const COMPARISON_FEATURES: { label: string; ai?: boolean }[] = [
   { label: "CASCADE Drop Simulator" },
   { label: "Import & Export Mermaid" },
   { label: "Share Architecture Preview" },
+  { label: "AI Auto-Connect & Cardinality", ai: true },
 ];
 
 /** Flexible matcher for comparison features, including backward compatibility */
@@ -97,6 +98,9 @@ const matchFeature = (feature: string, targetLabel: string): boolean => {
   }
   // Backward compatibility for Share feature
   if (t.includes("share") && f.includes("share")) {
+    return true;
+  }
+  if (t.includes("auto-connect") && (f.includes("auto-connect") || f.includes("copilot") || f.includes("cardinality"))) {
     return true;
   }
   return false;

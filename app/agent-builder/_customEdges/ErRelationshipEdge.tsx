@@ -263,8 +263,11 @@ export default function ErRelationshipEdge({
 
   const relationshipTitle = typeof label === "string" ? label : ((data as Record<string, unknown> | undefined)?.title as string | undefined) || config.desc;
 
+  const isAiProposed = Boolean((data as Record<string, unknown> | undefined)?.isAiProposed);
   const isEnumEdge = isEnumConnection || activeCardinality === "enum" || activeCardinality === "type";
-  const strokeColor = selected
+  const strokeColor = isAiProposed
+    ? "#38bdf8"
+    : selected
     ? (isEnumEdge ? "#f59e0b" : "#10b981")
     : (isEnumEdge ? "#d97706" : "#059669");
 
@@ -274,7 +277,9 @@ export default function ErRelationshipEdge({
       <BaseEdge
         id={id}
         path={edgePath}
-        className={animated ? "react-flow__edge-path animated" : "react-flow__edge-path"}
+        className={`${animated ? "react-flow__edge-path animated" : "react-flow__edge-path"}${
+          isAiProposed ? " ai-proposed-edge" : ""
+        }`}
         style={{
           strokeWidth: selected ? 2.5 : 2,
           stroke: strokeColor,
@@ -331,11 +336,20 @@ export default function ErRelationshipEdge({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className={`group flex items-center gap-1 px-2 py-0.8 rounded-full border text-[11px] font-mono font-semibold shadow-md bg-card/95 backdrop-blur-md cursor-pointer transition-all hover:scale-105 ${config.badgeColor} ${
+                className={`group flex items-center gap-1 px-2 py-0.8 rounded-full border text-[11px] font-mono font-semibold shadow-md bg-card/95 backdrop-blur-md cursor-pointer transition-all hover:scale-105 ${
+                  isAiProposed
+                    ? "bg-sky-500/20 text-sky-300 border-sky-400/60 ring-1 ring-sky-400/40"
+                    : config.badgeColor
+                } ${
                   selected ? "ring-2 ring-primary/40 shadow-lg" : ""
                 }`}
                 title="Click to customize relationship cardinality (1:1, 1:N, N:M, Crow's Foot)"
               >
+                {isAiProposed && (
+                  <span className="text-[9px] font-bold px-1 rounded bg-sky-400/25 text-sky-200">
+                    +AI
+                  </span>
+                )}
                 <span>{config.label}</span>
                 {relationshipTitle && !relationshipTitle.includes(config.label) && (
                   <span className="text-[10px] text-foreground/80 font-sans font-normal truncate max-w-[120px]">

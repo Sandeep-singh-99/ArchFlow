@@ -240,6 +240,7 @@ export const SeedDefaultPlans = mutation({
               "CASCADE Drop Simulator",
               "Import & Export Mermaid",
               "Share Architecture Preview",
+              "AI Auto-Connect & Cardinality",
             ],
             updatedAt: Date.now(),
           });
@@ -310,6 +311,7 @@ export const SeedDefaultPlans = mutation({
           "CASCADE Drop Simulator",
           "Import & Export Mermaid",
           "Share Architecture Preview",
+          "AI Auto-Connect & Cardinality",
         ],
         tokenQuota: 999999,
         projectQuota: 9999,
