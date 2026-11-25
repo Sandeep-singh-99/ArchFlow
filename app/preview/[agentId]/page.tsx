@@ -171,8 +171,6 @@ function PreviewPageContent() {
     const cooldownKey = `archflow_view_logged_${rawAgentId}`;
     const alreadyLogged = sessionStorage.getItem(cooldownKey);
     if (!alreadyLogged) {
-      sessionStorage.setItem(cooldownKey, "true");
-
       const env = parseClientEnvironment();
       recordVisit({
         agentId: rawAgentId,
@@ -181,9 +179,15 @@ function PreviewPageContent() {
         device: env.device,
         browser: env.browser,
         os: env.os,
-      }).catch((err) => {
-        console.warn("Analytics visit logging notice:", err);
-      });
+      })
+        .then((visitId) => {
+          if (visitId) {
+            sessionStorage.setItem(cooldownKey, "true");
+          }
+        })
+        .catch((err) => {
+          console.warn("Analytics visit logging notice:", err);
+        });
     }
 
     // 3. Heartbeat for engagement time (every 10s)

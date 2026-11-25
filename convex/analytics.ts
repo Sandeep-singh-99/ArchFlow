@@ -31,21 +31,6 @@ function deduplicateVisitsList<T extends VisitRecord>(visits: T[]): T[] {
       continue;
     }
 
-    // Check if nearly identical visit exists (< 10 minutes, same agent, same device/browser/os)
-    const duplicate = result.find(
-      (r) =>
-        r.agentId === v.agentId &&
-        Math.abs(r.timestamp - v.timestamp) < 10 * 60 * 1000 &&
-        r.device === v.device &&
-        r.browser === v.browser &&
-        r.os === v.os
-    );
-
-    if (duplicate) {
-      duplicate.durationSeconds = Math.max(duplicate.durationSeconds, v.durationSeconds);
-      continue;
-    }
-
     seenSessions.add(v.visitorSessionId);
     result.push({ ...v });
   }
@@ -90,27 +75,6 @@ export const RecordLinkVisit = mutation({
       return existingBySession[0]._id;
     }
 
-    // 2. Cooldown check: Check if a visit for this agentId occurred within the last 30 minutes from the same device + browser
-    const recentVisits = await ctx.db
-      .query("LinkAnalyticsTable")
-      .withIndex("by_agentId", (q) => q.eq("agentId", args.agentId))
-      .order("desc")
-      .take(25);
-
-    const thirtyMinsAgo = Date.now() - 30 * 60 * 1000;
-    const sameRecentVisit = recentVisits.find(
-      (v) =>
-        v.timestamp > thirtyMinsAgo &&
-        v.device === (args.device || "Desktop") &&
-        v.browser === (args.browser || "Unknown") &&
-        v.os === (args.os || "Unknown")
-    );
-
-    if (sameRecentVisit) {
-      // Same visitor returned within cooldown window; avoid creating duplicate view
-      return sameRecentVisit._id;
-    }
-
     const cleanReferrer = (args.referrer && args.referrer.trim()) || "Direct";
     const cleanDevice = args.device || "Desktop";
     const cleanBrowser = args.browser || "Unknown";
@@ -150,26 +114,16 @@ export const CleanDuplicateVisits = mutation({
 
     for (const v of visits) {
       if (seenSessions.has(v.visitorSessionId)) {
+        const existing = kept.find((prev) => prev.visitorSessionId === v.visitorSessionId);
+        if (existing) {
+          existing.durationSeconds = Math.max(existing.durationSeconds, v.durationSeconds);
+        }
         toDeleteIds.push(v._id);
         continue;
       }
 
-      const duplicate = kept.find(
-        (prev) =>
-          prev.agentId === v.agentId &&
-          Math.abs(prev.timestamp - v.timestamp) < 10 * 60 * 1000 &&
-          prev.device === v.device &&
-          prev.browser === v.browser &&
-          prev.os === v.os
-      );
-
-      if (duplicate) {
-        duplicate.durationSeconds = Math.max(duplicate.durationSeconds, v.durationSeconds);
-        toDeleteIds.push(v._id);
-      } else {
-        seenSessions.add(v.visitorSessionId);
-        kept.push(v);
-      }
+      seenSessions.add(v.visitorSessionId);
+      kept.push(v);
     }
 
     for (const id of toDeleteIds) {
