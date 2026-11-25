@@ -1,6 +1,5 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
 export const alt = "ArchFlow — Visual SQL & NoSQL Database Schema Studio with AI Auto-Connect";
 export const size = {
   width: 1200,
