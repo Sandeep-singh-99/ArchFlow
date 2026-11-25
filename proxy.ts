@@ -5,10 +5,25 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/preview(.*)',
+  '/opengraph-image(.*)',
+  '/twitter-image(.*)',
+  '/sitemap.xml',
 ])
 
+const SOCIAL_CRAWLER_UA =
+  /Twitterbot|LinkedInBot|facebookexternalhit|Facebot|Slackbot|Discordbot|WhatsApp|TelegramBot/i
+
+function isSocialPreviewCrawler(req: Request): boolean {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return false
+  const ua = req.headers.get('user-agent') || ''
+  return SOCIAL_CRAWLER_UA.test(ua)
+}
+
 export default clerkMiddleware(async (auth, req) => {
-  if (!isPublicRoute(req)) {
+  const isAgentBuilderPreviewBot =
+    req.nextUrl.pathname.startsWith('/agent-builder') && isSocialPreviewCrawler(req)
+
+  if (!isPublicRoute(req) && !isAgentBuilderPreviewBot) {
     await auth.protect()
   }
 }, {
