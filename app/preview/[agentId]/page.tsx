@@ -6,6 +6,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import {
   ReactFlow,
+  ReactFlowProvider,
   ConnectionMode,
   useReactFlow,
   Background,
@@ -103,7 +104,7 @@ function parseClientEnvironment() {
   return { device, browser, os, referrer };
 }
 
-export default function PreviewPage() {
+function PreviewPageContent() {
   const { agentId } = useParams();
   const rawAgentId = typeof agentId === "string" ? agentId : Array.isArray(agentId) ? agentId[0] : "";
 
@@ -246,7 +247,7 @@ export default function PreviewPage() {
   // Loading state
   if (agent === undefined) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-950 text-foreground">
+      <div className="w-full min-h-screen flex flex-col items-center justify-center bg-zinc-950 text-foreground p-4">
         <div className="flex flex-col items-center gap-3">
           <div className="size-12 rounded-xl bg-gradient-to-tr from-[#ffc507] to-[#ffee72] text-zinc-950 flex items-center justify-center animate-bounce shadow-lg shadow-[#ffc507]/20">
             <Network className="size-6 font-bold" />
@@ -263,7 +264,7 @@ export default function PreviewPage() {
   // Not Found state
   if (agent === null) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-950 text-foreground p-4">
+      <div className="w-full min-h-screen flex flex-col items-center justify-center bg-zinc-950 text-foreground p-4">
         <div className="max-w-md w-full p-6 rounded-2xl border border-border/80 bg-card text-center space-y-4 shadow-xl">
           <div className="size-12 rounded-full bg-destructive/15 border border-destructive/30 text-destructive flex items-center justify-center mx-auto">
             <ShieldAlert className="size-6" />
@@ -288,7 +289,7 @@ export default function PreviewPage() {
   }
 
   return (
-    <div className="relative w-full h-full flex flex-col bg-zinc-950 overflow-hidden">
+    <div className="relative w-full h-screen flex flex-col bg-zinc-950 overflow-hidden">
       {/* Read-Only Top Header Bar */}
       <header className="w-full h-13 px-4 border-b border-border/70 bg-card/90 backdrop-blur-md flex items-center justify-between z-30 shrink-0">
         {/* Brand & Architecture Identity */}
@@ -538,5 +539,13 @@ export default function PreviewPage() {
         </ReactFlow>
       </div>
     </div>
+  );
+}
+
+export default function PreviewPage() {
+  return (
+    <ReactFlowProvider>
+      <PreviewPageContent />
+    </ReactFlowProvider>
   );
 }

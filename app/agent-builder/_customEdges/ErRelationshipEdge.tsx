@@ -142,7 +142,9 @@ export default function ErRelationshipEdge({
   selected,
   animated = true,
 }: EdgeProps) {
-  const { addedNodes, setNodeEdges } = useContext(WorkflowContext);
+  const workflow = useContext(WorkflowContext);
+  const addedNodes = workflow?.addedNodes;
+  const setNodeEdges = workflow?.setNodeEdges;
 
   // Check if either connected node is an Enum node
   const sourceNode = (addedNodes || []).find((n: Node) => n.id === source);
@@ -237,6 +239,7 @@ export default function ErRelationshipEdge({
   const config = CARDINALITY_CONFIG[activeCardinality] || CARDINALITY_CONFIG[defaultCardinality];
 
   const handleSelectCardinality = (newType: string) => {
+    if (!setNodeEdges) return;
     setNodeEdges((eds: Edge[]) =>
       (eds || []).map((e: Edge) => {
         if (e.id === id) {
@@ -402,6 +405,7 @@ export default function ErRelationshipEdge({
                   placeholder="Type custom text (e.g. role, status)..."
                   value={typeof label === "string" ? label : ""}
                   onChange={(e) => {
+                    if (!setNodeEdges) return;
                     const val = e.target.value;
                     setNodeEdges((eds: Edge[]) =>
                       (eds || []).map((edge: Edge) =>
