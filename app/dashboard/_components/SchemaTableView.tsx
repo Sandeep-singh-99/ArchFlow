@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { timeAgo } from "@/lib/utils";
-import { Agent } from "@/types/AgentTypes";
+import type { DashboardProject } from "@/app/dashboard/_components/MyAgents";
 import { Id } from "@/convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,58 +30,32 @@ import {
   Clock,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useMutation } from "convex/react";
+import { useConvex, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { exportSqlDdl } from "@/lib/sqlDdlExporter";
+import { downloadProjectSql } from "@/app/dashboard/_components/downloadProjectSql";
 import RenameProjectModal from "./RenameProjectModal";
 import { getSchemaType } from "@/lib/schemaClassifier";
 
 interface SchemaTableViewProps {
-  agents: Agent[];
+  agents: DashboardProject[];
   userId?: Id<"UserTable">;
   onDeleteRequest: (agentId: Id<"AgentTable">, agentName: string) => void;
-  onRefresh: () => void;
 }
 
 export default function SchemaTableView({
   agents,
   userId,
   onDeleteRequest,
-  onRefresh,
 }: SchemaTableViewProps) {
   const [renameTarget, setRenameTarget] = useState<{
     id: Id<"AgentTable">;
     name: string;
   } | null>(null);
 
+  const convex = useConvex();
   const duplicateAgentMutation = useMutation(api.agent.DuplicateAgent);
 
-  const handleQuickExportSql = (
-    agent: Agent,
-    dialect: "postgresql" | "mysql"
-  ) => {
-    try {
-      const ddl = exportSqlDdl(agent.nodes || [], agent.edges || [], {
-        dialect,
-      });
-      const blob = new Blob([ddl], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      const safeName = (agent.name || "schema")
-        .toLowerCase()
-        .replace(/[^a-z0-9_-]+/g, "_");
-      link.download = `${safeName}_${dialect}.sql`;
-      link.click();
-      URL.revokeObjectURL(url);
-      toast.success(`Exported ${dialect.toUpperCase()} DDL!`);
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to export SQL DDL");
-    }
-  };
-
-  const handleDuplicate = async (agent: Agent) => {
+  const handleDuplicate = async (agent: DashboardProject) => {
     if (!userId) {
       toast.error("User session not found");
       return;
@@ -95,7 +69,6 @@ export default function SchemaTableView({
         userId,
       });
       toast.success(`Duplicated "${agent.name}"`, { id: "duplicate-toast" });
-      onRefresh();
     } catch (err: unknown) {
       console.error(err);
       const message =
@@ -110,18 +83,18 @@ export default function SchemaTableView({
   };
 
   return (
-    <div className="rounded-xl border border-border/80 bg-card overflow-hidden shadow-xs">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-muted/40 border-b border-border text-muted-foreground font-mono uppercase text-[10px] tracking-wider">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <div role="region" aria-label="Architecture table" tabIndex={0} className="overflow-x-auto focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#ffe47a]">
+        <table className="w-full min-w-[48rem] text-left text-sm">
+          <thead className="border-b border-border bg-muted/50 text-xs text-muted-foreground">
             <tr>
-              <th className="py-3 px-4 font-semibold">Schema Name</th>
-              <th className="py-3 px-3 font-semibold">Type</th>
-              <th className="py-3 px-3 font-semibold">Status</th>
-              <th className="py-3 px-3 font-semibold">Entities</th>
-              <th className="py-3 px-3 font-semibold">Relations</th>
-              <th className="py-3 px-3 font-semibold">Last Modified</th>
-              <th className="py-3 px-4 text-right font-semibold">Actions</th>
+              <th scope="col" className="py-3 px-4 font-semibold">Schema Name</th>
+              <th scope="col" className="py-3 px-3 font-semibold">Type</th>
+              <th scope="col" className="py-3 px-3 font-semibold">Status</th>
+              <th scope="col" className="py-3 px-3 font-semibold">Entities</th>
+              <th scope="col" className="py-3 px-3 font-semibold">Relations</th>
+              <th scope="col" className="py-3 px-3 font-semibold">Created</th>
+              <th scope="col" className="py-3 px-4 text-right font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/60">
@@ -129,28 +102,12 @@ export default function SchemaTableView({
               const schemaType = getSchemaType(agent);
               const isNoSql = schemaType === "nosql";
 
-              const nodes = Array.isArray(agent.nodes) ? agent.nodes : [];
-              const edges = Array.isArray(agent.edges) ? agent.edges : [];
-
-              const tableCount = nodes.filter((n: Record<string, unknown>) => {
-                const type = (n?.type as string) || "";
-                return (
-                  type === "SqlTableNode" ||
-                  type === "NosqlCollectionNode" ||
-                  type === "Table" ||
-                  type === "Collection"
-                );
-              }).length;
-
-              const viewCount = nodes.filter((n: Record<string, unknown>) => {
-                const type = (n?.type as string) || "";
-                return type === "SqlViewNode" || type === "View";
-              }).length;
+              const { tableCount = 0, viewCount = 0, relationCount = 0 } = agent;
 
               return (
                 <tr
                   key={agent._id}
-                  className="group hover:bg-muted/20 transition-colors"
+                  className="hover:bg-muted/40 focus-within:bg-muted/40"
                 >
                   {/* Schema Name */}
                   <td className="py-3.5 px-4">
@@ -229,11 +186,11 @@ export default function SchemaTableView({
                   <td className="py-3.5 px-3">
                     <div className="flex items-center gap-1.5 font-mono text-xs text-foreground">
                       <GitFork className="h-3.5 w-3.5 text-sky-400 shrink-0" />
-                      <span>{edges.length} {isNoSql ? "relations" : "FK links"}</span>
+                      <span>{relationCount} {isNoSql ? "relations" : "FK links"}</span>
                     </div>
                   </td>
 
-                  {/* Last Modified */}
+                  {/* Created */}
                   <td className="py-3.5 px-3 text-muted-foreground font-mono text-[11px]">
                     <div className="flex items-center gap-1.5">
                       <Clock className="h-3 w-3 shrink-0" />
@@ -244,23 +201,19 @@ export default function SchemaTableView({
                   {/* Actions */}
                   <td className="py-3.5 px-4 text-right">
                     <div className="flex items-center justify-end gap-1.5">
-                      <Link href={`/agent-builder/${agent.agentId}`}>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 px-2 text-xs font-semibold text-[#ffee72] hover:text-[#ffdf27] hover:bg-[#ffc507]/10 cursor-pointer"
-                        >
-                          <span>Open</span>
-                          <ArrowRight className="h-3 w-3 ml-1" />
-                        </Button>
-                      </Link>
+                      <Button asChild size="sm" variant="ghost" className="text-xs font-semibold text-[#ffe47a] hover:bg-[#ffe47a]/10 hover:text-[#ffed9d]">
+                        <Link href={`/agent-builder/${agent.agentId}`} aria-label={`Open canvas for ${agent.name || "untitled schema"}`}>
+                          Open <ArrowRight aria-hidden className="size-3.5" />
+                        </Link>
+                      </Button>
 
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                            className="size-9 cursor-pointer text-muted-foreground hover:text-foreground"
+                            aria-label={`Actions for ${agent.name || "untitled schema"}`}
                           >
                             <MoreVertical className="h-3.5 w-3.5" />
                           </Button>
@@ -291,7 +244,7 @@ export default function SchemaTableView({
 
                           <DropdownMenuItem
                             onClick={() =>
-                              handleQuickExportSql(agent, "postgresql")
+                              downloadProjectSql(convex, agent, "postgresql")
                             }
                             className="cursor-pointer gap-2 text-xs"
                           >
@@ -299,7 +252,7 @@ export default function SchemaTableView({
                             <span>Export PostgreSQL</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleQuickExportSql(agent, "mysql")}
+                            onClick={() => downloadProjectSql(convex, agent, "mysql")}
                             className="cursor-pointer gap-2 text-xs"
                           >
                             <Code2 className="h-3.5 w-3.5 text-sky-500" />
@@ -345,10 +298,6 @@ export default function SchemaTableView({
           onOpenChange={(open) => !open && setRenameTarget(null)}
           agentId={renameTarget.id}
           currentName={renameTarget.name}
-          onSuccess={() => {
-            setRenameTarget(null);
-            onRefresh();
-          }}
         />
       )}
     </div>

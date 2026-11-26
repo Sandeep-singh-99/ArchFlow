@@ -1,16 +1,15 @@
 "use client";
 
-import { UserDetailContext } from "@/context/UserDetailContext";
 import { api } from "@/convex/_generated/api";
-import { Agent } from "@/types/AgentTypes";
-import { useConvex, useMutation, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
+import { useMutation } from "convex/react";
 import {
   Database,
   Plus,
   SearchX,
   RotateCcw,
 } from "lucide-react";
-import React, { useContext, useEffect, useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import {
   AlertDialog,
@@ -33,19 +32,21 @@ import DashboardToolbar, {
   SortOption,
   ViewMode,
 } from "./DashboardToolbar";
-import { useAuth } from "@clerk/nextjs";
 import { getSchemaType } from "@/lib/schemaClassifier";
-import { getUserPlanCode, getPlanProjectQuota } from "@/lib/planAccess";
+import { Skeleton } from "@/components/ui/skeleton";
+
+export type DashboardProject = FunctionReturnType<typeof api.agent.GetUserAgentsList>[number];
 
 interface MyAgentsProps {
-  onOpenCreateDialog?: () => void;
+  agents: DashboardProject[] | undefined;
+  userId?: Id<"UserTable">;
+  onOpenCreateDialog: () => void;
 }
 
-export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
-  const { userDetails } = useContext(UserDetailContext);
-  const [agentList, setAgentList] = useState<Agent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const convex = useConvex();
+const emptyProjects: DashboardProject[] = [];
+
+export default function MyAgents({ agents, userId, onOpenCreateDialog }: MyAgentsProps) {
+  const agentList = agents ?? emptyProjects;
   const deleteAgentMutation = useMutation(api.agent.DeleteAgent);
   const [deleteId, setDeleteId] = useState<Id<"AgentTable"> | null>(null);
   const [deleteName, setDeleteName] = useState<string>("");
@@ -58,34 +59,6 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
   const [sortBy, setSortBy] = useState<SortOption>("recent");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
-  const activePlans = useQuery(api.plans.GetActivePlans, {});
-  const { has } = useAuth();
-  const userPlan = getUserPlanCode(userDetails, has);
-  const quota = getPlanProjectQuota(userPlan, activePlans, userDetails?.subscriptionPlanId);
-  const hasAiPlan = userPlan === "ai";
-  const isPaidUser = userPlan !== "free";
-
-  const GetUserAgents = useCallback(async () => {
-    if (!userDetails?._id) return;
-    try {
-      setLoading(true);
-      const results = await convex.query(api.agent.GetUserAgentsList, {
-        userId: userDetails._id as Id<"UserTable">,
-      });
-      setAgentList(results || []);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  }, [userDetails?._id, convex]);
-
-  useEffect(() => {
-    if (userDetails) {
-      GetUserAgents();
-    }
-  }, [userDetails, GetUserAgents]);
-
   const handleDeleteRequest = (id: Id<"AgentTable">, name: string) => {
     setDeleteId(id);
     setDeleteName(name);
@@ -97,7 +70,6 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
     try {
       await deleteAgentMutation({ agentId: deleteId });
       toast.success("Database schema deleted");
-      GetUserAgents();
       setOpenAlert(false);
     } catch (error) {
       console.error(error);
@@ -143,7 +115,7 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
       result = result.filter((agent) => !agent.published);
     }
 
-    // Sort order (Recently Updated / Name A-Z / Most Entities)
+    // Sort by creation date, name, or entity count.
     if (sortBy === "recent") {
       result.sort((a, b) => (b._creationTime || 0) - (a._creationTime || 0));
     } else if (sortBy === "name") {
@@ -152,58 +124,26 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
       );
     } else if (sortBy === "entities") {
       result.sort((a, b) => {
-        const aCount = Array.isArray(a.nodes) ? a.nodes.length : 0;
-        const bCount = Array.isArray(b.nodes) ? b.nodes.length : 0;
-        return bCount - aCount;
+        return (b.nodeCount ?? 0) - (a.nodeCount ?? 0);
       });
     }
 
     return result;
   }, [agentList, searchQuery, typeFilter, statusFilter, sortBy]);
 
-  if (loading) {
+  if (!agents) {
     return (
-      <div className="space-y-8">
+      <div role="status" className="space-y-6">
+        <span className="sr-only">Loading your architectures</span>
         {/* Shimmering Metrics Bar Skeleton */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="h-24 rounded-xl border border-border/60 bg-card/60 p-4 animate-pulse flex flex-col justify-between"
-            >
-              <div className="flex justify-between items-center">
-                <div className="h-3 w-20 bg-muted/80 rounded" />
-                <div className="h-6 w-6 bg-muted/80 rounded" />
-              </div>
-              <div className="h-5 w-12 bg-muted/80 rounded" />
-            </div>
-          ))}
-        </div>
-
-        {/* Shimmering Cards Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pt-2">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="rounded-xl border border-border/60 bg-card/60 p-4 animate-pulse flex flex-col justify-between space-y-4"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="h-8 w-8 rounded-lg bg-muted/80" />
-                  <div className="h-5 w-16 bg-muted/80 rounded" />
-                </div>
-                <div className="space-y-1.5">
-                  <div className="h-4 w-3/4 bg-muted/80 rounded" />
-                  <div className="h-3 w-1/3 bg-muted/80 rounded" />
-                </div>
-              </div>
-              <div className="pt-3 border-t border-border/40 flex items-center justify-between">
-                <div className="h-3 w-20 bg-muted/80 rounded" />
-                <div className="h-7 w-24 bg-muted/80 rounded" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <Skeleton aria-hidden className="h-24 rounded-2xl motion-reduce:animate-none" />
+        <section aria-labelledby="project-library-loading" className="space-y-4">
+          <h2 id="project-library-loading" className="text-xl font-semibold tracking-tight">Your architectures</h2>
+          {/* Shimmering Cards Skeleton */}
+          <div aria-hidden className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {[1, 2, 3].map((item) => <Skeleton key={item} className="h-48 rounded-2xl motion-reduce:animate-none" />)}
+          </div>
+        </section>
       </div>
     );
   }
@@ -211,28 +151,21 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
   return (
     <div className="w-full space-y-6">
       {/* Dynamic Telemetry / Metrics Bar */}
-      <DashboardMetricsBar
-        agents={agentList}
-        isPaidUser={isPaidUser}
-        hasAiPlan={hasAiPlan}
-        userPlan={userPlan}
-        quota={quota}
-        projectCount={agentList.length}
-      />
+      <DashboardMetricsBar agents={agentList} />
 
       {/* Main Workspace Section */}
-      <div className="space-y-5">
+      <section aria-labelledby="project-library" className="space-y-4">
         {/* Section Header & Toolbar */}
         <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-lg font-bold tracking-tight text-foreground">
-                Your Database Architectures
-              </h2>
-              <span className="px-2 py-0.5 rounded-full text-xs font-mono font-semibold bg-muted text-foreground border border-border/60">
-                {agentList.length}
-              </span>
-            </div>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+            <h2 id="project-library" className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+              Your architectures
+            </h2>
+            <p aria-live="polite" className="text-sm tabular-nums text-muted-foreground">
+              {filteredAndSortedAgents.length === agentList.length
+                ? `${agentList.length} ${agentList.length === 1 ? "schema" : "schemas"}`
+                : `${filteredAndSortedAgents.length} of ${agentList.length} schemas`}
+            </p>
           </div>
 
           {/* Search, Filter, Sort and View Switcher */}
@@ -248,8 +181,6 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
               onSortByChange={setSortBy}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
-              totalCount={agentList.length}
-              filteredCount={filteredAndSortedAgents.length}
               sqlCount={sqlCount}
               nosqlCount={nosqlCount}
             />
@@ -258,28 +189,22 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
 
         {/* Empty States */}
         {agentList.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-dashed border-border/80 bg-card/40 my-4 space-y-5">
+          <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-violet-300/20 bg-[radial-gradient(ellipse_at_top,#201b2f,transparent_70%)] px-5 py-12 text-center">
             <div className="h-14 w-14 rounded-2xl bg-[#ffc507]/10 text-[#ffee72] flex items-center justify-center border border-[#ffdf27]/20 shadow-xs">
               <Database className="h-7 w-7 text-[#ffdf27]" />
             </div>
             <div className="space-y-1.5 max-w-md">
               <h3 className="font-bold text-lg text-foreground">
-                No Database Schemas Yet
+                Create your first schema
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Create your first relational SQL schema or NoSQL document model with visual tables,
-                collections, foreign keys, and instant export.
+                Start a SQL or NoSQL project to model your database in the visual canvas.
               </p>
             </div>
-            {onOpenCreateDialog && (
-              <Button
-                onClick={onOpenCreateDialog}
-                className="gap-2 font-semibold bg-gradient-to-r from-[#ffc507] via-[#ffee72] to-[#ffdf27] text-zinc-950 hover:brightness-105 border-none shadow-xs cursor-pointer"
-              >
-                <Plus className="h-4 w-4 text-zinc-950" />
-                <span>Create New Schema</span>
-              </Button>
-            )}
+            <Button onClick={onOpenCreateDialog} className="cursor-pointer bg-[#ffe47a] font-semibold text-zinc-950 hover:bg-[#ffed9d]">
+              <Plus aria-hidden />
+              New schema
+            </Button>
           </div>
         ) : filteredAndSortedAgents.length === 0 ? (
           /* Filtered No Results State */
@@ -288,11 +213,11 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
               <SearchX className="h-5 w-5" />
             </div>
             <div className="space-y-1">
-              <h4 className="font-semibold text-sm text-foreground">
-                No matching schemas found
-              </h4>
+              <h3 className="font-semibold text-sm text-foreground">
+                No matching schemas
+              </h3>
               <p className="text-xs text-muted-foreground">
-                No schemas matched your current search and filter criteria.
+                Try another search or reset the filters.
               </p>
             </div>
             <Button
@@ -307,19 +232,18 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
               className="gap-1.5 text-xs cursor-pointer"
             >
               <RotateCcw className="h-3.5 w-3.5" />
-              Reset Filters
+              Reset filters
             </Button>
           </div>
         ) : viewMode === "grid" ? (
           /* Grid View */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pt-2">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {filteredAndSortedAgents.map((agent) => (
               <SchemaCard
                 key={agent._id}
                 agent={agent}
-                userId={userDetails?._id as Id<"UserTable">}
+                userId={userId}
                 onDeleteRequest={handleDeleteRequest}
-                onRefresh={GetUserAgents}
               />
             ))}
           </div>
@@ -327,12 +251,11 @@ export default function MyAgents({ onOpenCreateDialog }: MyAgentsProps = {}) {
           /* Table View */
           <SchemaTableView
             agents={filteredAndSortedAgents}
-            userId={userDetails?._id as Id<"UserTable">}
+            userId={userId}
             onDeleteRequest={handleDeleteRequest}
-            onRefresh={GetUserAgents}
           />
         )}
-      </div>
+      </section>
 
       {/* Delete Confirmation Alert Dialog */}
       <AlertDialog open={openAlert} onOpenChange={setOpenAlert}>

@@ -1,155 +1,37 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { Agent } from "@/types/AgentTypes";
-import {
-  Database,
-  Layers,
-  GitFork,
-  Cpu,
-} from "lucide-react";
+import { Database, GitFork, Layers } from "lucide-react";
+import type { DashboardProject } from "@/app/dashboard/_components/MyAgents";
 
-import { PlanCode } from "@/lib/planAccess";
+export default function DashboardMetricsBar({ agents }: { agents: DashboardProject[] }) {
+  let totalTables = 0;
+  let totalRelations = 0;
 
-interface DashboardMetricsBarProps {
-  agents: Agent[];
-  isPaidUser: boolean;
-  hasAiPlan: boolean;
-  projectCount: number;
-  userPlan?: PlanCode;
-  quota?: number;
-}
+  for (const agent of agents) {
+    totalTables += agent.tableCount ?? 0;
+    totalRelations += agent.relationCount ?? 0;
+  }
 
-export default function DashboardMetricsBar({
-  agents,
-  isPaidUser,
-  hasAiPlan,
-  projectCount,
-  userPlan,
-  quota,
-}: DashboardMetricsBarProps) {
-  const metrics = useMemo(() => {
-    let totalTables = 0;
-    let totalRelations = 0;
-    let totalViews = 0;
-
-    agents.forEach((agent) => {
-      const nodes = Array.isArray(agent.nodes) ? agent.nodes : [];
-      const edges = Array.isArray(agent.edges) ? agent.edges : [];
-
-      totalRelations += edges.length;
-
-      nodes.forEach((node: Record<string, unknown>) => {
-        const type = (node?.type as string) || "";
-        if (
-          type === "SqlTableNode" ||
-          type === "NosqlCollectionNode" ||
-          type === "Table" ||
-          type === "Collection"
-        ) {
-          totalTables += 1;
-        } else if (type === "SqlViewNode" || type === "View") {
-          totalViews += 1;
-        }
-      });
-    });
-
-    const effectivePlan = userPlan || (hasAiPlan ? "ai" : isPaidUser ? "pro" : "free");
-    const isAi = effectivePlan === "ai" || hasAiPlan;
-    const isPro = effectivePlan === "pro";
-    const resolvedQuota = typeof quota === "number" && quota > 0 ? quota : (isAi ? 25 : isPro ? 15 : 1);
-    const isUnlimited = resolvedQuota >= 999;
-    const maxSlots = isUnlimited ? "Unlimited" : String(resolvedQuota);
-
-    const quotaCaption = isUnlimited
-      ? `Plan Quota: ${projectCount} / Unlimited`
-      : `Plan Quota: ${projectCount} / ${maxSlots}`;
-
-    return {
-      totalSchemas: agents.length,
-      maxSlots,
-      quotaCaption,
-      totalTables,
-      totalRelations,
-      totalViews,
-    };
-  }, [agents, isPaidUser, hasAiPlan, userPlan, projectCount, quota]);
-
-  const cards = [
-    {
-      title: "Active Schemas",
-      value: metrics.totalSchemas,
-      caption: metrics.quotaCaption,
-      icon: Database,
-      accentColor: "text-[#ffee72]",
-      bgAccent: "bg-[#ffc507]/10",
-      borderAccent: "border-[#ffdf27]/20",
-    },
-    {
-      title: "Tables & Collections",
-      value: metrics.totalTables,
-      caption: `${metrics.totalViews} views & queries`,
-      icon: Layers,
-      accentColor: "text-emerald-400",
-      bgAccent: "bg-emerald-500/10",
-      borderAccent: "border-emerald-500/20",
-    },
-    {
-      title: "Mapped Relations",
-      value: metrics.totalRelations,
-      caption: "Foreign keys & links",
-      icon: GitFork,
-      accentColor: "text-sky-400",
-      bgAccent: "bg-sky-500/10",
-      borderAccent: "border-sky-500/20",
-    },
-    {
-      title: "Target Dialects",
-      value: "Postgres & MySQL",
-      caption: "Native SQL DDL export",
-      icon: Cpu,
-      accentColor: "text-purple-400",
-      bgAccent: "bg-purple-500/10",
-      borderAccent: "border-purple-500/20",
-      isText: true,
-    },
+  const metrics = [
+    { label: "Schemas", value: agents.length, icon: Database, color: "bg-[#ffe47a]/10 text-[#ffe47a]" },
+    { label: "Tables & collections", value: totalTables, icon: Layers, color: "bg-violet-300/10 text-violet-200" },
+    { label: "Relationships", value: totalRelations, icon: GitFork, color: "bg-emerald-300/10 text-emerald-200" },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map((card, i) => (
-        <div
-          key={i}
-          className="relative overflow-hidden rounded-xl border border-border/80 bg-card p-4 transition-all duration-200 hover:border-zinc-700 hover:shadow-md shadow-xs flex flex-col justify-between"
-        >
-          {/* Subtle top ambient glow */}
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
-              {card.title}
-            </span>
-            <div
-              className={`h-7 w-7 rounded-lg ${card.bgAccent} ${card.borderAccent} border flex items-center justify-center shrink-0`}
-            >
-              <card.icon className={`h-3.5 w-3.5 ${card.accentColor}`} />
-            </div>
-          </div>
-
-          <div className="mt-3">
-            <div
-              className={`font-bold tracking-tight text-foreground ${
-                card.isText ? "text-base font-mono" : "text-2xl"
-              }`}
-            >
-              {card.value}
-            </div>
-            <div className="mt-1 flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground/80">
-              <span>{card.caption}</span>
-            </div>
+    <dl aria-label="Workspace totals" className="grid divide-y divide-border rounded-2xl border border-border bg-card sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      {metrics.map(({ label, value, icon: Icon, color }) => (
+        <div key={label} className="flex min-w-0 items-center gap-3 px-4 py-3 sm:px-5 sm:py-4">
+          {/* Subtle accent on each metric icon */}
+          <span className={`grid size-9 shrink-0 place-items-center rounded-xl ${color}`}>
+            <Icon aria-hidden className="size-4" />
+          </span>
+          <div className="min-w-0">
+            <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+            <dd className="text-xl font-semibold tracking-tight tabular-nums">{value.toLocaleString("en-US")}</dd>
           </div>
         </div>
       ))}
-    </div>
+    </dl>
   );
 }

@@ -2,10 +2,10 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Agent } from "@/types/AgentTypes";
+import type { DashboardProject } from "@/app/dashboard/_components/MyAgents";
 import { Id } from "@/convex/_generated/dataModel";
 import RenameProjectModal from "./RenameProjectModal";
-import { exportSqlDdl } from "@/lib/sqlDdlExporter";
+import { downloadProjectSql } from "@/app/dashboard/_components/downloadProjectSql";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,67 +30,30 @@ import {
   GitFork,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useMutation } from "convex/react";
+import { useConvex, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { getSchemaType } from "@/lib/schemaClassifier";
 
 interface SchemaCardProps {
-  agent: Agent;
+  agent: DashboardProject;
   userId?: Id<"UserTable">;
   onDeleteRequest: (agentId: Id<"AgentTable">, agentName: string) => void;
-  onRefresh: () => void;
 }
 
 export default function SchemaCard({
   agent,
   userId,
   onDeleteRequest,
-  onRefresh,
 }: SchemaCardProps) {
   const [renameModalOpen, setRenameModalOpen] = useState(false);
-  const [cardName, setCardName] = useState(agent.name);
+  const cardName = agent.name || "Untitled schema";
+  const convex = useConvex();
   const duplicateAgentMutation = useMutation(api.agent.DuplicateAgent);
 
   const schemaType = getSchemaType(agent);
   const isNoSql = schemaType === "nosql";
 
-  const nodes = Array.isArray(agent.nodes) ? agent.nodes : [];
-  const edges = Array.isArray(agent.edges) ? agent.edges : [];
-
-  const tableCount = nodes.filter((n: Record<string, unknown>) => {
-    const type = (n?.type as string) || "";
-    return (
-      type === "SqlTableNode" ||
-      type === "NosqlCollectionNode" ||
-      type === "Table" ||
-      type === "Collection"
-    );
-  }).length;
-
-  const viewCount = nodes.filter((n: Record<string, unknown>) => {
-    const type = (n?.type as string) || "";
-    return type === "SqlViewNode" || type === "View";
-  }).length;
-
-  const handleQuickExportSql = (dialect: "postgresql" | "mysql") => {
-    try {
-      const ddl = exportSqlDdl(nodes, edges, { dialect });
-      const blob = new Blob([ddl], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      const safeName = (cardName || "schema")
-        .toLowerCase()
-        .replace(/[^a-z0-9_-]+/g, "_");
-      link.download = `${safeName}_${dialect}.sql`;
-      link.click();
-      URL.revokeObjectURL(url);
-      toast.success(`Exported ${dialect.toUpperCase()} DDL!`);
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to export SQL DDL");
-    }
-  };
+  const { tableCount = 0, viewCount = 0, relationCount = 0 } = agent;
 
   const handleDuplicate = async () => {
     if (!userId) {
@@ -106,7 +69,6 @@ export default function SchemaCard({
         userId,
       });
       toast.success(`Duplicated "${cardName}"`, { id: "duplicate-toast" });
-      onRefresh();
     } catch (err: unknown) {
       console.error(err);
       const message =
@@ -121,7 +83,7 @@ export default function SchemaCard({
   };
 
   return (
-    <div className="group relative rounded-xl border border-border/80 bg-card hover:border-zinc-600 transition-all duration-200 shadow-xs hover:shadow-md flex flex-col justify-between overflow-hidden">
+    <article className="group relative flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card motion-safe:transition-colors hover:border-white/20 focus-within:border-white/20">
       {/* Subtle top ambient glow */}
       <div
         className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent ${
@@ -130,12 +92,12 @@ export default function SchemaCard({
       />
 
       {/* Main Card Content */}
-      <div className="p-4 space-y-3.5">
+      <div className="flex-1 space-y-3">
         {/* Header Bar */}
-        <div className="flex items-center justify-between gap-2">
+        <div className={`flex items-center justify-between gap-2 border-b border-border bg-[radial-gradient(#ffffff20_1px,transparent_1px)] bg-size-[14px_14px] p-4 ${isNoSql ? "bg-[#10201e]" : "bg-[#1c1826]"}`}>
           <div className="flex items-center gap-2">
             <div
-              className={`h-8 w-8 rounded-lg flex items-center justify-center border shrink-0 shadow-2xs ${
+              className={`size-10 rounded-xl flex items-center justify-center border shrink-0 shadow-2xs ${
                 isNoSql
                   ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
                   : "bg-[#ffc507]/10 text-[#ffee72] border-[#ffdf27]/20"
@@ -180,8 +142,8 @@ export default function SchemaCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md cursor-pointer"
-                  title="Actions"
+                  className="size-9 bg-card/80 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md cursor-pointer"
+                  aria-label={`Actions for ${cardName}`} title="Actions"
                 >
                   <MoreVertical className="h-3.5 w-3.5" />
                 </Button>
@@ -206,14 +168,14 @@ export default function SchemaCard({
                 <DropdownMenuSeparator />
 
                 <DropdownMenuItem
-                  onClick={() => handleQuickExportSql("postgresql")}
+                  onClick={() => downloadProjectSql(convex, agent, "postgresql")}
                   className="cursor-pointer gap-2 text-xs"
                 >
                   <Download className="h-3.5 w-3.5 text-emerald-500" />
                   <span>Export PostgreSQL</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => handleQuickExportSql("mysql")}
+                  onClick={() => downloadProjectSql(convex, agent, "mysql")}
                   className="cursor-pointer gap-2 text-xs"
                 >
                   <Code2 className="h-3.5 w-3.5 text-sky-500" />
@@ -245,18 +207,18 @@ export default function SchemaCard({
         </div>
 
         {/* Title */}
-        <div>
+        <h3 className="px-4 pt-0.5">
           <Link
             href={`/agent-builder/${agent.agentId}`}
-            className="font-semibold text-sm text-foreground hover:text-[#ffee72] transition-colors truncate block"
+            className="block truncate rounded-sm text-base font-semibold tracking-tight text-foreground outline-none hover:text-[#ffe47a] focus-visible:ring-2 focus-visible:ring-[#ffe47a]"
             title={cardName}
           >
             {cardName}
           </Link>
-        </div>
+        </h3>
 
         {/* Entity Stats Chips */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
+        <div className="flex flex-wrap items-center gap-2 px-4 pb-4">
           <div className="flex items-center gap-1.5 text-[11px] font-mono px-2 py-0.5 rounded-md bg-muted/50 border border-border/60 text-foreground">
             <Layers className="h-3 w-3 text-emerald-400 shrink-0" />
             <span>
@@ -266,7 +228,7 @@ export default function SchemaCard({
           <div className="flex items-center gap-1.5 text-[11px] font-mono px-2 py-0.5 rounded-md bg-muted/50 border border-border/60 text-foreground">
             <GitFork className="h-3 w-3 text-sky-400 shrink-0" />
             <span>
-              {edges.length} {edges.length === 1 ? "relation" : "relations"}
+              {relationCount} {relationCount === 1 ? "relation" : "relations"}
             </span>
           </div>
           {viewCount > 0 && (
@@ -278,17 +240,12 @@ export default function SchemaCard({
       </div>
 
       {/* Footer Action Row */}
-      <div className="px-4 py-2.5 bg-muted/20 border-t border-border/60 flex items-center justify-end">
-        <Link href={`/agent-builder/${agent.agentId}`}>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2.5 gap-1.5 text-xs font-semibold text-[#ffee72] hover:text-[#ffdf27] hover:bg-[#ffc507]/10 cursor-pointer"
-          >
-            <span>Open Canvas</span>
-            <ArrowRight className="h-3 w-3" />
-          </Button>
-        </Link>
+      <div className="flex items-center justify-end border-t border-border bg-muted/25 px-3 py-2">
+        <Button asChild size="sm" variant="ghost" className="gap-1.5 text-xs font-semibold text-[#ffe47a] hover:bg-[#ffe47a]/10 hover:text-[#ffed9d]">
+          <Link href={`/agent-builder/${agent.agentId}`} aria-label={`Open canvas for ${cardName}`}>
+            Open canvas <ArrowRight aria-hidden className="size-3.5" />
+          </Link>
+        </Button>
       </div>
 
       {/* In-place Rename Modal */}
@@ -297,11 +254,7 @@ export default function SchemaCard({
         onOpenChange={setRenameModalOpen}
         agentId={agent._id}
         currentName={cardName}
-        onSuccess={(newName) => {
-          setCardName(newName);
-          onRefresh();
-        }}
       />
-    </div>
+    </article>
   );
 }

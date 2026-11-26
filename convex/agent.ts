@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, MutationCtx } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
+import { getSchemaType } from "../lib/schemaClassifier";
 
 async function resolveMaxProjectQuota(
   ctx: { db: MutationCtx["db"] },
@@ -111,6 +112,7 @@ export const GetUserAgents = query({
 export const GetUserAgentsList = query({
   args: {
     userId: v.id("UserTable"),
+    includeSchemaStats: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const results = await ctx.db
@@ -124,9 +126,24 @@ export const GetUserAgentsList = query({
       _creationTime: agent._creationTime,
       agentId: agent.agentId,
       name: agent.name,
-      schemaType: agent.schemaType,
+      schemaType: args.includeSchemaStats ? getSchemaType(agent) : agent.schemaType,
       published: agent.published,
       userId: agent.userId,
+      ...(args.includeSchemaStats && {
+        nodeCount: Array.isArray(agent.nodes) ? agent.nodes.length : 0,
+        tableCount: Array.isArray(agent.nodes)
+          ? agent.nodes.filter((node: { type?: string } | null) =>
+              node?.type === "SqlTableNode" || node?.type === "Table" ||
+              node?.type === "NosqlCollectionNode" || node?.type === "Collection"
+            ).length
+          : 0,
+        viewCount: Array.isArray(agent.nodes)
+          ? agent.nodes.filter((node: { type?: string } | null) =>
+              node?.type === "SqlViewNode" || node?.type === "View"
+            ).length
+          : 0,
+        relationCount: Array.isArray(agent.edges) ? agent.edges.length : 0,
+      }),
     }));
   },
 });
